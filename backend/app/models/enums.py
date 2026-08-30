@@ -68,3 +68,9 @@ class ApplicationStatus(str, enum.Enum):
     offered = "offered"
     rejected = "rejected"
     withdrawn = "withdrawn"
+
+
+class OutreachStatus(str, enum.Enum):
+    sent = "sent"
+    draft_no_contact = "draft_no_contact"  # drafted, but no recruiter email was found to send to
+    failed = "failed"

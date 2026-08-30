@@ -2,7 +2,9 @@
 consistent with how the aggregation service talks to job-board APIs directly.
 """
 
+import base64
 import urllib.parse
+from email.mime.text import MIMEText
 
 import httpx
 
@@ -20,6 +22,7 @@ SCOPES = [
     "https://www.googleapis.com/auth/gmail.readonly",
     "https://www.googleapis.com/auth/gmail.labels",
     "https://www.googleapis.com/auth/gmail.settings.basic",
+    "https://www.googleapis.com/auth/gmail.send",
 ]
 
 
@@ -128,6 +131,25 @@ def list_message_ids(access_token: str, label_id: str, query: str) -> list[str]:
     if resp.status_code >= 400:
         raise GmailAPIError(f"Listing messages failed: {resp.text[:500]}")
     return [m["id"] for m in resp.json().get("messages", [])]
+
+
+def send_message(access_token: str, to: str, subject: str, body_text: str) -> str:
+    """Send a plain-text email from the connected user's own Gmail account.
+    Returns the sent message's id."""
+    mime_message = MIMEText(body_text)
+    mime_message["To"] = to
+    mime_message["Subject"] = subject
+    raw = base64.urlsafe_b64encode(mime_message.as_bytes()).decode()
+
+    resp = httpx.post(
+        f"{GMAIL_API_BASE}/messages/send",
+        headers=_auth_headers(access_token),
+        json={"raw": raw},
+        timeout=HTTP_TIMEOUT,
+    )
+    if resp.status_code >= 400:
+        raise GmailAPIError(f"Sending message failed: {resp.text[:500]}")
+    return resp.json()["id"]
 
 
 def get_message(access_token: str, message_id: str) -> dict:

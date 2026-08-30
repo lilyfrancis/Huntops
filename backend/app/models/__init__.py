@@ -5,6 +5,8 @@ from app.models.gmail_connection import GmailConnection
 from app.models.ingestion_run import IngestionRun
 from app.models.job import Job
 from app.models.job_match import JobMatch
+from app.models.outreach import Outreach
+from app.models.recruiter_contact import RecruiterContact
 from app.models.resume import Resume
 from app.models.user import User
 
@@ -18,4 +20,6 @@ __all__ = [
     "IngestionRun",
     "GmailConnection",
     "EmailSyncRun",
+    "RecruiterContact",
+    "Outreach",
 ]

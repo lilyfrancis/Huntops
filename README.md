@@ -12,6 +12,8 @@ Autopilot Outreach → Reach & retention → Premium coaching).
 parsing, geo-aware fit scoring. ✅
 **Phase 3 — Email-alert bridge**: per-user Gmail OAuth, auto-provisioned
 label + filters, AI extraction of jobs from alert emails. ✅
+**Phase 4 — Autopilot Outreach**: Apollo recruiter discovery, AI-drafted
+pitches, sending via the user's own Gmail. ✅ — the flagship feature.
 
 ## What's in Phase 1
 
@@ -89,12 +91,46 @@ label + filters, AI extraction of jobs from alert emails. ✅
   counts and errors per sync, without exposing which user's inbox produced
   which job to anyone but that user.
 
-## Deliberately not yet built
+## What's in Phase 4
 
-Autopilot Outreach (Apollo recruiter discovery + AI-drafted, auto-sent
-pitches) and every other "wow" feature from the blueprint (warm-intro
-finder, ghost-job detector, mock interview simulator, negotiation coach,
-apply-anywhere extension) — those are Phase 4 onward.
+- **Apollo recruiter discovery**, ported from Job Engine with both of its
+  documented gotchas preserved: search results obfuscate the last name
+  (e.g. "Li\*\*\*a"), so enrichment keys on the person's `id`, never the
+  masked name; and the work email lands in `person.email`, not the usually-
+  empty `personal_emails` array.
+- **Per-job, not per-user, recruiter caching**: `RecruiterContact` is keyed
+  on `job_id` alone. The second, third, and Nth user who reaches out to the
+  same job reuses the cached contact instead of spending another Apollo
+  reveal credit — the same instinct behind Phase 2's job dedup, applied to
+  a paid third-party lookup this time.
+- **Per-user AI drafting**, not a hardcoded persona: Job Engine's prompt had
+  one candidate's résumé and voice baked in as constants. Here the draft is
+  built from whichever user's résumé and optional `positioning_statement`
+  requested it — same prompt structure, works for anyone.
+- **Real send, not a copy-pasted draft**: on a recruiter email + a connected
+  Gmail account, the pitch is sent from the user's own inbox via the Gmail
+  API (new `gmail.send` scope) using the OAuth plumbing Phase 3 already
+  built. No recruiter found, or no Gmail connected? The draft is still
+  generated and returned — the user can send it manually.
+- **Gated and metered honestly**: Elite-tier only, credit balance checked
+  *before* any Apollo or Anthropic call fires, so a user who can't pay never
+  costs real money. Cached per `(user, job)` like JobQuick's old boost/
+  message features, so re-opening the same job never re-drafts or re-charges.
+
+## Deliberately not built (and why)
+
+**Warm-intro finder** — the blueprint proposed surfacing 2nd-degree
+LinkedIn connections before falling back to a cold recruiter email. That
+needs LinkedIn's connection graph, which neither Apollo nor any realistic
+third-party API exposes to outside applications. Building a fake version of
+this would be worse than not having it; it stays out until there's an
+honest data source for it.
+
+**Everything else from the blueprint's "new wow features" list** — ghost-job
+detector, mock interview simulator, negotiation coach, apply-anywhere
+browser extension, funnel/streak dashboard — is real product work, just not
+part of the core Job Engine → HuntOps port. Reasonable next phases once the
+core loop (find → score → reach out) is validated with real users.
 
 ## Project layout
 
@@ -104,14 +140,17 @@ backend/
     core/       settings, JWT/password security, rate limiter
     db/         SQLAlchemy engine/session
     models/     User, Job, Application, CreditLedgerEntry, Resume, JobMatch,
-                IngestionRun, GmailConnection, EmailSyncRun
+                IngestionRun, GmailConnection, EmailSyncRun,
+                RecruiterContact, Outreach
     schemas/    Pydantic request/response models, AI response schemas
     routers/    auth, users, jobs, applications, billing, resumes, matches,
-                integrations (Gmail), admin, health
+                integrations (Gmail), outreach, admin, health
     services/   credits ledger, Stripe billing, AI client, résumé parsing,
                 job-fit matching, job aggregation, Gmail OAuth + message
-                parsing, email-alert bridge, daily scheduler
-  alembic/      migrations (0001 core, 0002 aggregation + matching, 0003 email bridge)
+                parsing + sending, email-alert bridge, Apollo recruiter
+                discovery, outreach drafting/orchestration, daily scheduler
+  alembic/      migrations (0001 core, 0002 aggregation + matching,
+                0003 email bridge, 0004 outreach)
   tests/        pytest suite (sqlite in-memory, external calls mocked — no
                 network or API keys needed to run it)
 docker-compose.yml   Postgres + API for local dev
@@ -199,10 +238,23 @@ to disable the daily 07:00 UTC run and only trigger ingestion manually via
 4. `POST /api/integrations/gmail/sync` triggers an immediate sync;
    otherwise it runs daily at 07:10 UTC via the scheduler.
 
-## What's next (Phase 4)
+## Apollo + Outreach setup
 
-Autopilot Outreach — Apollo recruiter discovery, AI-drafted personalized
-pitches (email + LinkedIn note + tailored CV bullets), and sending via the
-user's own connected Gmail. This is the blueprint's flagship differentiator:
-the point where the product can honestly say "we already emailed the
-recruiter for you."
+1. Get a **master** API key from [Apollo.io](https://developer.apollo.io/) —
+   a non-master key gets a 403 on people search — and set `APOLLO_API_KEY`.
+2. A job seeker needs an Elite subscription, an uploaded résumé, and
+   (optionally, to enable actual sending rather than draft-only output) a
+   connected Gmail account from the Phase 3 setup above.
+3. `POST /api/outreach {"job_id": "..."}` runs the whole flow: find/reuse a
+   recruiter contact for the job's company, draft a personalized pitch, and
+   send it if a recruiter email and connected Gmail are both available.
+   Costs `OUTREACH_CREDIT_COST` (default 30) credits on first request for a
+   given job; repeat requests for the same job return the cached result for
+   free. `GET /api/outreach/mine` lists everything a user has sent or drafted.
+
+## What's next (Phase 5)
+
+Reach & retention: the daily digest/push notification, and the account-side
+work needed before any of this goes in front of real users — rate limiting
+beyond auth, observability, and a frontend to actually drive the flows this
+API now supports end to end.

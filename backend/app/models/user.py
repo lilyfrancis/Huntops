@@ -24,6 +24,10 @@ class User(Base):
     # gracefully to skills/experience fit only.
     home_market: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
+    # Optional free-text steer for outreach drafting, e.g. "pivoting from
+    # sales into RevOps" — never fabricated content, just tone/emphasis.
+    positioning_statement: Mapped[str | None] = mapped_column(String(500), nullable=True)
+
     subscription_tier: Mapped[SubscriptionTier] = mapped_column(
         Enum(SubscriptionTier, name="subscription_tier"), nullable=False, default=SubscriptionTier.free
     )

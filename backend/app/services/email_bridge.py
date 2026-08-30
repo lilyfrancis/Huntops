@@ -106,7 +106,7 @@ def _as_aware_utc(dt: datetime) -> datetime:
     return dt if dt.tzinfo is not None else dt.replace(tzinfo=timezone.utc)
 
 
-def _get_valid_access_token(db: Session, connection: GmailConnection) -> str:
+def get_valid_access_token(db: Session, connection: GmailConnection) -> str:
     if _as_aware_utc(connection.token_expires_at) > datetime.now(timezone.utc) + timedelta(minutes=2):
         return decrypt(connection.access_token_encrypted)
 
@@ -131,7 +131,7 @@ def sync_user(db: Session, user: User) -> dict:
     fetched = extracted_total = inserted_total = 0
 
     try:
-        access_token = _get_valid_access_token(db, connection)
+        access_token = get_valid_access_token(db, connection)
         message_ids = gmail_oauth.list_message_ids(
             access_token, connection.label_id, settings.EMAIL_SYNC_QUERY_WINDOW
         )

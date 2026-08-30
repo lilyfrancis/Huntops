@@ -18,6 +18,13 @@ class ExtractedJobPosting(BaseModel):
     location: str | None = None
 
 
+class OutreachDraft(BaseModel):
+    email_subject: str
+    email_body: str
+    linkedin_msg: str
+    cv_bullets: list[str] = Field(default_factory=list)
+
+
 class JobFitScore(BaseModel):
     job_index: int
     overall_score: float = Field(ge=0, le=100)

@@ -8,7 +8,19 @@ from slowapi.errors import RateLimitExceeded
 
 from app.core.config import get_settings, validate_settings_on_startup
 from app.core.limiter import limiter
-from app.routers import admin, applications, auth, billing, health, integrations, jobs, matches, resumes, users
+from app.routers import (
+    admin,
+    applications,
+    auth,
+    billing,
+    health,
+    integrations,
+    jobs,
+    matches,
+    outreach,
+    resumes,
+    users,
+)
 from app.services.scheduler import shutdown_scheduler, start_scheduler
 
 logging.basicConfig(level=logging.INFO)
@@ -44,6 +56,7 @@ app.include_router(billing.router)
 app.include_router(resumes.router)
 app.include_router(matches.router)
 app.include_router(integrations.router)
+app.include_router(outreach.router)
 app.include_router(admin.router)
 
 

@@ -69,6 +69,21 @@ class Settings(BaseSettings):
     ENABLE_SCHEDULED_EMAIL_SYNC: bool = True
     EMAIL_SYNC_QUERY_WINDOW: str = "newer_than:2d"
 
+    # Apollo (recruiter discovery) + outreach drafting — Autopilot Outreach,
+    # gated to the elite tier and metered in credits since both an Apollo
+    # reveal and a Sonnet-tier draft cost real money per call.
+    APOLLO_API_KEY: str = ""
+    RECRUITER_TITLES: str = (
+        "Recruiter,Technical Recruiter,Talent Acquisition,Talent Partner,"
+        "Head of Talent,Head of People,People Operations Manager,HR Manager,"
+        "Hiring Manager,Recruitment Manager"
+    )
+    OUTREACH_CREDIT_COST: int = 30
+
+    @property
+    def recruiter_titles_list(self) -> List[str]:
+        return [t.strip() for t in self.RECRUITER_TITLES.split(",") if t.strip()]
+
     @property
     def allowed_resume_extensions_list(self) -> List[str]:
         return [e.strip() for e in self.ALLOWED_RESUME_EXTENSIONS.split(",") if e.strip()]
