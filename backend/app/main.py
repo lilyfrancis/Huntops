@@ -1,4 +1,5 @@
 import logging
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -7,13 +8,22 @@ from slowapi.errors import RateLimitExceeded
 
 from app.core.config import get_settings, validate_settings_on_startup
 from app.core.limiter import limiter
-from app.routers import admin, applications, auth, billing, health, jobs, users
+from app.routers import admin, applications, auth, billing, health, jobs, matches, resumes, users
+from app.services.scheduler import shutdown_scheduler, start_scheduler
 
 logging.basicConfig(level=logging.INFO)
 settings = get_settings()
 validate_settings_on_startup(settings)
 
-app = FastAPI(title="HuntOps API", version="0.1.0")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    start_scheduler()
+    yield
+    shutdown_scheduler()
+
+
+app = FastAPI(title="HuntOps API", version="0.1.0", lifespan=lifespan)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
@@ -31,6 +41,8 @@ app.include_router(users.router)
 app.include_router(jobs.router)
 app.include_router(applications.router)
 app.include_router(billing.router)
+app.include_router(resumes.router)
+app.include_router(matches.router)
 app.include_router(admin.router)
 
 

@@ -19,6 +19,8 @@ def update_profile(
         current_user.full_name = payload.full_name
     if payload.company_name is not None:
         current_user.company_name = payload.company_name
+    if payload.home_market is not None:
+        current_user.home_market = payload.home_market
 
     db.commit()
     db.refresh(current_user)

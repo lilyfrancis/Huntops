@@ -34,6 +34,7 @@ class UserOut(BaseModel):
     full_name: str
     role: UserRole
     company_name: str | None
+    home_market: str | None
     subscription_tier: SubscriptionTier
     ai_credits: int
     is_approved: bool
@@ -43,6 +44,7 @@ class UserOut(BaseModel):
 class UserProfileUpdate(BaseModel):
     full_name: str | None = None
     company_name: str | None = None
+    home_market: str | None = None
 
 
 class TokenPair(BaseModel):

@@ -19,6 +19,11 @@ class User(Base):
     role: Mapped[UserRole] = mapped_column(Enum(UserRole, name="user_role"), nullable=False)
     company_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
+    # Free-text home market for geo-eligibility boosting (e.g. "Nigeria",
+    # "Philippines"). Null means no boost is applied — scoring degrades
+    # gracefully to skills/experience fit only.
+    home_market: Mapped[str | None] = mapped_column(String(100), nullable=True)
+
     subscription_tier: Mapped[SubscriptionTier] = mapped_column(
         Enum(SubscriptionTier, name="subscription_tier"), nullable=False, default=SubscriptionTier.free
     )

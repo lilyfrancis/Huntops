@@ -7,10 +7,12 @@ from sqlalchemy.orm import Session
 from app.core.security import require_admin
 from app.db.base import get_db
 from app.models.enums import JobStatus
+from app.models.ingestion_run import IngestionRun
 from app.models.job import Job
 from app.models.user import User
 from app.schemas.job import JobOut, JobRejectRequest
 from app.schemas.user import UserOut
+from app.services.aggregation import ingest_all
 
 router = APIRouter(prefix="/api/admin", tags=["admin"], dependencies=[Depends(require_admin)])
 
@@ -73,3 +75,30 @@ def reject_job(job_id: uuid.UUID, payload: JobRejectRequest, db: Session = Depen
     db.commit()
     db.refresh(job)
     return job
+
+
+@router.post("/jobs/aggregate")
+def trigger_aggregation(db: Session = Depends(get_db)) -> dict:
+    """Manually run the aggregation pipeline on demand (also runs daily via the scheduler)."""
+    return ingest_all(db)
+
+
+@router.get("/jobs/aggregation-runs")
+def list_aggregation_runs(
+    limit: int = Query(20, ge=1, le=200),
+    db: Session = Depends(get_db),
+) -> list[dict]:
+    runs = db.query(IngestionRun).order_by(desc(IngestionRun.started_at)).limit(limit).all()
+    return [
+        {
+            "id": str(r.id),
+            "source": r.source,
+            "status": r.status,
+            "fetched_count": r.fetched_count,
+            "inserted_count": r.inserted_count,
+            "error": r.error,
+            "started_at": r.started_at,
+            "finished_at": r.finished_at,
+        }
+        for r in runs
+    ]

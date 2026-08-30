@@ -41,6 +41,28 @@ class Settings(BaseSettings):
     STRIPE_PRICE_ELITE: str = ""
     FRONTEND_URL: str = "http://localhost:3000"
 
+    # AI (Anthropic) — cheap Haiku tier for scoring/extraction, Sonnet reserved
+    # for Phase 4's outreach drafting (higher quality writing, higher cost).
+    ANTHROPIC_API_KEY: str = ""
+    ANTHROPIC_SCORING_MODEL: str = "claude-haiku-4-5-20251001"
+    ANTHROPIC_DRAFTING_MODEL: str = "claude-sonnet-5"
+
+    # Résumé upload
+    MAX_UPLOAD_SIZE_MB: int = 5
+    ALLOWED_RESUME_EXTENSIONS: str = ".pdf,.docx,.txt"
+
+    # Job aggregation
+    AGGREGATION_DAILY_CAP: int = 200
+    MAX_MATCH_CANDIDATES: int = 40
+    GEO_MATCH_BOOST: int = 15
+    ADZUNA_APP_ID: str = ""
+    ADZUNA_APP_KEY: str = ""
+    ENABLE_SCHEDULED_AGGREGATION: bool = True
+
+    @property
+    def allowed_resume_extensions_list(self) -> List[str]:
+        return [e.strip() for e in self.ALLOWED_RESUME_EXTENSIONS.split(",") if e.strip()]
+
     @property
     def cors_origins_list(self) -> List[str]:
         if self.CORS_ORIGINS == "*":
