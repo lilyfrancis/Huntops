@@ -11,6 +11,13 @@ class ParsedResume(BaseModel):
     achievements: list[str] = Field(default_factory=list)
 
 
+class ExtractedJobPosting(BaseModel):
+    title: str
+    company: str = "Unknown"
+    url: str | None = None
+    location: str | None = None
+
+
 class JobFitScore(BaseModel):
     job_index: int
     overall_score: float = Field(ge=0, le=100)

@@ -109,7 +109,7 @@ def test_ingest_all_dedupes_and_isolates_source_failures(db_session):
         raise RuntimeError("upstream API is down")
 
     def normalize_ok(raw):
-        return aggregation._normalize_common(
+        return aggregation.normalize_common(
             title=raw["title"], company=raw["company"], url=raw["url"], location=raw["location"],
             description="", requirements=[], salary_range=None, source="working",
         )
@@ -146,7 +146,7 @@ def test_ingest_all_skips_jobs_already_in_db(db_session):
         return [{"title": "Existing Job", "company": "Acme", "url": "https://x.example/existing", "location": "Remote"}]
 
     def normalize_ok(raw):
-        return aggregation._normalize_common(
+        return aggregation.normalize_common(
             title=raw["title"], company=raw["company"], url=raw["url"], location=raw["location"],
             description="", requirements=[], salary_range=None, source="working",
         )

@@ -34,7 +34,7 @@ USER_AGENT = "HuntOpsBot/1.0 (+https://github.com/lilyfrancis/huntops)"
 _TAG_RE = re.compile(r"<[^>]+>")
 
 
-def _strip_html(text: str | None) -> str:
+def strip_html(text: str | None) -> str:
     if not text:
         return ""
     return _TAG_RE.sub(" ", text).replace("&amp;", "&").replace("&nbsp;", " ").strip()
@@ -237,7 +237,7 @@ def infer_restriction(location: str, description: str) -> str | None:
 
 # ---------- normalization — one source-specific mapper each, into the Job column shape ----------
 
-def _normalize_common(
+def normalize_common(
     *, title: str, company: str | None, url: str, location: str, description: str,
     requirements: list[str], salary_range: str | None, source: str,
 ) -> dict | None:
@@ -246,7 +246,7 @@ def _normalize_common(
     if not title or not url:
         return None
 
-    clean_description = _strip_html(description)[:4000]
+    clean_description = strip_html(description)[:4000]
     return {
         "title": title[:255],
         "company_name": (company or None),
@@ -269,7 +269,7 @@ def _normalize_common(
 
 
 def normalize_remotive(raw: dict) -> dict | None:
-    return _normalize_common(
+    return normalize_common(
         title=raw.get("title", ""),
         company=raw.get("company_name"),
         url=raw.get("url", ""),
@@ -284,7 +284,7 @@ def normalize_remotive(raw: dict) -> dict | None:
 def normalize_remoteok(raw: dict) -> dict | None:
     salary_min, salary_max = raw.get("salary_min"), raw.get("salary_max")
     salary_range = f"${salary_min:,}–${salary_max:,}" if salary_min and salary_max else None
-    return _normalize_common(
+    return normalize_common(
         title=raw.get("position", ""),
         company=raw.get("company"),
         url=raw.get("url", ""),
@@ -299,7 +299,7 @@ def normalize_remoteok(raw: dict) -> dict | None:
 def normalize_arbeitnow(raw: dict) -> dict | None:
     job_types = raw.get("job_types", []) or []
     location = "Remote" if raw.get("remote") else (raw.get("location") or "Not specified")
-    return _normalize_common(
+    return normalize_common(
         title=raw.get("title", ""),
         company=raw.get("company_name"),
         url=raw.get("url", ""),
@@ -315,7 +315,7 @@ def normalize_jobicy(raw: dict) -> dict | None:
     industries = raw.get("jobIndustry", []) or []
     salary_min, salary_max = raw.get("annualSalaryMin"), raw.get("annualSalaryMax")
     salary_range = f"${salary_min:,}–${salary_max:,}" if salary_min and salary_max else None
-    return _normalize_common(
+    return normalize_common(
         title=raw.get("jobTitle", ""),
         company=raw.get("companyName"),
         url=raw.get("url", ""),
@@ -328,7 +328,7 @@ def normalize_jobicy(raw: dict) -> dict | None:
 
 
 def normalize_weworkremotely(raw: dict) -> dict | None:
-    return _normalize_common(
+    return normalize_common(
         title=raw.get("title", ""),
         company=raw.get("company"),
         url=raw.get("url", ""),
@@ -344,7 +344,7 @@ def normalize_adzuna(raw: dict) -> dict | None:
     location = raw.get("location", {}).get("display_name", "") if isinstance(raw.get("location"), dict) else ""
     salary_min, salary_max = raw.get("salary_min"), raw.get("salary_max")
     salary_range = f"£{salary_min:,.0f}–£{salary_max:,.0f}" if salary_min and salary_max else None
-    return _normalize_common(
+    return normalize_common(
         title=raw.get("title", ""),
         company=(raw.get("company") or {}).get("display_name"),
         url=raw.get("redirect_url", ""),

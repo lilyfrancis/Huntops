@@ -1,5 +1,7 @@
 from app.models.application import Application
 from app.models.credit_ledger import CreditLedgerEntry
+from app.models.email_sync_run import EmailSyncRun
+from app.models.gmail_connection import GmailConnection
 from app.models.ingestion_run import IngestionRun
 from app.models.job import Job
 from app.models.job_match import JobMatch
@@ -14,4 +16,6 @@ __all__ = [
     "Resume",
     "JobMatch",
     "IngestionRun",
+    "GmailConnection",
+    "EmailSyncRun",
 ]

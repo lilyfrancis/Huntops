@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.core.security import require_admin
 from app.db.base import get_db
+from app.models.email_sync_run import EmailSyncRun
 from app.models.enums import JobStatus
 from app.models.ingestion_run import IngestionRun
 from app.models.job import Job
@@ -95,6 +96,31 @@ def list_aggregation_runs(
             "source": r.source,
             "status": r.status,
             "fetched_count": r.fetched_count,
+            "inserted_count": r.inserted_count,
+            "error": r.error,
+            "started_at": r.started_at,
+            "finished_at": r.finished_at,
+        }
+        for r in runs
+    ]
+
+
+@router.get("/email-sync-runs")
+def list_email_sync_runs(
+    limit: int = Query(20, ge=1, le=200),
+    db: Session = Depends(get_db),
+) -> list[dict]:
+    """Aggregate email-bridge health across all users — never exposes which
+    user's inbox a run belongs to beyond the id, since this is admin ops
+    visibility, not a way to browse individual mailboxes."""
+    runs = db.query(EmailSyncRun).order_by(desc(EmailSyncRun.started_at)).limit(limit).all()
+    return [
+        {
+            "id": str(r.id),
+            "user_id": str(r.user_id),
+            "status": r.status,
+            "fetched_count": r.fetched_count,
+            "extracted_count": r.extracted_count,
             "inserted_count": r.inserted_count,
             "error": r.error,
             "started_at": r.started_at,

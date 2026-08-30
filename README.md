@@ -10,6 +10,8 @@ Autopilot Outreach → Reach & retention → Premium coaching).
 **Phase 1 — Foundation**: auth, roles, job/application CRUD, real Stripe billing. ✅
 **Phase 2 — Real supply & fit intelligence**: live job aggregation, résumé
 parsing, geo-aware fit scoring. ✅
+**Phase 3 — Email-alert bridge**: per-user Gmail OAuth, auto-provisioned
+label + filters, AI extraction of jobs from alert emails. ✅
 
 ## What's in Phase 1
 
@@ -64,13 +66,35 @@ parsing, geo-aware fit scoring. ✅
   prior prototype did a bare `json.loads()` with no validation, so a
   malformed reply corrupted data instead of failing loudly.
 
+## What's in Phase 3
+
+- **Per-user Gmail OAuth**, not one shared mailbox. Job Engine's own spec was
+  explicit that it only ever handled one hand-configured inbox with manually
+  created Gmail filters — this is the multi-tenant version, sized honestly
+  as the trickiest piece in the whole blueprint's rebuild plan.
+- **Zero manual setup**: connecting an account programmatically creates the
+  "HuntOps" Gmail label and routing filters for known job-alert senders
+  (LinkedIn, Indeed, Glassdoor, Jobberman, MyJobMag, TheLadders) via the
+  Gmail API — the user never touches Gmail's settings UI.
+- **Encrypted tokens at rest**: refresh/access tokens are Fernet-encrypted
+  before hitting the database, decrypted only in memory when a sync runs.
+- **Same extraction + normalization pipeline as Phase 2**: emails are parsed
+  by Claude into structured postings, then flow through the exact same
+  `normalize_common` / lane-inference / geo-heuristic functions aggregation
+  uses — the email bridge is just another source feeding one table.
+- **LinkedIn's missing-URL problem, solved the way Job Engine solved it**:
+  when an alert email has no direct job link, a provider-aware search-URL
+  fallback is generated (and deduped on) instead of dropping the job.
+- **Scoped audit logging**: `EmailSyncRun` records fetched/extracted/inserted
+  counts and errors per sync, without exposing which user's inbox produced
+  which job to anyone but that user.
+
 ## Deliberately not yet built
 
-The email-alert bridge (mining a user's own Gmail job alerts), Autopilot
-Outreach (Apollo recruiter discovery + AI-drafted, auto-sent pitches), and
-every other "wow" feature from the blueprint (warm-intro finder, ghost-job
-detector, mock interview simulator, negotiation coach, apply-anywhere
-extension) — those are Phases 3 onward.
+Autopilot Outreach (Apollo recruiter discovery + AI-drafted, auto-sent
+pitches) and every other "wow" feature from the blueprint (warm-intro
+finder, ghost-job detector, mock interview simulator, negotiation coach,
+apply-anywhere extension) — those are Phase 4 onward.
 
 ## Project layout
 
@@ -79,12 +103,15 @@ backend/
   app/
     core/       settings, JWT/password security, rate limiter
     db/         SQLAlchemy engine/session
-    models/     User, Job, Application, CreditLedgerEntry, Resume, JobMatch, IngestionRun
+    models/     User, Job, Application, CreditLedgerEntry, Resume, JobMatch,
+                IngestionRun, GmailConnection, EmailSyncRun
     schemas/    Pydantic request/response models, AI response schemas
-    routers/    auth, users, jobs, applications, billing, resumes, matches, admin, health
+    routers/    auth, users, jobs, applications, billing, resumes, matches,
+                integrations (Gmail), admin, health
     services/   credits ledger, Stripe billing, AI client, résumé parsing,
-                job-fit matching, job aggregation, daily scheduler
-  alembic/      migrations (0001 core schema, 0002 aggregation + matching)
+                job-fit matching, job aggregation, Gmail OAuth + message
+                parsing, email-alert bridge, daily scheduler
+  alembic/      migrations (0001 core, 0002 aggregation + matching, 0003 email bridge)
   tests/        pytest suite (sqlite in-memory, external calls mocked — no
                 network or API keys needed to run it)
 docker-compose.yml   Postgres + API for local dev
@@ -157,8 +184,25 @@ fetched: 0` rather than an error. Set `ENABLE_SCHEDULED_AGGREGATION=false`
 to disable the daily 07:00 UTC run and only trigger ingestion manually via
 `POST /api/admin/jobs/aggregate`.
 
-## What's next (Phase 3)
+## Gmail setup
 
-The email-alert bridge — per-user Gmail OAuth reading job-alert labels,
-Claude extracting postings from them — the multi-tenant piece Job Engine
-never had to solve, since it only ever ran against one mailbox.
+1. In [Google Cloud Console](https://console.cloud.google.com/apis/credentials),
+   create an OAuth 2.0 Client ID (Web application), enable the Gmail API for
+   the project, and add `GOOGLE_OAUTH_REDIRECT_URI`'s value to the client's
+   authorized redirect URIs.
+2. Set `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` and a real
+   `TOKEN_ENCRYPTION_KEY` (see `.env.example` for how to generate one).
+3. A job seeker calls `GET /api/integrations/gmail/connect`, visits the
+   returned URL, and consents. Google redirects back to
+   `/api/integrations/gmail/callback`, which creates the Gmail label/filters
+   and stores encrypted tokens — no manual Gmail configuration needed.
+4. `POST /api/integrations/gmail/sync` triggers an immediate sync;
+   otherwise it runs daily at 07:10 UTC via the scheduler.
+
+## What's next (Phase 4)
+
+Autopilot Outreach — Apollo recruiter discovery, AI-drafted personalized
+pitches (email + LinkedIn note + tailored CV bullets), and sending via the
+user's own connected Gmail. This is the blueprint's flagship differentiator:
+the point where the product can honestly say "we already emailed the
+recruiter for you."

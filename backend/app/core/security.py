@@ -21,6 +21,7 @@ security = HTTPBearer()
 class TokenType(str, Enum):
     access = "access"
     refresh = "refresh"
+    oauth_state = "oauth_state"
 
 
 def hash_password(password: str) -> str:
@@ -61,6 +62,13 @@ def create_access_token(user_id: uuid.UUID) -> str:
 
 def create_refresh_token(user_id: uuid.UUID) -> str:
     return _create_token(str(user_id), TokenType.refresh, timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS))
+
+
+def create_oauth_state_token(user_id: uuid.UUID) -> str:
+    """Short-lived signed state for OAuth redirects — the callback is hit by the
+    browser with no Authorization header, so this is how it recovers which
+    user initiated the flow without trusting an unsigned query param."""
+    return _create_token(str(user_id), TokenType.oauth_state, timedelta(minutes=10))
 
 
 def decode_token(token: str, expected_type: TokenType) -> dict:

@@ -59,9 +59,23 @@ class Settings(BaseSettings):
     ADZUNA_APP_KEY: str = ""
     ENABLE_SCHEDULED_AGGREGATION: bool = True
 
+    # Gmail OAuth (email-alert bridge)
+    GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
+    GOOGLE_OAUTH_REDIRECT_URI: str = "http://localhost:8000/api/integrations/gmail/callback"
+    TOKEN_ENCRYPTION_KEY: str = ""
+    GMAIL_LABEL_NAME: str = "HuntOps"
+    EMAIL_ALERT_SENDER_DOMAINS: str = "linkedin.com,indeed.com,glassdoor.com,jobberman.com,myjobmag.com,theladders.com"
+    ENABLE_SCHEDULED_EMAIL_SYNC: bool = True
+    EMAIL_SYNC_QUERY_WINDOW: str = "newer_than:2d"
+
     @property
     def allowed_resume_extensions_list(self) -> List[str]:
         return [e.strip() for e in self.ALLOWED_RESUME_EXTENSIONS.split(",") if e.strip()]
+
+    @property
+    def email_alert_sender_domains_list(self) -> List[str]:
+        return [d.strip() for d in self.EMAIL_ALERT_SENDER_DOMAINS.split(",") if d.strip()]
 
     @property
     def cors_origins_list(self) -> List[str]:
