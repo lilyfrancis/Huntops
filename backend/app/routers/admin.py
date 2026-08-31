@@ -4,16 +4,21 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
 from app.core.security import require_admin
 from app.db.base import get_db
+from app.models.application import Application
 from app.models.email_sync_run import EmailSyncRun
-from app.models.enums import JobStatus
+from app.models.enums import JobStatus, OutreachStatus, SubscriptionTier, UserRole
 from app.models.ingestion_run import IngestionRun
 from app.models.job import Job
+from app.models.outreach import Outreach
 from app.models.user import User
 from app.schemas.job import JobOut, JobRejectRequest
 from app.schemas.user import UserOut
 from app.services.aggregation import ingest_all
+
+settings = get_settings()
 
 router = APIRouter(prefix="/api/admin", tags=["admin"], dependencies=[Depends(require_admin)])
 
@@ -103,6 +108,55 @@ def list_aggregation_runs(
         }
         for r in runs
     ]
+
+
+@router.get("/analytics")
+def get_analytics(db: Session = Depends(get_db)) -> dict:
+    """Consolidated business + ops health — the equivalent of JobQuick's
+    analytics endpoint, extended with the ingestion/outreach visibility
+    that endpoint never had because its supply and outreach were fake."""
+    total_users = db.query(User).count()
+    job_seekers = db.query(User).filter(User.role == UserRole.job_seeker).count()
+    employers = db.query(User).filter(User.role == UserRole.employer).count()
+    pro_count = db.query(User).filter(User.subscription_tier == SubscriptionTier.pro).count()
+    elite_count = db.query(User).filter(User.subscription_tier == SubscriptionTier.elite).count()
+
+    total_jobs = db.query(Job).count()
+    active_jobs = db.query(Job).filter(Job.status == JobStatus.active).count()
+    featured_jobs = db.query(Job).filter(Job.is_featured.is_(True)).count()
+    aggregated_jobs = db.query(Job).filter(Job.source != "internal").count()
+
+    total_applications = db.query(Application).count()
+
+    total_outreach = db.query(Outreach).count()
+    sent_outreach = db.query(Outreach).filter(Outreach.status == OutreachStatus.sent).count()
+
+    recent_runs = db.query(IngestionRun).order_by(desc(IngestionRun.started_at)).limit(30).all()
+    ingestion_success_rate = (
+        sum(1 for r in recent_runs if r.status == "success") / len(recent_runs) if recent_runs else None
+    )
+
+    return {
+        "users": {
+            "total": total_users, "job_seekers": job_seekers, "employers": employers,
+            "pro": pro_count, "elite": elite_count,
+        },
+        "jobs": {
+            "total": total_jobs, "active": active_jobs, "featured": featured_jobs, "aggregated": aggregated_jobs,
+        },
+        "applications": {"total": total_applications},
+        "outreach": {
+            "total": total_outreach, "sent": sent_outreach,
+            "success_rate": (sent_outreach / total_outreach) if total_outreach else None,
+        },
+        "ingestion_health": {
+            "recent_runs_checked": len(recent_runs), "success_rate": ingestion_success_rate,
+        },
+        "revenue": {
+            "monthly_recurring_estimate_usd": round(pro_count * settings.PRO_PRICE_USD + elite_count * settings.ELITE_PRICE_USD, 2),
+            "pro_subs": pro_count, "elite_subs": elite_count,
+        },
+    }
 
 
 @router.get("/email-sync-runs")

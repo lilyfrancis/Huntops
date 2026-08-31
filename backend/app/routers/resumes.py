@@ -1,9 +1,10 @@
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, File
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
+from app.core.limiter import limiter
 from app.core.security import require_job_seeker
 from app.db.base import get_db
 from app.models.resume import Resume
@@ -18,7 +19,9 @@ settings = get_settings()
 
 
 @router.post("/upload", response_model=ResumeOut, status_code=201)
+@limiter.limit("10/hour")
 async def upload_resume(
+    request: Request,
     file: UploadFile = File(...),
     current_user: User = Depends(require_job_seeker),
     db: Session = Depends(get_db),

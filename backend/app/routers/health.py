@@ -22,9 +22,11 @@ def health_check(db: Session = Depends(get_db)) -> dict:
 @router.get("/api/health/detailed", dependencies=[Depends(require_admin)])
 def detailed_health_check(db: Session = Depends(get_db)) -> dict:
     from app.core.config import get_settings
+    from app.services.scheduler import get_scheduler
 
     settings = get_settings()
     checks = {}
+    scheduler = get_scheduler()
 
     try:
         db.execute(text("SELECT 1"))
@@ -33,4 +35,12 @@ def detailed_health_check(db: Session = Depends(get_db)) -> dict:
         checks["database"] = {"status": "unhealthy", "error": str(e)}
 
     checks["stripe"] = {"configured": bool(settings.STRIPE_SECRET_KEY and settings.STRIPE_WEBHOOK_SECRET)}
+    checks["anthropic"] = {"configured": bool(settings.ANTHROPIC_API_KEY)}
+    checks["apollo"] = {"configured": bool(settings.APOLLO_API_KEY)}
+    checks["gmail_oauth"] = {"configured": bool(settings.GOOGLE_CLIENT_ID and settings.GOOGLE_CLIENT_SECRET)}
+    checks["smtp"] = {"configured": bool(settings.SMTP_HOST)}
+    checks["scheduler"] = {
+        "running": bool(scheduler and scheduler.running),
+        "jobs": [j.id for j in scheduler.get_jobs()] if scheduler else [],
+    }
     return checks

@@ -84,6 +84,25 @@ class Settings(BaseSettings):
     def recruiter_titles_list(self) -> List[str]:
         return [t.strip() for t in self.RECRUITER_TITLES.split(",") if t.strip()]
 
+    # Outbound platform email (digest, admin alerts) — deliberately generic
+    # SMTP rather than a vendor SDK, so any provider's SMTP relay works
+    # (SendGrid, Postmark, SES, or a real mailbox in dev).
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USERNAME: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM_EMAIL: str = "noreply@huntops.app"
+    SMTP_USE_TLS: bool = True
+    ADMIN_ALERT_EMAIL: str = ""
+
+    ENABLE_SCHEDULED_DIGEST: bool = True
+    DIGEST_MAX_JOBS: int = 10
+
+    # For the admin revenue estimate only — not used for actual billing,
+    # which is entirely Stripe-driven (see services/billing.py).
+    PRO_PRICE_USD: float = 24.0
+    ELITE_PRICE_USD: float = 89.0
+
     @property
     def allowed_resume_extensions_list(self) -> List[str]:
         return [e.strip() for e in self.ALLOWED_RESUME_EXTENSIONS.split(",") if e.strip()]

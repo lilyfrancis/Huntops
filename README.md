@@ -14,6 +14,9 @@ parsing, geo-aware fit scoring. ✅
 label + filters, AI extraction of jobs from alert emails. ✅
 **Phase 4 — Autopilot Outreach**: Apollo recruiter discovery, AI-drafted
 pitches, sending via the user's own Gmail. ✅ — the flagship feature.
+**Phase 5 — Reach & retention**: daily digest email, consolidated admin
+analytics, scheduled-job failure alerting, rate limiting on AI-costing
+endpoints. ✅
 
 ## What's in Phase 1
 
@@ -117,6 +120,34 @@ pitches, sending via the user's own Gmail. ✅ — the flagship feature.
   costs real money. Cached per `(user, job)` like JobQuick's old boost/
   message features, so re-opening the same job never re-drafts or re-charges.
 
+## What's in Phase 5
+
+- **Daily digest email**: the scheduled job re-scores every job seeker with
+  a résumé against recent active jobs, persists the matches (through the
+  same `persist_matches` function the interactive `/api/ai/match-jobs`
+  endpoint uses — one code path, not two that can drift), and emails a
+  home-market-first summary. Ported from Job Engine's "Build Digest" step,
+  generalized from one shared Telegram chat to per-user email.
+- **Consolidated admin analytics** (`GET /api/admin/analytics`): user/job/
+  application counts, subscription revenue estimate, and — unlike JobQuick's
+  original version — real ingestion success rate and outreach send success
+  rate, because this product's supply and outreach are real enough to have
+  a success rate worth watching.
+- **Scheduled-job failure alerting**: if the aggregation, email-sync, or
+  digest job crashes outright, an admin email fires — the generalized,
+  email-based equivalent of Job Engine's dedicated Telegram error-alert
+  workflow. A single user's AI failure inside the digest loop is logged and
+  skipped, not treated as a crash worth paging on.
+- **Rate limiting extended past auth**: résumé upload, job matching, and
+  outreach creation are now capped per IP (10/hour, 20/hour, 10/hour) on
+  top of the credit/tier gates already in place — the credit system stops
+  someone from affording abuse, this stops someone from just hammering the
+  endpoint.
+- **Request logging + expanded health check**: every request logs method,
+  path, status, and duration; `/api/health/detailed` now reports whether
+  Anthropic/Apollo/Gmail OAuth/SMTP are configured and whether the
+  scheduler is actually running, not just database/Stripe.
+
 ## Deliberately not built (and why)
 
 **Warm-intro finder** — the blueprint proposed surfacing 2nd-degree
@@ -132,6 +163,11 @@ browser extension, funnel/streak dashboard — is real product work, just not
 part of the core Job Engine → HuntOps port. Reasonable next phases once the
 core loop (find → score → reach out) is validated with real users.
 
+**A frontend.** All five backend phases are done and tested at the API
+layer — every flow the pitch describes works over HTTP — but there is no
+UI. Nobody can click a button to try any of this yet. That's the honest
+gap between "the API can do it" and "the product exists."
+
 ## Project layout
 
 ```
@@ -144,8 +180,9 @@ backend/
                 RecruiterContact, Outreach
     schemas/    Pydantic request/response models, AI response schemas
     routers/    auth, users, jobs, applications, billing, resumes, matches,
-                integrations (Gmail), outreach, admin, health
+                integrations (Gmail), outreach, digest, admin, health
     services/   credits ledger, Stripe billing, AI client, résumé parsing,
+                notifications (SMTP digest/alerts), daily digest builder,
                 job-fit matching, job aggregation, Gmail OAuth + message
                 parsing + sending, email-alert bridge, Apollo recruiter
                 discovery, outreach drafting/orchestration, daily scheduler
@@ -252,9 +289,28 @@ to disable the daily 07:00 UTC run and only trigger ingestion manually via
    given job; repeat requests for the same job return the cached result for
    free. `GET /api/outreach/mine` lists everything a user has sent or drafted.
 
-## What's next (Phase 5)
+## Digest + admin alerting setup
 
-Reach & retention: the daily digest/push notification, and the account-side
-work needed before any of this goes in front of real users — rate limiting
-beyond auth, observability, and a frontend to actually drive the flows this
-API now supports end to end.
+1. Set `SMTP_HOST` (and `SMTP_USERNAME`/`SMTP_PASSWORD` if your relay needs
+   auth) to any SMTP provider — SendGrid, Postmark, SES, or a real mailbox
+   in dev. Without it, `send_email` logs and returns `False` instead of
+   raising, so nothing else breaks.
+2. `GET /api/digest/preview` renders a job seeker's digest from whatever's
+   already scored (call `GET /api/ai/match-jobs` first if it looks empty).
+   The scheduled job at 07:30 UTC scores fresh matches for every job seeker
+   with a résumé, then emails the digest — no manual step needed.
+3. Set `ADMIN_ALERT_EMAIL` to get emailed if the aggregation, email-sync, or
+   digest scheduled job crashes outright. Per-item failures (one bad
+   aggregation source, one user's AI hiccup) are logged and skipped, not
+   alerted on — only a crash of the whole scheduled run pages you.
+4. `GET /api/admin/analytics` (admin-only) is the one-stop view: user/job/
+   application counts, revenue estimate, outreach send success rate, and
+   recent ingestion success rate.
+
+## What's next (Phase 6)
+
+A frontend. All five backend phases work end to end over HTTP, but there's
+nothing to click. The API is ready for a Next.js/Vite app to actually drive
+registration, the job feed, résumé upload, matching, Gmail connect, and the
+Autopilot Outreach flow — that's the next real milestone, not another
+backend phase.

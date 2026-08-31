@@ -1,9 +1,10 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
 
+from app.core.limiter import limiter
 from app.core.security import require_job_seeker
 from app.db.base import get_db
 from app.models.job import Job
@@ -17,7 +18,9 @@ router = APIRouter(prefix="/api/outreach", tags=["outreach"])
 
 
 @router.post("", response_model=OutreachOut, status_code=201)
+@limiter.limit("10/hour")
 def create_outreach(
+    request: Request,
     payload: OutreachRequest,
     current_user: User = Depends(require_job_seeker),
     db: Session = Depends(get_db),

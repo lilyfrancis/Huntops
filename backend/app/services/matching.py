@@ -1,12 +1,17 @@
+from sqlalchemy.orm import Session
+
 from app.core.config import get_settings
 from app.models.job import Job
+from app.models.job_match import JobMatch
 from app.models.resume import Resume
+from app.models.user import User
 from app.schemas.ai import JobFitScore, validate_or_raise
 from app.services import ai_client
 
 settings = get_settings()
 
 SYSTEM_PROMPT = "You are an expert job matching AI. Provide detailed, objective assessments."
+MIN_SCORE_THRESHOLD = 50
 
 
 def _build_prompt(resume: Resume, jobs: list[Job], home_market: str | None) -> str:
@@ -83,3 +88,34 @@ def score_jobs(resume: Resume, jobs: list[Job], home_market: str | None) -> list
 
     results.sort(key=lambda r: r[1].overall_score, reverse=True)
     return results
+
+
+def persist_matches(
+    db: Session, user: User, scored: list[tuple[Job, JobFitScore, bool]], min_score: float = MIN_SCORE_THRESHOLD
+) -> list[tuple[JobMatch, Job]]:
+    """Upsert JobMatch rows for whatever cleared the score threshold, returned
+    paired with their Job so callers never need a second lookup.
+
+    Shared by the interactive /api/ai/match-jobs endpoint and the scheduled
+    daily digest, so both write through the exact same persistence rule
+    instead of two copies drifting apart.
+    """
+    persisted = []
+    for job, score, geo_boost_applied in scored:
+        if score.overall_score < min_score:
+            continue
+
+        match = db.query(JobMatch).filter(JobMatch.user_id == user.id, JobMatch.job_id == job.id).first()
+        if match is None:
+            match = JobMatch(user_id=user.id, job_id=job.id, fit_score=0)
+            db.add(match)
+
+        match.fit_score = score.overall_score
+        match.skills_score = score.skills_score
+        match.experience_score = score.experience_score
+        match.geo_score = score.location_score
+        match.geo_boost_applied = geo_boost_applied
+        match.reason = score.reason
+        persisted.append((match, job))
+
+    return persisted
