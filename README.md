@@ -23,6 +23,8 @@ employer, and admin flow the API supports. ✅
 reveals, pricing — in front of the app. ✅
 **Phase 8 — Ghost-job detector**: heuristic scoring that flags listings
 which probably aren't a real, fillable seat, with the reasons shown. ✅
+**Phase 9 — Mock interview simulator**: role-specific questions, per-answer
+grading, and a session summary. Pro's own headline feature. ✅
 
 ## What's in Phase 1
 
@@ -359,6 +361,6 @@ to disable the daily 07:00 UTC run and only trigger ingestion manually via
 
 The core loop (find → score → reach out) is now clickable end to end for
 job seekers, employers, and admins, with a real marketing page in front
-of it and ghost listings flagged in the feed. Still on the deferred
-wow-features list: mock interview simulator, negotiation coach, and a
-funnel/streak dashboard for the job seeker.
+of it, ghost listings flagged in the feed, and interview practice behind
+the Pro tier. Still on the deferred wow-features list: a negotiation
+coach, and a funnel/streak dashboard for the job seeker.
