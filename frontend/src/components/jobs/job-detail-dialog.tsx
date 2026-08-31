@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/compone
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { GhostBadge, GhostReasons } from "@/components/jobs/ghost-badge";
 import { applicationsApi } from "@/lib/api";
 import { ApiError } from "@/lib/api-client";
 import type { Job } from "@/lib/types";
@@ -36,6 +37,7 @@ export function JobDetailDialog({ job, open, onOpenChange }: { job: Job | null; 
           {job.is_featured && <Badge tone="accent">Featured</Badge>}
           {job.is_remote && <Badge tone="cyan">Remote</Badge>}
           {job.lane && <Badge tone="neutral">{job.lane.replace("_", " ")}</Badge>}
+          <GhostBadge band={job.ghost_band} />
         </div>
         <DialogTitle>{job.title}</DialogTitle>
         <DialogDescription asChild>
@@ -49,6 +51,10 @@ export function JobDetailDialog({ job, open, onOpenChange }: { job: Job | null; 
             {job.salary_range && <span>{job.salary_range}</span>}
           </div>
         </DialogDescription>
+
+        <div className="mt-3">
+          <GhostReasons band={job.ghost_band} flags={job.ghost_flags} />
+        </div>
 
         <div className="max-h-64 overflow-y-auto rounded-lg border border-border bg-surface-2 p-4 text-sm text-ink-muted whitespace-pre-wrap">
           {job.description}

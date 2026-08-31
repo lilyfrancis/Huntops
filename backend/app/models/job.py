@@ -48,6 +48,12 @@ class Job(Base):
     # Null means no restriction detected (open to apply from anywhere).
     restricted_to: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
+    # Ghost-job detection (Phase 8). Null score means "not yet scanned" — the
+    # scanner backfills on a schedule, since staleness signals accrue over time.
+    ghost_score: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+    ghost_flags: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
+    ghost_checked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc), index=True
     )

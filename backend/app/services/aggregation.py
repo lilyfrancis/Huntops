@@ -24,6 +24,7 @@ from app.core.config import get_settings
 from app.models.enums import ExperienceLevel, JobLane, JobStatus, JobType
 from app.models.ingestion_run import IngestionRun
 from app.models.job import Job
+from app.services.ghost_detection import apply_score
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -403,7 +404,9 @@ def ingest_all(db: Session, daily_cap: int | None = None) -> dict:
                     seen_urls_this_run.add(url)
                     continue
 
-                db.add(Job(**normalized))
+                job = Job(**normalized)
+                apply_score(db, job)
+                db.add(job)
                 seen_urls_this_run.add(url)
                 inserted += 1
                 remaining_cap -= 1

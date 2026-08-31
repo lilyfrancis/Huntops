@@ -66,8 +66,13 @@ export interface Job {
   lane: JobLane | null;
   is_remote: boolean;
   restricted_to: string | null;
+  ghost_score: number | null;
+  ghost_flags: string[];
+  ghost_band: GhostBand;
   created_at: string;
 }
+
+export type GhostBand = "unchecked" | "clean" | "caution" | "likely_ghost";
 
 export interface Application {
   id: string;

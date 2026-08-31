@@ -5,6 +5,7 @@ export interface JobFilters {
   location?: string;
   job_type?: JobType;
   featured_only?: boolean;
+  hide_ghosts?: boolean;
   skip?: number;
   limit?: number;
 }

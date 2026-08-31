@@ -5,7 +5,7 @@ from sqlalchemy import desc
 
 from app.core.config import get_settings
 from app.db.base import SessionLocal
-from app.services import digest, matching, notifications
+from app.services import digest, ghost_detection, matching, notifications
 from app.services.aggregation import ingest_all
 from app.services.ai_client import AIResponseError
 from app.services.email_bridge import sync_all_connected_users
@@ -24,6 +24,18 @@ def _run_daily_aggregation() -> None:
     except Exception as e:  # the job runner has no caller to raise to
         logger.error("Scheduled aggregation failed: %s", e)
         notifications.alert_admin("Daily aggregation job crashed", str(e))
+    finally:
+        db.close()
+
+
+def _run_ghost_rescan() -> None:
+    db = SessionLocal()
+    try:
+        summary = ghost_detection.rescan_all(db)
+        logger.info("Scheduled ghost rescan complete: %s", summary)
+    except Exception as e:
+        logger.error("Scheduled ghost rescan failed: %s", e)
+        notifications.alert_admin("Daily ghost rescan job crashed", str(e))
     finally:
         db.close()
 
@@ -101,6 +113,10 @@ def start_scheduler() -> BackgroundScheduler | None:
         # 10 minutes after aggregation, matching Job Engine's original stagger
         # (Phase 1 at 7:00, Phase 2 email bridge at 7:10) so both don't hit the DB at once.
         _scheduler.add_job(_run_email_sync, "cron", hour=7, minute=10, id="daily_email_sync")
+    if settings.ENABLE_SCHEDULED_AGGREGATION:
+        # Between ingest and digest: staleness signals accrue daily, so scores
+        # have to be refreshed before the digest picks what to send.
+        _scheduler.add_job(_run_ghost_rescan, "cron", hour=7, minute=20, id="daily_ghost_rescan")
     if settings.ENABLE_SCHEDULED_DIGEST:
         # After both — the digest scores against jobs aggregation/email-sync just refreshed.
         _scheduler.add_job(_run_daily_digest, "cron", hour=7, minute=30, id="daily_digest")

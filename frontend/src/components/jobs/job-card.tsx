@@ -3,6 +3,7 @@ import { Building2, MapPin, Radio } from "lucide-react";
 import type { Job } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { GhostBadge } from "@/components/jobs/ghost-badge";
 
 const JOB_TYPE_LABEL: Record<Job["job_type"], string> = {
   full_time: "Full-time",
@@ -28,6 +29,7 @@ export function JobCard({ job, onClick }: { job: Job; onClick?: () => void }) {
               </Badge>
             )}
             {job.source !== "internal" && <Badge tone="neutral">{job.source}</Badge>}
+            <GhostBadge band={job.ghost_band} />
           </div>
           <h3 className="truncate text-base font-semibold text-ink">{job.title}</h3>
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-muted">

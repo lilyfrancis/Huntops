@@ -1,9 +1,10 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, computed_field
 
 from app.models.enums import ExperienceLevel, JobLane, JobStatus, JobType
+from app.services.ghost_detection import classify
 
 
 class JobCreate(BaseModel):
@@ -49,7 +50,14 @@ class JobOut(BaseModel):
     lane: JobLane | None
     is_remote: bool
     restricted_to: str | None
+    ghost_score: int | None
+    ghost_flags: list[str]
     created_at: datetime
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def ghost_band(self) -> str:
+        return classify(self.ghost_score)
 
 
 class JobRejectRequest(BaseModel):

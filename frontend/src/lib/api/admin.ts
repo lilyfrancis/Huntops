@@ -13,6 +13,10 @@ export const adminApi = {
   triggerAggregation: () => api.post<Record<string, { fetched: number; inserted: number; status: string }>>(
     "/api/admin/jobs/aggregate"
   ),
+  rescanGhosts: () =>
+    api.post<{ scanned: number; clean: number; caution: number; likely_ghost: number }>(
+      "/api/admin/jobs/rescan-ghosts"
+    ),
   aggregationRuns: () => api.get<IngestionRun[]>("/api/admin/jobs/aggregation-runs"),
   emailSyncRuns: () => api.get<EmailSyncRun[]>("/api/admin/email-sync-runs"),
   analytics: () => api.get<AdminAnalytics>("/api/admin/analytics"),

@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Briefcase, Search } from "lucide-react";
+import { Briefcase, Ghost, Search } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { JobCard } from "@/components/jobs/job-card";
 import { JobDetailDialog } from "@/components/jobs/job-detail-dialog";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { PageSpinner } from "@/components/ui/spinner";
 import { EmptyState } from "@/components/ui/empty-state";
 import { jobsApi } from "@/lib/api";
@@ -12,12 +13,16 @@ import type { Job } from "@/lib/types";
 
 export function JobFeedPage() {
   const [location, setLocation] = useState("");
+  const [hideGhosts, setHideGhosts] = useState(false);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
 
   const { data: jobs, isLoading } = useQuery({
-    queryKey: ["jobs", { location }],
-    queryFn: () => jobsApi.list({ location: location || undefined, limit: 50 }),
+    queryKey: ["jobs", { location, hideGhosts }],
+    queryFn: () =>
+      jobsApi.list({ location: location || undefined, hide_ghosts: hideGhosts || undefined, limit: 50 }),
   });
+
+  const flaggedCount = jobs?.filter((job) => job.ghost_band !== "clean" && job.ghost_band !== "unchecked").length ?? 0;
 
   return (
     <div>
@@ -37,6 +42,22 @@ export function JobFeedPage() {
             className="pl-9"
           />
         </div>
+
+        <Button
+          variant={hideGhosts ? "solid" : "outline"}
+          size="sm"
+          onClick={() => setHideGhosts((v) => !v)}
+          aria-pressed={hideGhosts}
+        >
+          <Ghost className="h-3.5 w-3.5" />
+          {hideGhosts ? "Ghosts hidden" : "Hide ghost jobs"}
+        </Button>
+
+        {!hideGhosts && flaggedCount > 0 && (
+          <span className="font-mono text-[11px] uppercase tracking-widest text-ink-faint">
+            {flaggedCount} flagged
+          </span>
+        )}
       </div>
 
       {isLoading ? (

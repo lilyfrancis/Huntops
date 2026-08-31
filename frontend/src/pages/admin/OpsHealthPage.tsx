@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
-import { PlayCircle, Radar } from "lucide-react";
+import { Ghost, PlayCircle, Radar } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +32,15 @@ export function OpsHealthPage() {
     onError: () => toast.error("Aggregation run failed"),
   });
 
+  const rescanMutation = useMutation({
+    mutationFn: adminApi.rescanGhosts,
+    onSuccess: (summary) => {
+      toast.success(`Rescanned ${summary.scanned} jobs — ${summary.likely_ghost} flagged as likely ghosts`);
+      queryClient.invalidateQueries({ queryKey: ["jobs"] });
+    },
+    onError: () => toast.error("Ghost rescan failed"),
+  });
+
   return (
     <div className="space-y-10">
       <div>
@@ -40,9 +49,19 @@ export function OpsHealthPage() {
           title="Aggregation runs"
           description="Each of the six job sources runs independently — one failing never blocks the rest."
           action={
-            <Button size="sm" onClick={() => triggerMutation.mutate()} disabled={triggerMutation.isPending}>
-              <PlayCircle className="h-3.5 w-3.5" /> {triggerMutation.isPending ? "Running…" : "Run now"}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => rescanMutation.mutate()}
+                disabled={rescanMutation.isPending}
+              >
+                <Ghost className="h-3.5 w-3.5" /> {rescanMutation.isPending ? "Scanning…" : "Rescan ghosts"}
+              </Button>
+              <Button size="sm" onClick={() => triggerMutation.mutate()} disabled={triggerMutation.isPending}>
+                <PlayCircle className="h-3.5 w-3.5" /> {triggerMutation.isPending ? "Running…" : "Run now"}
+              </Button>
+            </div>
           }
         />
         {runsLoading ? (

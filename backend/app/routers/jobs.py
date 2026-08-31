@@ -11,6 +11,7 @@ from app.models.enums import JobStatus, UserRole
 from app.models.job import Job
 from app.models.user import User
 from app.schemas.job import JobCreate, JobOut, JobUpdate
+from app.services.ghost_detection import GHOST_THRESHOLD
 
 router = APIRouter(prefix="/api/jobs", tags=["jobs"])
 settings = get_settings()
@@ -44,6 +45,7 @@ def list_jobs(
     location: str | None = None,
     job_type: str | None = None,
     featured_only: bool = False,
+    hide_ghosts: bool = False,
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
@@ -56,6 +58,9 @@ def list_jobs(
         query = query.filter(Job.job_type == job_type)
     if featured_only:
         query = query.filter(Job.is_featured.is_(True))
+    if hide_ghosts:
+        # Unscanned jobs stay visible — absence of a score isn't evidence of a ghost.
+        query = query.filter((Job.ghost_score.is_(None)) | (Job.ghost_score < GHOST_THRESHOLD))
 
     query = query.order_by(desc(Job.is_featured), desc(Job.created_at))
     return query.offset(skip).limit(limit).all()

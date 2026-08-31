@@ -16,6 +16,7 @@ from app.models.outreach import Outreach
 from app.models.user import User
 from app.schemas.job import JobOut, JobRejectRequest
 from app.schemas.user import UserOut
+from app.services import ghost_detection
 from app.services.aggregation import ingest_all
 
 settings = get_settings()
@@ -87,6 +88,12 @@ def reject_job(job_id: uuid.UUID, payload: JobRejectRequest, db: Session = Depen
 def trigger_aggregation(db: Session = Depends(get_db)) -> dict:
     """Manually run the aggregation pipeline on demand (also runs daily via the scheduler)."""
     return ingest_all(db)
+
+
+@router.post("/jobs/rescan-ghosts")
+def trigger_ghost_rescan(db: Session = Depends(get_db)) -> dict:
+    """Re-score every job for ghost signals (also runs daily via the scheduler)."""
+    return ghost_detection.rescan_all(db)
 
 
 @router.get("/jobs/aggregation-runs")
