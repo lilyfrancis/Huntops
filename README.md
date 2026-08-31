@@ -21,6 +21,8 @@ endpoints. ✅
 employer, and admin flow the API supports. ✅
 **Phase 7 — Landing page**: an animated marketing page — hero, scroll
 reveals, pricing — in front of the app. ✅
+**Phase 8 — Ghost-job detector**: heuristic scoring that flags listings
+which probably aren't a real, fillable seat, with the reasons shown. ✅
 
 ## What's in Phase 1
 
@@ -357,6 +359,6 @@ to disable the daily 07:00 UTC run and only trigger ingestion manually via
 
 The core loop (find → score → reach out) is now clickable end to end for
 job seekers, employers, and admins, with a real marketing page in front
-of it. The reasonable next milestone is the "new wow features" list that
-was deliberately deferred above: ghost-job detector, mock interview
-simulator, negotiation coach, funnel/streak dashboard.
+of it and ghost listings flagged in the feed. Still on the deferred
+wow-features list: mock interview simulator, negotiation coach, and a
+funnel/streak dashboard for the job seeker.
