@@ -12,6 +12,7 @@ from app.models.job import Job
 from app.models.user import User
 from app.schemas.job import JobCreate, JobOut, JobUpdate
 from app.services.ghost_detection import GHOST_THRESHOLD
+from app.services.salary_parsing import parse_salary
 
 router = APIRouter(prefix="/api/jobs", tags=["jobs"])
 settings = get_settings()
@@ -26,8 +27,12 @@ def create_job(
     if not current_user.is_approved:
         raise HTTPException(status_code=403, detail="Your employer account is pending approval")
 
+    parsed_salary = parse_salary(payload.salary_range)
     job = Job(
         **payload.model_dump(),
+        salary_annual_min=parsed_salary["annual_min"] if parsed_salary else None,
+        salary_annual_max=parsed_salary["annual_max"] if parsed_salary else None,
+        salary_currency=parsed_salary["currency"] if parsed_salary else None,
         employer_id=current_user.id,
         employer_name=current_user.full_name,
         company_name=current_user.company_name,

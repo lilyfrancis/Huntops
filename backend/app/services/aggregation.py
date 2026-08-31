@@ -25,6 +25,7 @@ from app.models.enums import ExperienceLevel, JobLane, JobStatus, JobType
 from app.models.ingestion_run import IngestionRun
 from app.models.job import Job
 from app.services.ghost_detection import apply_score
+from app.services.salary_parsing import parse_salary
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -248,7 +249,11 @@ def normalize_common(
         return None
 
     clean_description = strip_html(description)[:4000]
+    parsed_salary = parse_salary(salary_range)
     return {
+        "salary_annual_min": parsed_salary["annual_min"] if parsed_salary else None,
+        "salary_annual_max": parsed_salary["annual_max"] if parsed_salary else None,
+        "salary_currency": parsed_salary["currency"] if parsed_salary else None,
         "title": title[:255],
         "company_name": (company or None),
         "employer_id": None,

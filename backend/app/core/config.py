@@ -85,6 +85,9 @@ class Settings(BaseSettings):
     INTERVIEW_CREDIT_COST: int = 15
     INTERVIEW_QUESTION_COUNT: int = 5
 
+    # Negotiation coach: one grounded review per offer.
+    NEGOTIATION_CREDIT_COST: int = 20
+
     @property
     def recruiter_titles_list(self) -> List[str]:
         return [t.strip() for t in self.RECRUITER_TITLES.split(",") if t.strip()]

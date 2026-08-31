@@ -23,6 +23,7 @@ const PLANS = [
     features: [
       "Everything in Free",
       "Mock interview simulator",
+      "Negotiation coach",
       "10x the AI credits",
       "Priority digest placement",
     ],

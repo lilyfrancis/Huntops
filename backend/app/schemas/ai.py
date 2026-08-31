@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from app.services.ai_client import AIResponseError
@@ -52,6 +54,20 @@ class AnswerFeedback(BaseModel):
 class InterviewSummary(BaseModel):
     summary: str
     next_steps: list[str] = Field(default_factory=list)
+
+
+class NegotiationLever(BaseModel):
+    lever: str
+    rationale: str
+
+
+class NegotiationAdvice(BaseModel):
+    verdict: str
+    confidence: Literal["high", "medium", "low"]
+    levers: list[NegotiationLever] = Field(default_factory=list)
+    counter_script: str
+    if_they_say_no: str
+    watch_outs: list[str] = Field(default_factory=list)
 
 
 def validate_or_raise(model_cls: type[BaseModel], data: object):

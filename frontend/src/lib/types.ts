@@ -241,3 +241,41 @@ export interface HuntStats {
   };
   activity: { date: string; active: boolean }[];
 }
+
+export interface SalaryBenchmark {
+  currency: string;
+  sample_size: number;
+  lookback_days: number;
+  p25: number;
+  median: number;
+  p75: number;
+  lane: string | null;
+  experience_level: string | null;
+  cohort: string;
+}
+
+export interface NegotiationReview {
+  id: string;
+  role_title: string;
+  company_name: string | null;
+  location: string;
+  currency: string;
+  base_salary: number;
+  equity: string | null;
+  other_terms: string | null;
+  has_competing_offer: boolean;
+  verdict: string;
+  confidence: "high" | "medium" | "low";
+  levers: { lever: string; rationale: string }[];
+  counter_script: string;
+  if_they_say_no: string;
+  watch_outs: string[];
+  /** Null means no benchmark existed — the advice is tactics-only. */
+  benchmark: SalaryBenchmark | null;
+  created_at: string;
+}
+
+export interface CurrencyCoverage {
+  currency: string;
+  listings: number;
+}

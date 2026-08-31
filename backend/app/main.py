@@ -20,6 +20,7 @@ from app.routers import (
     interviews,
     jobs,
     matches,
+    negotiation,
     outreach,
     resumes,
     stats,
@@ -74,6 +75,7 @@ app.include_router(integrations.router)
 app.include_router(outreach.router)
 app.include_router(interviews.router)
 app.include_router(stats.router)
+app.include_router(negotiation.router)
 app.include_router(digest.router)
 app.include_router(admin.router)
 

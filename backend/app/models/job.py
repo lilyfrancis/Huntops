@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, Integer, JSON, String, Text, UniqueConstraint
+from sqlalchemy import Boolean, DateTime, Enum, Float, ForeignKey, Integer, JSON, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.types import Uuid
 
@@ -47,6 +47,14 @@ class Job(Base):
     # Heuristic geographic restriction extracted at ingest time, e.g. "US", "UK".
     # Null means no restriction detected (open to apply from anywhere).
     restricted_to: Mapped[str | None] = mapped_column(String(100), nullable=True)
+
+    # Normalized salary (Phase 11). Parsed from the free-text salary_range at
+    # ingest so listings are comparable; null where the string was unparseable.
+    # Annualized figures are what benchmarks compare — a monthly listing and an
+    # annual one are otherwise off by 12x.
+    salary_annual_min: Mapped[float | None] = mapped_column(Float, nullable=True)
+    salary_annual_max: Mapped[float | None] = mapped_column(Float, nullable=True)
+    salary_currency: Mapped[str | None] = mapped_column(String(3), nullable=True, index=True)
 
     # Ghost-job detection (Phase 8). Null score means "not yet scanned" — the
     # scanner backfills on a schedule, since staleness signals accrue over time.
