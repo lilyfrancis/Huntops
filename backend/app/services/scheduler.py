@@ -103,6 +103,16 @@ def start_scheduler() -> BackgroundScheduler | None:
     global _scheduler
     if settings.ENVIRONMENT == "test":
         return None
+
+    # This scheduler lives inside the API process, so every uvicorn worker would
+    # otherwise start its own copy and fire each cron job once per worker —
+    # four workers would send every user four digests and run aggregation four
+    # times. In production the API runs with RUN_SCHEDULER=false and a single
+    # dedicated scheduler container owns the jobs.
+    if not settings.RUN_SCHEDULER:
+        logger.info("Scheduler disabled in this process (RUN_SCHEDULER=false)")
+        return None
+
     if _scheduler is not None:
         return _scheduler
 

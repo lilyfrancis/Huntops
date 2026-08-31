@@ -1,0 +1,38 @@
+# One origin serves the app and the API. That is deliberate: the frontend calls
+# relative paths like /api/jobs, so there is no cross-site request, no CORS
+# preflight, and no need to expose the API on its own hostname.
+
+{$DOMAIN} {
+	tls {$TLS_EMAIL}
+
+	encode gzip zstd
+
+	# API and health first — these must win over the SPA fallback.
+	handle /api/* {
+		reverse_proxy api:8000
+	}
+
+	handle /health {
+		reverse_proxy api:8000
+	}
+
+	# Everything else is the built frontend.
+	handle {
+		reverse_proxy web:80
+	}
+
+	header {
+		# Sent on HTTPS only; tells browsers never to try this host over HTTP again.
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		# The API is same-origin, so the app never needs to call out anywhere else.
+		-Server
+	}
+
+	log {
+		output stdout
+		format console
+	}
+}

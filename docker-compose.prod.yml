@@ -1,0 +1,125 @@
+# Production stack for a Hostinger VPS (KVM 2 or larger).
+#
+#   docker compose -f docker-compose.prod.yml up -d --build
+#
+# Differences from the dev compose that matter:
+#   - no source bind-mounts (the image is the artifact)
+#   - Postgres is NOT published to the host; only the app network reaches it
+#   - the frontend is a built static bundle behind nginx, never the Vite dev server
+#   - Caddy terminates TLS and serves everything from one origin, so there is no
+#     CORS surface and the browser never talks to the API cross-site
+#   - migrations run once, in their own container, before the API starts
+#   - exactly one process owns the cron jobs (see the `scheduler` service)
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - huntops_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # Runs to completion on every deploy, then exits. The API waits for it, so a
+  # release can never serve traffic against a schema it doesn't match.
+  migrate:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    restart: "no"
+    env_file: [./backend/.env]
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+    command: alembic upgrade head
+    depends_on:
+      db:
+        condition: service_healthy
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    restart: unless-stopped
+    env_file: [./backend/.env]
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      ENVIRONMENT: production
+      # The scheduler container owns cron. If this were true, every gunicorn
+      # worker would fire every scheduled job.
+      RUN_SCHEDULER: "false"
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  # One process, one set of cron jobs. Do not scale this service.
+  scheduler:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    restart: unless-stopped
+    env_file: [./backend/.env]
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      ENVIRONMENT: production
+      RUN_SCHEDULER: "true"
+    # Single worker: the scheduler is in-process, so a second worker would
+    # double every job.
+    command: >
+      gunicorn app.main:app
+      --worker-class uvicorn.workers.UvicornWorker
+      --workers 1
+      --bind 0.0.0.0:8000
+      --access-logfile -
+      --error-logfile -
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    restart: unless-stopped
+    depends_on:
+      - api
+
+  # Caddy gets a real certificate from Let's Encrypt automatically on first
+  # boot, given a domain pointed at this VPS. No certbot cron to forget.
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN}
+      TLS_EMAIL: ${TLS_EMAIL}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+      - api
+
+volumes:
+  huntops_pg_data:
+  caddy_data:
+  caddy_config:

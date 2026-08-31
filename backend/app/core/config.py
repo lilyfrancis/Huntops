@@ -39,7 +39,7 @@ class Settings(BaseSettings):
     STRIPE_WEBHOOK_SECRET: str = ""
     STRIPE_PRICE_PRO: str = ""
     STRIPE_PRICE_ELITE: str = ""
-    FRONTEND_URL: str = "http://localhost:3000"
+    FRONTEND_URL: str = "http://localhost:5173"
 
     # AI (Anthropic) — cheap Haiku tier for scoring/extraction, Sonnet reserved
     # for Phase 4's outreach drafting (higher quality writing, higher cost).
@@ -102,6 +102,11 @@ class Settings(BaseSettings):
     SMTP_FROM_EMAIL: str = "noreply@huntops.app"
     SMTP_USE_TLS: bool = True
     ADMIN_ALERT_EMAIL: str = ""
+
+    # Whether THIS process owns the cron jobs. Must be true in exactly one
+    # process: with multiple uvicorn workers, every worker that has this on
+    # runs every scheduled job, so digests and aggregation fire N times.
+    RUN_SCHEDULER: bool = True
 
     ENABLE_SCHEDULED_DIGEST: bool = True
     DIGEST_MAX_JOBS: int = 10

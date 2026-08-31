@@ -1,0 +1,36 @@
+FROM python:3.11-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+WORKDIR /app
+
+# libpq for psycopg; gcc is build-only and removed again to keep the image small
+# and the runtime surface narrow.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends gcc libpq-dev curl \
+ && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt \
+ && apt-get purge -y gcc && apt-get autoremove -y
+
+COPY . .
+
+# Run as a non-root user: nothing in this app needs root, and a container
+# breakout is far less useful without it.
+RUN useradd --create-home --uid 10001 huntops \
+ && chown -R huntops:huntops /app
+USER huntops
+
+EXPOSE 8000
+
+# Gunicorn supervises uvicorn workers — it restarts a worker that dies, which
+# a bare `uvicorn --workers` does not do as robustly.
+CMD ["gunicorn", "app.main:app", \
+     "--worker-class", "uvicorn.workers.UvicornWorker", \
+     "--workers", "3", \
+     "--bind", "0.0.0.0:8000", \
+     "--access-logfile", "-", \
+     "--error-logfile", "-", \
+     "--timeout", "120"]
