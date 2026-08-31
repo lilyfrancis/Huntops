@@ -5,7 +5,8 @@ actually live, and emails the recruiter for you.
 
 This repo is being built in phases against the product blueprint
 (Foundation → Real supply → Fit intelligence → Email-alert bridge →
-Autopilot Outreach → Reach & retention → Frontend → Landing page).
+Autopilot Outreach → Reach & retention → Frontend → Landing page), plus
+the wow-features that followed it.
 
 **Phase 1 — Foundation**: auth, roles, job/application CRUD, real Stripe billing. ✅
 **Phase 2 — Real supply & fit intelligence**: live job aggregation, résumé
@@ -27,6 +28,8 @@ which probably aren't a real, fillable seat, with the reasons shown. ✅
 grading, and a session summary. Pro's own headline feature. ✅
 **Phase 10 — Momentum dashboard**: cumulative application funnel, daily
 streak, and an 8-week activity grid. Free on every tier. ✅
+**Phase 11 — Negotiation coach**: offer strategy and a counter script,
+benchmarked against real listings — never a guessed number. ✅
 
 ## What's in Phase 1
 
@@ -363,6 +366,12 @@ to disable the daily 07:00 UTC run and only trigger ingestion manually via
 
 The core loop (find → score → reach out) is now clickable end to end for
 job seekers, employers, and admins, with a real marketing page in front
-of it, ghost listings flagged in the feed, interview practice behind the
-Pro tier, and a momentum dashboard closing the loop. The last item still
-on the deferred wow-features list is the negotiation coach.
+of it, ghost listings flagged in the feed, interview practice and offer
+coaching behind the Pro tier, and a momentum dashboard closing the loop.
+Every item from the blueprint's wow-features list is now built except the
+apply-anywhere browser extension.
+
+The most valuable next work is not another feature: it is running the
+Alembic chain against a real Postgres (the suite uses SQLite via
+`create_all` and never exercises the migrations), committing the
+Playwright flows as a real E2E suite, and wiring CI.
