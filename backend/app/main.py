@@ -22,6 +22,7 @@ from app.routers import (
     matches,
     outreach,
     resumes,
+    stats,
     users,
 )
 from app.services.scheduler import shutdown_scheduler, start_scheduler
@@ -72,6 +73,7 @@ app.include_router(matches.router)
 app.include_router(integrations.router)
 app.include_router(outreach.router)
 app.include_router(interviews.router)
+app.include_router(stats.router)
 app.include_router(digest.router)
 app.include_router(admin.router)
 

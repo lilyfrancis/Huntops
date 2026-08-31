@@ -214,3 +214,30 @@ export interface InterviewSessionSummary {
   created_at: string;
   completed_at: string | null;
 }
+
+export interface FunnelStage {
+  stage: string;
+  label: string;
+  count: number;
+}
+
+export interface HuntStats {
+  funnel: FunnelStage[];
+  totals: {
+    matches_scored: number;
+    applications: number;
+    outreach_sent: number;
+    interviews_completed: number;
+  };
+  streak: {
+    current_days: number;
+    longest_days: number;
+    active_days_in_window: number;
+    window_days: number;
+  };
+  conversion: {
+    applied_to_interviewing: number | null;
+    applied_to_offered: number | null;
+  };
+  activity: { date: string; active: boolean }[];
+}

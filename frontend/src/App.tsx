@@ -13,6 +13,7 @@ import { NotFoundPage } from "@/pages/NotFoundPage";
 
 import { JobFeedPage } from "@/pages/jobseeker/JobFeedPage";
 import { MatchesPage } from "@/pages/jobseeker/MatchesPage";
+import { MomentumPage } from "@/pages/jobseeker/MomentumPage";
 import { ResumePage } from "@/pages/jobseeker/ResumePage";
 import { ApplicationsPage } from "@/pages/jobseeker/ApplicationsPage";
 import { OutreachPage } from "@/pages/jobseeker/OutreachPage";
@@ -45,6 +46,7 @@ export function App() {
               <Route element={<AppShell />}>
                 <Route path="/app" element={<JobFeedPage />} />
                 <Route path="/app/matches" element={<MatchesPage />} />
+                <Route path="/app/momentum" element={<MomentumPage />} />
                 <Route path="/app/resume" element={<ResumePage />} />
                 <Route path="/app/applications" element={<ApplicationsPage />} />
                 <Route path="/app/outreach" element={<OutreachPage />} />

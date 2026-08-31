@@ -2,6 +2,7 @@ import { Link, NavLink, Outlet } from "react-router-dom";
 import {
   Briefcase,
   FileText,
+  Flame,
   Inbox,
   LayoutDashboard,
   LogOut,
@@ -32,6 +33,7 @@ const NAV_BY_ROLE: Record<string, NavItem[]> = {
   job_seeker: [
     { to: "/app", label: "Job feed", icon: Briefcase, end: true },
     { to: "/app/matches", label: "Matches", icon: Sparkles },
+    { to: "/app/momentum", label: "Momentum", icon: Flame },
     { to: "/app/resume", label: "Résumé", icon: FileText },
     { to: "/app/applications", label: "Applications", icon: Inbox },
     { to: "/app/outreach", label: "Outreach", icon: Send },
