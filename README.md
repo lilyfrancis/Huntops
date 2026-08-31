@@ -25,6 +25,8 @@ reveals, pricing — in front of the app. ✅
 which probably aren't a real, fillable seat, with the reasons shown. ✅
 **Phase 9 — Mock interview simulator**: role-specific questions, per-answer
 grading, and a session summary. Pro's own headline feature. ✅
+**Phase 10 — Momentum dashboard**: cumulative application funnel, daily
+streak, and an 8-week activity grid. Free on every tier. ✅
 
 ## What's in Phase 1
 
@@ -361,6 +363,6 @@ to disable the daily 07:00 UTC run and only trigger ingestion manually via
 
 The core loop (find → score → reach out) is now clickable end to end for
 job seekers, employers, and admins, with a real marketing page in front
-of it, ghost listings flagged in the feed, and interview practice behind
-the Pro tier. Still on the deferred wow-features list: a negotiation
-coach, and a funnel/streak dashboard for the job seeker.
+of it, ghost listings flagged in the feed, interview practice behind the
+Pro tier, and a momentum dashboard closing the loop. The last item still
+on the deferred wow-features list is the negotiation coach.
