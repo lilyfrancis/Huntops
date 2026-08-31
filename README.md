@@ -5,7 +5,7 @@ actually live, and emails the recruiter for you.
 
 This repo is being built in phases against the product blueprint
 (Foundation → Real supply → Fit intelligence → Email-alert bridge →
-Autopilot Outreach → Reach & retention → Frontend).
+Autopilot Outreach → Reach & retention → Frontend → Landing page).
 
 **Phase 1 — Foundation**: auth, roles, job/application CRUD, real Stripe billing. ✅
 **Phase 2 — Real supply & fit intelligence**: live job aggregation, résumé
@@ -19,6 +19,8 @@ analytics, scheduled-job failure alerting, rate limiting on AI-costing
 endpoints. ✅
 **Phase 6 — Frontend**: a real React app covering every job-seeker,
 employer, and admin flow the API supports. ✅
+**Phase 7 — Landing page**: an animated marketing page — hero, scroll
+reveals, pricing — in front of the app. ✅
 
 ## What's in Phase 1
 
@@ -354,7 +356,7 @@ to disable the daily 07:00 UTC run and only trigger ingestion manually via
 ## What's next
 
 The core loop (find → score → reach out) is now clickable end to end for
-job seekers, employers, and admins. Reasonable next milestones: the
-"new wow features" list that was deliberately deferred above (ghost-job
-detector, mock interview simulator, negotiation coach, funnel/streak
-dashboard), and a marketing/landing site in front of the app.
+job seekers, employers, and admins, with a real marketing page in front
+of it. The reasonable next milestone is the "new wow features" list that
+was deliberately deferred above: ghost-job detector, mock interview
+simulator, negotiation coach, funnel/streak dashboard.
