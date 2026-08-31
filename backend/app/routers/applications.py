@@ -28,6 +28,8 @@ def apply_to_job(
     application = Application(
         job_id=payload.job_id,
         candidate_id=current_user.id,
+        candidate_name=current_user.full_name,
+        candidate_email=current_user.email,
         cover_letter=payload.cover_letter,
     )
     db.add(application)

@@ -3,7 +3,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.models.enums import ExperienceLevel, JobStatus, JobType
+from app.models.enums import ExperienceLevel, JobLane, JobStatus, JobType
 
 
 class JobCreate(BaseModel):
@@ -45,6 +45,10 @@ class JobOut(BaseModel):
     is_featured: bool
     application_count: int
     source: str
+    source_url: str | None
+    lane: JobLane | None
+    is_remote: bool
+    restricted_to: str | None
     created_at: datetime
 
 

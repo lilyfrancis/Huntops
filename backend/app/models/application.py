@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, Enum, Float, ForeignKey, Text, UniqueConstraint
+from sqlalchemy import DateTime, Enum, Float, ForeignKey, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.types import Uuid
 
@@ -18,6 +18,10 @@ class Application(Base):
     candidate_id: Mapped[uuid.UUID] = mapped_column(
         Uuid(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )
+    # Denormalized at apply-time, same pattern as Job.employer_name/company_name —
+    # an employer reviewing applicants needs a name, not a bare candidate_id.
+    candidate_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    candidate_email: Mapped[str] = mapped_column(String(255), nullable=False)
 
     cover_letter: Mapped[str | None] = mapped_column(Text, nullable=True)
     status: Mapped[ApplicationStatus] = mapped_column(

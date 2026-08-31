@@ -160,14 +160,25 @@ def test_status_endpoint_reports_not_connected_by_default(client):
     assert resp.json() == {"connected": False, "last_synced_at": None}
 
 
+def _redirect_query(resp) -> dict:
+    from urllib.parse import parse_qs, urlparse
+
+    location = resp.headers["location"]
+    return parse_qs(urlparse(location).query)
+
+
 def test_callback_rejects_missing_code(client):
-    resp = client.get("/api/integrations/gmail/callback", params={"state": "whatever"})
-    assert resp.status_code == 400
+    resp = client.get("/api/integrations/gmail/callback", params={"state": "whatever"}, follow_redirects=False)
+    assert resp.status_code in (302, 307)
+    assert _redirect_query(resp)["gmail"] == ["error"]
 
 
 def test_callback_rejects_invalid_state(client):
-    resp = client.get("/api/integrations/gmail/callback", params={"code": "abc", "state": "not-a-real-token"})
-    assert resp.status_code == 400
+    resp = client.get(
+        "/api/integrations/gmail/callback", params={"code": "abc", "state": "not-a-real-token"}, follow_redirects=False
+    )
+    assert resp.status_code in (302, 307)
+    assert _redirect_query(resp)["gmail"] == ["error"]
 
 
 @patch("app.routers.integrations.email_bridge.handle_oauth_callback")
@@ -183,9 +194,11 @@ def test_callback_connects_gmail_for_the_right_user(mock_handle, client):
     from urllib.parse import urlparse, parse_qs
     state = parse_qs(urlparse(auth_url).query)["state"][0]
 
-    resp = client.get("/api/integrations/gmail/callback", params={"code": "google-code", "state": state})
-    assert resp.status_code == 200
-    assert resp.json()["connected"] is True
+    resp = client.get(
+        "/api/integrations/gmail/callback", params={"code": "google-code", "state": state}, follow_redirects=False
+    )
+    assert resp.status_code in (302, 307)
+    assert _redirect_query(resp)["gmail"] == ["connected"]
     mock_handle.assert_called_once()
     called_user = mock_handle.call_args[0][1]
     assert called_user.email == "callback@example.com"

@@ -1,0 +1,93 @@
+@import "tailwindcss";
+
+/*
+  Committed dark "mission control" theme — the same brand language as the
+  marketing landing page, carried into the product itself. Deliberately
+  single-theme: this is a dashboard, not a document, and the radar/telemetry
+  aesthetic is built for a dark ground.
+*/
+@theme {
+  --font-display: "Big Shoulders Display", "Arial Narrow", sans-serif;
+  --font-sans: "IBM Plex Sans", -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --color-bg: #0c1219;
+  --color-surface: #121a24;
+  --color-surface-2: #182230;
+  --color-surface-3: #1e2a38;
+  --color-ink: #eef2f6;
+  --color-ink-muted: #98a5b3;
+  --color-ink-faint: #5e6b79;
+  --color-border: #232f3d;
+  --color-border-strong: #324255;
+
+  --color-accent: #f2994a;
+  --color-accent-strong: #ffb469;
+  --color-accent-soft: #f2994a1f;
+  --color-accent-ink: #2c1704;
+
+  --color-cyan: #4fc3c9;
+  --color-cyan-soft: #4fc3c91f;
+
+  --color-good: #4fce8f;
+  --color-good-soft: #4fce8f1f;
+  --color-warning: #e8c14d;
+  --color-warning-soft: #e8c14d1f;
+  --color-danger: #e0655c;
+  --color-danger-soft: #e0655c1f;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+  html {
+    color-scheme: dark;
+    background: var(--color-bg);
+  }
+  body {
+    background: var(--color-bg);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    text-wrap: balance;
+  }
+  ::selection {
+    background: var(--color-accent-soft);
+    color: var(--color-accent-strong);
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-border-strong);
+    border-radius: 6px;
+  }
+}
+
+@layer utilities {
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-accent);
+    font-weight: 600;
+  }
+}

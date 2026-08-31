@@ -29,5 +29,17 @@ services:
     volumes:
       - ./backend:/app
 
+  web:
+    build: ./frontend
+    environment:
+      VITE_API_BASE_URL: http://api:8000
+    ports:
+      - "5173:5173"
+    depends_on:
+      - api
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
 volumes:
   huntops_pg_data:

@@ -3,9 +3,9 @@
 The job search copilot that finds real openings, scores your fit for where you
 actually live, and emails the recruiter for you.
 
-This repo is being built in phases against the 7-phase product blueprint
+This repo is being built in phases against the product blueprint
 (Foundation → Real supply → Fit intelligence → Email-alert bridge →
-Autopilot Outreach → Reach & retention → Premium coaching).
+Autopilot Outreach → Reach & retention → Frontend).
 
 **Phase 1 — Foundation**: auth, roles, job/application CRUD, real Stripe billing. ✅
 **Phase 2 — Real supply & fit intelligence**: live job aggregation, résumé
@@ -17,6 +17,8 @@ pitches, sending via the user's own Gmail. ✅ — the flagship feature.
 **Phase 5 — Reach & retention**: daily digest email, consolidated admin
 analytics, scheduled-job failure alerting, rate limiting on AI-costing
 endpoints. ✅
+**Phase 6 — Frontend**: a real React app covering every job-seeker,
+employer, and admin flow the API supports. ✅
 
 ## What's in Phase 1
 
@@ -148,6 +150,33 @@ endpoints. ✅
   Anthropic/Apollo/Gmail OAuth/SMTP are configured and whether the
   scheduler is actually running, not just database/Stripe.
 
+## What's in Phase 6
+
+- **Full role-based app** built on Vite, React 19, TypeScript, Tailwind v4,
+  Radix UI primitives, and TanStack React Query — covering the job seeker
+  (feed, matches, résumé upload, applications, Autopilot Outreach, digest
+  preview, Gmail connect, profile), employer (post/manage jobs, review
+  applicants), and admin (analytics, pending-job moderation, user
+  approval, ops health) surfaces end to end.
+- **JWT auth with silent refresh**: access + refresh tokens with a
+  singleton in-flight refresh promise so concurrent 401s don't each trigger
+  their own refresh call, and a global `huntops:unauthorized` event that
+  logs the user out cleanly on final failure.
+- **Three real backend gaps found and fixed by building a real frontend
+  against the real API**, rather than assuming the Phase 1-5 contract was
+  UI-ready: `JobOut` wasn't exposing `lane`/`is_remote`/`source_url`/
+  `restricted_to` despite the model having them; `ApplicationOut` only
+  exposed a bare candidate UUID, unusable for an employer reviewing
+  applicants, so `candidate_name`/`candidate_email` are now denormalized
+  onto `Application` at apply-time (migration `0005`); and the Gmail OAuth
+  callback returned raw JSON instead of redirecting back into the app.
+- **Verified with a real end-to-end browser run**, not just a compile
+  check: Playwright drives the full business flow — employer registers,
+  is blocked from posting pre-approval, admin approves the employer, the
+  employer posts a job, admin approves the job, a job seeker sees it in
+  the feed and applies, and the employer sees the real applicant name and
+  email on the Applicants page — with zero console or page errors.
+
 ## Deliberately not built (and why)
 
 **Warm-intro finder** — the blueprint proposed surfacing 2nd-degree
@@ -163,14 +192,19 @@ browser extension, funnel/streak dashboard — is real product work, just not
 part of the core Job Engine → HuntOps port. Reasonable next phases once the
 core loop (find → score → reach out) is validated with real users.
 
-**A frontend.** All five backend phases are done and tested at the API
-layer — every flow the pitch describes works over HTTP — but there is no
-UI. Nobody can click a button to try any of this yet. That's the honest
-gap between "the API can do it" and "the product exists."
-
 ## Project layout
 
 ```
+frontend/
+  src/
+    components/ ui primitives (button, card, dialog, select, ...),
+                layout (app shell, protected routes, page header),
+                jobs/matches/admin presentational components
+    hooks/      use-auth (JWT session context)
+    lib/        typed API client (one module per backend domain), TS
+                mirrors of every backend schema, token storage, query
+                client, cn()/formatting helpers
+    pages/      jobseeker/, employer/, admin/ route pages
 backend/
   app/
     core/       settings, JWT/password security, rate limiter
@@ -203,13 +237,14 @@ cp backend/.env.example backend/.env
 docker compose up --build
 ```
 
-API is at `http://localhost:8000`. Run migrations once the DB is up:
+API is at `http://localhost:8000`, the app is at `http://localhost:5173`.
+Run migrations once the DB is up:
 
 ```bash
 docker compose exec api alembic upgrade head
 ```
 
-**Option B — Local Python:**
+**Option B — Local Python + Node:**
 
 ```bash
 cd backend
@@ -219,6 +254,15 @@ cp .env.example .env   # point DATABASE_URL at a Postgres you have running
 alembic upgrade head
 uvicorn app.main:app --reload
 ```
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+The Vite dev server proxies `/api` and `/health` to `http://localhost:8000`
+by default (see `vite.config.ts`; override with `VITE_API_BASE_URL`).
 
 ## Tests
 
@@ -307,10 +351,10 @@ to disable the daily 07:00 UTC run and only trigger ingestion manually via
    application counts, revenue estimate, outreach send success rate, and
    recent ingestion success rate.
 
-## What's next (Phase 6)
+## What's next
 
-A frontend. All five backend phases work end to end over HTTP, but there's
-nothing to click. The API is ready for a Next.js/Vite app to actually drive
-registration, the job feed, résumé upload, matching, Gmail connect, and the
-Autopilot Outreach flow — that's the next real milestone, not another
-backend phase.
+The core loop (find → score → reach out) is now clickable end to end for
+job seekers, employers, and admins. Reasonable next milestones: the
+"new wow features" list that was deliberately deferred above (ghost-job
+detector, mock interview simulator, negotiation coach, funnel/streak
+dashboard), and a marketing/landing site in front of the app.

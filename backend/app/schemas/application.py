@@ -17,6 +17,8 @@ class ApplicationOut(BaseModel):
     id: uuid.UUID
     job_id: uuid.UUID
     candidate_id: uuid.UUID
+    candidate_name: str
+    candidate_email: str
     cover_letter: str | None
     status: ApplicationStatus
     ai_match_score: float | None
