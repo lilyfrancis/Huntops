@@ -8,3 +8,4 @@ export { integrationsApi } from "./integrations";
 export { digestApi } from "./digest";
 export { billingApi } from "./billing";
 export { adminApi } from "./admin";
+export { interviewsApi } from "./interviews";

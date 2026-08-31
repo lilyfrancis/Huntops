@@ -22,9 +22,9 @@ const PLANS = [
     credits: "100 AI credits / mo",
     features: [
       "Everything in Free",
+      "Mock interview simulator",
       "10x the AI credits",
       "Priority digest placement",
-      "Résumé re-scoring on demand",
     ],
     cta: "Go Pro",
     featured: true,

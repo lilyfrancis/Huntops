@@ -80,6 +80,11 @@ class Settings(BaseSettings):
     )
     OUTREACH_CREDIT_COST: int = 30
 
+    # Mock interview: charged once up front for the whole session, so a user
+    # is never stranded mid-interview by an empty balance.
+    INTERVIEW_CREDIT_COST: int = 15
+    INTERVIEW_QUESTION_COUNT: int = 5
+
     @property
     def recruiter_titles_list(self) -> List[str]:
         return [t.strip() for t in self.RECRUITER_TITLES.split(",") if t.strip()]

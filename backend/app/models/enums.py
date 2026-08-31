@@ -70,6 +70,11 @@ class ApplicationStatus(str, enum.Enum):
     withdrawn = "withdrawn"
 
 
+class InterviewStatus(str, enum.Enum):
+    in_progress = "in_progress"
+    completed = "completed"
+
+
 class OutreachStatus(str, enum.Enum):
     sent = "sent"
     draft_no_contact = "draft_no_contact"  # drafted, but no recruiter email was found to send to

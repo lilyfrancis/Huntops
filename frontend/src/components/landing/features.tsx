@@ -3,6 +3,7 @@ import {
   Target,
   MailCheck,
   Send,
+  MessageSquare,
   Newspaper,
   ShieldCheck,
 } from "lucide-react";
@@ -35,8 +36,14 @@ const FEATURES = [
     body: "Elite finds the hiring recruiter via Apollo, drafts a pitch with AI, and sends it from your own Gmail — no copy-paste.",
   },
   {
-    icon: Newspaper,
+    icon: MessageSquare,
     tone: "text-cyan",
+    title: "Mock interview simulator",
+    body: "Practise the real screen for the role you're chasing, with every answer scored and rewritten stronger.",
+  },
+  {
+    icon: Newspaper,
+    tone: "text-good",
     title: "Daily digest",
     body: "One email each morning with your best new matches, so you never have to go looking.",
   },

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from app.services.ai_client import AIResponseError
 
@@ -32,6 +32,26 @@ class JobFitScore(BaseModel):
     experience_score: float = Field(ge=0, le=100)
     location_score: float = Field(ge=0, le=100)
     reason: str
+
+
+class InterviewQuestionSet(BaseModel):
+    questions: list[str] = Field(min_length=1)
+
+
+class AnswerFeedback(BaseModel):
+    # "model_answer" is a genuine domain term here (the ideal answer), not a
+    # Pydantic model attribute — opt out of the protected `model_` namespace.
+    model_config = ConfigDict(protected_namespaces=())
+
+    score: float = Field(ge=0, le=100)
+    strengths: list[str] = Field(default_factory=list)
+    improvements: list[str] = Field(default_factory=list)
+    model_answer: str
+
+
+class InterviewSummary(BaseModel):
+    summary: str
+    next_steps: list[str] = Field(default_factory=list)
 
 
 def validate_or_raise(model_cls: type[BaseModel], data: object):

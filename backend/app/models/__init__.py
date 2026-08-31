@@ -3,6 +3,7 @@ from app.models.credit_ledger import CreditLedgerEntry
 from app.models.email_sync_run import EmailSyncRun
 from app.models.gmail_connection import GmailConnection
 from app.models.ingestion_run import IngestionRun
+from app.models.interview import InterviewSession, InterviewTurn
 from app.models.job import Job
 from app.models.job_match import JobMatch
 from app.models.outreach import Outreach
@@ -22,4 +23,6 @@ __all__ = [
     "EmailSyncRun",
     "RecruiterContact",
     "Outreach",
+    "InterviewSession",
+    "InterviewTurn",
 ]

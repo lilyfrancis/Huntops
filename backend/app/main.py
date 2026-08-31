@@ -17,6 +17,7 @@ from app.routers import (
     digest,
     health,
     integrations,
+    interviews,
     jobs,
     matches,
     outreach,
@@ -70,6 +71,7 @@ app.include_router(resumes.router)
 app.include_router(matches.router)
 app.include_router(integrations.router)
 app.include_router(outreach.router)
+app.include_router(interviews.router)
 app.include_router(digest.router)
 app.include_router(admin.router)
 

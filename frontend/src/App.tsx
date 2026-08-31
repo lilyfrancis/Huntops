@@ -16,6 +16,7 @@ import { MatchesPage } from "@/pages/jobseeker/MatchesPage";
 import { ResumePage } from "@/pages/jobseeker/ResumePage";
 import { ApplicationsPage } from "@/pages/jobseeker/ApplicationsPage";
 import { OutreachPage } from "@/pages/jobseeker/OutreachPage";
+import { InterviewsPage } from "@/pages/jobseeker/InterviewsPage";
 import { DigestPage } from "@/pages/jobseeker/DigestPage";
 import { IntegrationsPage } from "@/pages/jobseeker/IntegrationsPage";
 import { ProfilePage } from "@/pages/jobseeker/ProfilePage";
@@ -47,6 +48,7 @@ export function App() {
                 <Route path="/app/resume" element={<ResumePage />} />
                 <Route path="/app/applications" element={<ApplicationsPage />} />
                 <Route path="/app/outreach" element={<OutreachPage />} />
+                <Route path="/app/interviews" element={<InterviewsPage />} />
                 <Route path="/app/digest" element={<DigestPage />} />
                 <Route path="/app/integrations" element={<IntegrationsPage />} />
                 <Route path="/app/profile" element={<ProfilePage />} />

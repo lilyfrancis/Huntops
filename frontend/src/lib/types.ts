@@ -176,3 +176,41 @@ export interface AdminAnalytics {
 export interface ApiErrorBody {
   detail?: string;
 }
+
+export type InterviewStatus = "in_progress" | "completed";
+
+export interface InterviewTurn {
+  id: string;
+  position: number;
+  question: string;
+  answer: string | null;
+  score: number | null;
+  strengths: string[];
+  improvements: string[];
+  model_answer: string | null;
+  answered_at: string | null;
+}
+
+export interface InterviewSession {
+  id: string;
+  job_id: string | null;
+  role_title: string;
+  company_name: string | null;
+  status: InterviewStatus;
+  average_score: number | null;
+  summary: string | null;
+  next_steps: string[];
+  created_at: string;
+  completed_at: string | null;
+  turns: InterviewTurn[];
+}
+
+export interface InterviewSessionSummary {
+  id: string;
+  role_title: string;
+  company_name: string | null;
+  status: InterviewStatus;
+  average_score: number | null;
+  created_at: string;
+  completed_at: string | null;
+}
