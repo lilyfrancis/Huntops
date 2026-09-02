@@ -62,7 +62,7 @@ cp backend/.env.example backend/.env   # application settings
 Generate real secrets — do not hand-invent them:
 
 ```bash
-openssl rand -base64 32                                             # POSTGRES_PASSWORD
+openssl rand -hex 24                                                # POSTGRES_PASSWORD (hex: it goes into a URL)
 openssl rand -hex 32                                                # JWT_SECRET
 python3 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"   # TOKEN_ENCRYPTION_KEY
 ```

@@ -126,10 +126,15 @@ cp backend/.env.example backend/.env
 Run this and keep the output — you'll paste these into the next step:
 
 ```bash
-echo "POSTGRES_PASSWORD=$(openssl rand -base64 32)"
+echo "POSTGRES_PASSWORD=$(openssl rand -hex 24)"
 echo "JWT_SECRET=$(openssl rand -hex 32)"
 docker run --rm python:3.11-slim sh -c "pip install -q cryptography && python -c 'from cryptography.fernet import Fernet; print(\"TOKEN_ENCRYPTION_KEY=\" + Fernet.generate_key().decode())'"
 ```
+
+Hex, not base64, is deliberate: this password is interpolated into a
+connection URL (`postgresql://user:PASSWORD@db:...`), and base64 output can
+contain `/`, `+` and `=`, which break URL parsing and produce a baffling
+"could not connect" error.
 
 ⚠️ **Save `TOKEN_ENCRYPTION_KEY` somewhere safe.** If you lose it, every stored
 Gmail connection becomes unreadable and users must reconnect.
