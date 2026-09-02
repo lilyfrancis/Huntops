@@ -1,5 +1,9 @@
 # Deploying HuntOps to a Hostinger VPS
 
+> Deploying to **AWS** instead? See [AWS_DEPLOY.md](AWS_DEPLOY.md) for a
+> step-by-step Lightsail guide. The stack is identical; only the server
+> provisioning and firewall steps differ.
+
 ## Read this first: Cloud Hosting will not run this app
 
 Hostinger sells two things people call "cloud". They are not interchangeable here.
