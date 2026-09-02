@@ -20,6 +20,10 @@ job_lane = postgresql.ENUM(
     "engineering", "product", "design", "gtm", "revops", "marketing", "sales",
     "automation", "operations", "leadership", "customer_success", "finance", "hr", "other",
     name="job_lane",
+    # The explicit .create(bind, checkfirst=True) below owns creation; without
+    # this, add_column/create_table emits a second CREATE TYPE and the
+    # migration dies with "type already exists" on a fresh Postgres.
+    create_type=False,
 )
 
 

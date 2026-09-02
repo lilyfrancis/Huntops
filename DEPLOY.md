@@ -155,6 +155,18 @@ find /root/backups -name 'huntops-*.sql.gz' -mtime +14 -delete
 Copy those off the VPS — a backup that only exists on the machine it protects
 is not a backup.
 
+## Migrations are verified against real PostgreSQL
+
+The full chain (0001–0009) has been run against a real PostgreSQL 16, and the
+resulting schema diffed against the SQLAlchemy models — they match exactly. The
+app was then booted against that database and exercised through registration,
+login, and authenticated reads with no errors.
+
+This found two genuine bugs that SQLite testing could never have caught, both
+now fixed: migrations 0001/0002/0004 created their enum types twice and failed
+outright on a fresh Postgres, and three tables carried a unique constraint
+duplicating a unique index.
+
 ## Notes on how this is wired
 
 - **One origin.** Caddy serves the frontend and proxies `/api` to the backend
@@ -170,11 +182,6 @@ is not a backup.
 
 ## Known gaps before you trust this with real users
 
-- **The Alembic chain has never been run against a real Postgres.** The test
-  suite builds its schema directly from the models on SQLite and never
-  exercises the migrations. The migrations are written to match the models and
-  use only Postgres-safe operations, but the first `docker compose up` on the
-  VPS is their first real execution. Watch the `migrate` container's logs.
 - **No CI**, and no committed end-to-end test suite — browser verification so
   far has been ad-hoc.
 - **Stripe, Anthropic, Apollo, and Gmail have only ever run against mocks.**

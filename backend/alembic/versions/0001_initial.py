@@ -16,13 +16,14 @@ down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
-user_role = postgresql.ENUM("job_seeker", "employer", "admin", name="user_role")
-subscription_tier = postgresql.ENUM("free", "pro", "elite", name="subscription_tier")
-job_status = postgresql.ENUM("pending", "active", "rejected", "closed", name="job_status")
-job_type = postgresql.ENUM("full_time", "part_time", "contract", "internship", name="job_type")
-experience_level = postgresql.ENUM("entry", "mid", "senior", "lead", "executive", name="experience_level")
+user_role = postgresql.ENUM("job_seeker", "employer", "admin", name="user_role", create_type=False)
+subscription_tier = postgresql.ENUM("free", "pro", "elite", name="subscription_tier", create_type=False)
+job_status = postgresql.ENUM("pending", "active", "rejected", "closed", name="job_status", create_type=False)
+job_type = postgresql.ENUM("full_time", "part_time", "contract", "internship", name="job_type", create_type=False)
+experience_level = postgresql.ENUM("entry", "mid", "senior", "lead", "executive", name="experience_level", create_type=False)
 application_status = postgresql.ENUM(
-    "pending", "reviewed", "interviewing", "offered", "rejected", "withdrawn", name="application_status"
+    "pending", "reviewed", "interviewing", "offered", "rejected", "withdrawn",
+    name="application_status", create_type=False,
 )
 
 

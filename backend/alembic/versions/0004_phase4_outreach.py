@@ -16,7 +16,7 @@ down_revision: Union[str, None] = "0003_phase3"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
-outreach_status = postgresql.ENUM("sent", "draft_no_contact", "failed", name="outreach_status")
+outreach_status = postgresql.ENUM("sent", "draft_no_contact", "failed", name="outreach_status", create_type=False)
 
 
 def upgrade() -> None:
