@@ -11,3 +11,5 @@ export { adminApi } from "./admin";
 export { interviewsApi } from "./interviews";
 export { statsApi } from "./stats";
 export { negotiationApi } from "./negotiation";
+export { preferencesApi } from "./preferences";
+export { autopilotApi } from "./autopilot";

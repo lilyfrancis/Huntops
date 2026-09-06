@@ -23,6 +23,7 @@ const NotFoundPage = lazy(() => import("@/pages/NotFoundPage").then((m) => ({ de
 
 const JobFeedPage = lazy(() => import("@/pages/jobseeker/JobFeedPage").then((m) => ({ default: m.JobFeedPage })));
 const MatchesPage = lazy(() => import("@/pages/jobseeker/MatchesPage").then((m) => ({ default: m.MatchesPage })));
+const AutopilotPage = lazy(() => import("@/pages/jobseeker/AutopilotPage").then((m) => ({ default: m.AutopilotPage })));
 const MomentumPage = lazy(() => import("@/pages/jobseeker/MomentumPage").then((m) => ({ default: m.MomentumPage })));
 const ResumePage = lazy(() => import("@/pages/jobseeker/ResumePage").then((m) => ({ default: m.ResumePage })));
 const ApplicationsPage = lazy(() => import("@/pages/jobseeker/ApplicationsPage").then((m) => ({ default: m.ApplicationsPage })));
@@ -40,6 +41,7 @@ const ApplicantsPage = lazy(() => import("@/pages/employer/ApplicantsPage").then
 const AnalyticsPage = lazy(() => import("@/pages/admin/AnalyticsPage").then((m) => ({ default: m.AnalyticsPage })));
 const PendingJobsPage = lazy(() => import("@/pages/admin/PendingJobsPage").then((m) => ({ default: m.PendingJobsPage })));
 const UsersPage = lazy(() => import("@/pages/admin/UsersPage").then((m) => ({ default: m.UsersPage })));
+const MailboxesPage = lazy(() => import("@/pages/admin/MailboxesPage").then((m) => ({ default: m.MailboxesPage })));
 const OpsHealthPage = lazy(() => import("@/pages/admin/OpsHealthPage").then((m) => ({ default: m.OpsHealthPage })));
 
 export function App() {
@@ -47,7 +49,7 @@ export function App() {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <AuthProvider>
-          <Toaster theme="dark" position="top-right" toastOptions={{ className: "font-sans" }} />
+          <Toaster theme="light" richColors position="top-right" toastOptions={{ className: "font-sans" }} />
           <Suspense fallback={<PageSpinner />}>
           <Routes>
             <Route path="/" element={<RootRedirect />} />
@@ -58,6 +60,7 @@ export function App() {
               <Route element={<AppShell />}>
                 <Route path="/app" element={<JobFeedPage />} />
                 <Route path="/app/matches" element={<MatchesPage />} />
+                <Route path="/app/autopilot" element={<AutopilotPage />} />
                 <Route path="/app/momentum" element={<MomentumPage />} />
                 <Route path="/app/resume" element={<ResumePage />} />
                 <Route path="/app/applications" element={<ApplicationsPage />} />
@@ -82,6 +85,7 @@ export function App() {
               <Route element={<AppShell />}>
                 <Route path="/admin" element={<AnalyticsPage />} />
                 <Route path="/admin/jobs/pending" element={<PendingJobsPage />} />
+                <Route path="/admin/mailboxes" element={<MailboxesPage />} />
                 <Route path="/admin/users" element={<UsersPage />} />
                 <Route path="/admin/ops" element={<OpsHealthPage />} />
               </Route>

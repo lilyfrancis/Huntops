@@ -35,10 +35,10 @@ def update_profile(
 
 
 @router.get("/preferences/options", response_model=PreferenceOptions)
-def preference_options(
-    current_user: User = Depends(require_job_seeker),
-    db: Session = Depends(get_db),
-) -> PreferenceOptions:
+def preference_options(db: Session = Depends(get_db)) -> PreferenceOptions:
+    """Unauthenticated: the signup form has to populate this picker before the
+    account it belongs to exists. Nothing here is private — it is the list of
+    markets we serve, which is the same thing the marketing page advertises."""
     return PreferenceOptions(
         markets=alert_mailboxes.known_markets(db),
         lanes=[lane.value for lane in JobLane if lane is not JobLane.other],

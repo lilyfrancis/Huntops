@@ -1,11 +1,18 @@
 import { api } from "../api-client";
-import type { ExperienceLevel, Job, JobType } from "../types";
+import type { ExperienceLevel, FeedItem, Job, JobType } from "../types";
 
 export interface JobFilters {
   location?: string;
   job_type?: JobType;
   featured_only?: boolean;
   hide_ghosts?: boolean;
+  skip?: number;
+  limit?: number;
+}
+
+export interface FeedParams {
+  /** Show the whole pool rather than this user's preference slice. */
+  ignore_preferences?: boolean;
   skip?: number;
   limit?: number;
 }
@@ -36,4 +43,5 @@ export const jobsApi = {
   update: (jobId: string, payload: Partial<JobCreatePayload>) => api.put<Job>(`/api/jobs/${jobId}`, payload),
   delete: (jobId: string) => api.delete<void>(`/api/jobs/${jobId}`),
   mine: () => api.get<Job[]>("/api/jobs/employer/mine"),
+  feed: (params: FeedParams = {}) => api.get<FeedItem[]>(`/api/jobs/feed${toQuery(params)}`),
 };

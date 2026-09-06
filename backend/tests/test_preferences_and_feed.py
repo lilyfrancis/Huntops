@@ -81,13 +81,16 @@ def test_a_later_settings_change_does_not_restamp_onboarding(client):
 
 def test_options_only_offer_markets_with_a_live_mailbox(client, db_session):
     """Offering a country with no mailbox behind it promises supply that does
-    not exist — the user picks it and gets an empty feed."""
+    not exist — the user picks it and gets an empty feed.
+
+    Unauthenticated on purpose: the signup form needs this before the account
+    it belongs to exists.
+    """
     from tests.test_alert_mailboxes import _seed_mailbox
 
     _seed_mailbox(db_session, market="Canada")
-    data = register_user(client, email="options@example.com")
 
-    resp = client.get("/api/users/preferences/options", headers=auth_headers(data["access_token"]))
+    resp = client.get("/api/users/preferences/options")
     assert resp.status_code == 200
     body = resp.json()
     assert body["markets"] == ["Canada"]

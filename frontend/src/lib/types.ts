@@ -66,6 +66,7 @@ export interface Job {
   lane: JobLane | null;
   is_remote: boolean;
   restricted_to: string | null;
+  market: string | null;
   ghost_score: number | null;
   ghost_flags: string[];
   ghost_band: GhostBand;
@@ -122,7 +123,85 @@ export interface Outreach {
 
 export interface GmailStatus {
   connected: boolean;
+  connected_at: string | null;
+}
+
+/* One job as it appears in a user's own feed: the listing, how it scored for
+   them, and whether they already acted on it — all in one payload, so an
+   Apply button can never reappear on a job that was just applied to. */
+export interface FeedItem {
+  job: Job;
+  fit_score: number | null;
+  fit_reason: string | null;
+  applied: boolean;
+  outreach_sent: boolean;
+  can_apply_directly: boolean;
+}
+
+export interface Preferences {
+  target_markets: string[];
+  lanes: JobLane[];
+  job_types: JobType[];
+  remote_only: boolean;
+  autopilot_apply_enabled: boolean;
+  autopilot_apply_threshold: number;
+  autopilot_outreach_enabled: boolean;
+  autopilot_outreach_threshold: number;
+  autopilot_daily_cap: number;
+  onboarded_at: string | null;
+}
+
+export type PreferencesUpdate = Partial<Omit<Preferences, "onboarded_at">>;
+
+/* Markets come from the mailboxes that actually exist, so the picker can
+   never offer a country with no supply behind it. */
+export interface PreferenceOptions {
+  markets: string[];
+  lanes: JobLane[];
+  job_types: JobType[];
+}
+
+export type AutopilotActionKind = "apply" | "outreach";
+export type AutopilotActionStatus = "done" | "skipped" | "failed";
+
+export interface AutopilotAction {
+  id: string;
+  job_id: string;
+  action: AutopilotActionKind;
+  status: AutopilotActionStatus;
+  detail: string | null;
+  fit_score: number | null;
+  created_at: string;
+}
+
+export interface AutopilotRunSummary {
+  applied: number;
+  outreach: number;
+  skipped: number;
+  failed: number;
+  capped: boolean;
+}
+
+export interface AlertMailbox {
+  id: string;
+  email_address: string;
+  label: string;
+  market: string;
+  lanes: JobLane[];
+  is_active: boolean;
+  connected_at: string;
   last_synced_at: string | null;
+  last_error: string | null;
+}
+
+export interface MailboxSyncResult {
+  mailbox: string;
+  market: string;
+  status: string;
+  fetched: number;
+  extracted: number;
+  inserted: number;
+  error: string | null;
 }
 
 export interface DigestEntry {
@@ -154,7 +233,9 @@ export interface IngestionRun {
 
 export interface EmailSyncRun {
   id: string;
-  user_id: string;
+  mailbox_id: string | null;
+  mailbox: string | null;
+  user_id: string | null;
   status: string;
   fetched_count: number;
   extracted_count: number;

@@ -90,24 +90,40 @@ export function OpsHealthPage() {
       </div>
 
       <div>
-        <PageHeader eyebrow="Email bridge" title="Email sync runs" description="Per-user Gmail sync attempts, aggregated for ops visibility." />
+        <PageHeader
+          eyebrow="Email bridge"
+          title="Mailbox sync runs"
+          description="One row per alert-mailbox sync attempt. A mailbox that stops syncing is a market whose feed quietly stops filling."
+        />
         {emailLoading ? (
           <PageSpinner />
         ) : !emailRuns || emailRuns.length === 0 ? (
-          <EmptyState icon={Radar} title="No syncs yet" description="Runs once a user connects Gmail and the daily 07:10 UTC job fires." />
+          <EmptyState
+            icon={Radar}
+            title="No syncs yet"
+            description="Runs once a mailbox is connected and the daily 07:10 UTC job fires."
+          />
         ) : (
           <div className="space-y-2">
             {emailRuns.map((run) => (
-              <Card key={run.id} className="flex items-center justify-between gap-4 p-3.5">
-                <Badge tone={run.status === "success" ? "good" : "danger"}>{run.status}</Badge>
-                <div className="flex items-center gap-4 text-xs text-ink-muted">
-                  <span>{run.fetched_count} fetched</span>
-                  <span>{run.extracted_count} extracted</span>
-                  <span>{run.inserted_count} inserted</span>
-                  <span className="font-mono text-ink-faint">
-                    {formatDistanceToNow(new Date(run.started_at), { addSuffix: true })}
-                  </span>
+              <Card key={run.id} className="p-3.5">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <Badge tone={run.status === "success" ? "good" : "danger"}>{run.status}</Badge>
+                    {/* Rows predating central mailboxes carry a user id and no
+                        name — kept as history rather than deleted with the feature. */}
+                    <span className="truncate text-sm text-ink">{run.mailbox ?? "Legacy per-user sync"}</span>
+                  </div>
+                  <div className="flex items-center gap-4 text-xs text-ink-muted">
+                    <span>{run.fetched_count} fetched</span>
+                    <span>{run.extracted_count} extracted</span>
+                    <span>{run.inserted_count} inserted</span>
+                    <span className="font-mono text-ink-faint">
+                      {formatDistanceToNow(new Date(run.started_at), { addSuffix: true })}
+                    </span>
+                  </div>
                 </div>
+                {run.error && <p className="mt-2 break-words text-sm text-danger">{run.error}</p>}
               </Card>
             ))}
           </div>

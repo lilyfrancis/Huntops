@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { PageSpinner } from "@/components/ui/spinner";
 import { EmptyState } from "@/components/ui/empty-state";
 import { adminApi } from "@/lib/api";
+import { humanize } from "@/lib/labels";
 
 export function UsersPage() {
   const queryClient = useQueryClient();
@@ -45,7 +46,7 @@ export function UsersPage() {
                 <p className="truncate text-xs text-ink-muted">{u.email}</p>
               </div>
               <div className="flex shrink-0 items-center gap-2">
-                <Badge tone="neutral">{u.role}</Badge>
+                <Badge tone="neutral">{humanize(u.role)}</Badge>
                 {!u.is_approved && <Badge tone="warning">Pending</Badge>}
                 {!u.is_approved && (
                   <Button size="sm" variant="outline" onClick={() => approveMutation.mutate(u.id)}>

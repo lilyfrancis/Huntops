@@ -5,6 +5,7 @@ import {
   Handshake,
   Flame,
   Inbox,
+  Radio,
   LayoutDashboard,
   LogOut,
   Mail,
@@ -35,6 +36,7 @@ const NAV_BY_ROLE: Record<string, NavItem[]> = {
   job_seeker: [
     { to: "/app", label: "Job feed", icon: Briefcase, end: true },
     { to: "/app/matches", label: "Matches", icon: Sparkles },
+    { to: "/app/autopilot", label: "Autopilot", icon: Radio },
     { to: "/app/momentum", label: "Momentum", icon: Flame },
     { to: "/app/resume", label: "Résumé", icon: FileText },
     { to: "/app/applications", label: "Applications", icon: Inbox },
@@ -42,7 +44,7 @@ const NAV_BY_ROLE: Record<string, NavItem[]> = {
     { to: "/app/interviews", label: "Interviews", icon: MessageSquare },
     { to: "/app/negotiation", label: "Negotiation", icon: Handshake },
     { to: "/app/digest", label: "Digest", icon: Newspaper },
-    { to: "/app/integrations", label: "Gmail", icon: Mail },
+    { to: "/app/integrations", label: "Send-as Gmail", icon: Mail },
     { to: "/app/profile", label: "Profile", icon: Settings },
   ],
   employer: [
@@ -51,6 +53,7 @@ const NAV_BY_ROLE: Record<string, NavItem[]> = {
   ],
   admin: [
     { to: "/admin", label: "Analytics", icon: LayoutDashboard, end: true },
+    { to: "/admin/mailboxes", label: "Alert mailboxes", icon: Inbox },
     { to: "/admin/jobs/pending", label: "Pending jobs", icon: Briefcase },
     { to: "/admin/users", label: "Users", icon: Users },
     { to: "/admin/ops", label: "Ops health", icon: Radar },

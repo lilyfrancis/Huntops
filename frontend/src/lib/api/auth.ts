@@ -1,5 +1,5 @@
 import { api } from "../api-client";
-import type { TokenPair, User, UserRole } from "../types";
+import type { PreferencesUpdate, TokenPair, User, UserRole } from "../types";
 
 export interface RegisterPayload {
   email: string;
@@ -7,6 +7,9 @@ export interface RegisterPayload {
   full_name: string;
   role: Exclude<UserRole, "admin">;
   company_name?: string;
+  /* Job seekers choose their market and job family during signup, so the feed
+     is already theirs the first time they open it. */
+  preferences?: PreferencesUpdate;
 }
 
 export const authApi = {

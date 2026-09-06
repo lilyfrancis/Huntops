@@ -1,5 +1,27 @@
 import { api } from "../api-client";
-import type { AdminAnalytics, EmailSyncRun, IngestionRun, Job, User } from "../types";
+import type {
+  AdminAnalytics,
+  AlertMailbox,
+  EmailSyncRun,
+  IngestionRun,
+  Job,
+  JobLane,
+  MailboxSyncResult,
+  User,
+} from "../types";
+
+export interface MailboxConnectPayload {
+  market: string;
+  label?: string;
+  lanes?: JobLane[];
+}
+
+export interface MailboxUpdatePayload {
+  label?: string;
+  market?: string;
+  lanes?: JobLane[];
+  is_active?: boolean;
+}
 
 export const adminApi = {
   users: (skip = 0, limit = 50) => api.get<User[]>(`/api/admin/users?skip=${skip}&limit=${limit}`),
@@ -20,4 +42,13 @@ export const adminApi = {
   aggregationRuns: () => api.get<IngestionRun[]>("/api/admin/jobs/aggregation-runs"),
   emailSyncRuns: () => api.get<EmailSyncRun[]>("/api/admin/email-sync-runs"),
   analytics: () => api.get<AdminAnalytics>("/api/admin/analytics"),
+
+  mailboxes: () => api.get<AlertMailbox[]>("/api/admin/mailboxes"),
+  connectMailbox: (payload: MailboxConnectPayload) =>
+    api.post<{ authorization_url: string }>("/api/admin/mailboxes/connect", payload),
+  updateMailbox: (id: string, payload: MailboxUpdatePayload) =>
+    api.patch<AlertMailbox>(`/api/admin/mailboxes/${id}`, payload),
+  deleteMailbox: (id: string) => api.delete<void>(`/api/admin/mailboxes/${id}`),
+  syncMailbox: (id: string) => api.post<MailboxSyncResult>(`/api/admin/mailboxes/${id}/sync`),
+  syncAllMailboxes: () => api.post<MailboxSyncResult[]>("/api/admin/mailboxes/sync"),
 };
