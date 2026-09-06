@@ -1,40 +1,62 @@
 @import "tailwindcss";
 
 /*
-  Committed dark "mission control" theme — the same brand language as the
-  marketing landing page, carried into the product itself. Deliberately
-  single-theme: this is a dashboard, not a document, and the radar/telemetry
-  aesthetic is built for a dark ground.
+  HuntOps design system — light.
+
+  Colours are taken from the logo itself (sampled from the artwork, not
+  eyeballed): navy #091528, violet #6F5AFB, cyan #0EDBF7.
+
+  Two contrast facts drive the rules below, both measured rather than assumed:
+
+  - Brand cyan is 1.68:1 on white. It can never carry text or a meaningful mark
+    on a light surface. It lives on navy (10.9:1) or as a decorative wash. A
+    darkened `cyan-ink` (#0A7F91, 4.71:1) exists for the rare case where the
+    cyan hue must read as text on white.
+  - Violet is 4.63:1 both as text on white and as white text on violet, so it
+    works as the primary action colour in both directions.
 */
 @theme {
-  --font-display: "Big Shoulders Display", "Arial Narrow", sans-serif;
-  --font-sans: "IBM Plex Sans", -apple-system, "Segoe UI", sans-serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --font-display: "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
 
-  --color-bg: #0c1219;
-  --color-surface: #121a24;
-  --color-surface-2: #182230;
-  --color-surface-3: #1e2a38;
-  --color-ink: #eef2f6;
-  --color-ink-muted: #98a5b3;
-  --color-ink-faint: #5e6b79;
-  --color-border: #232f3d;
-  --color-border-strong: #324255;
+  /* Brand */
+  --color-navy: #091528;
+  --color-navy-soft: #16233a;
+  --color-violet: #6f5afb;
+  --color-violet-dark: #5843e8;
+  --color-violet-soft: #efecff;
+  --color-cyan: #0edbf7;
+  --color-cyan-ink: #0a7f91;
+  --color-cyan-soft: #e3fbff;
 
-  --color-accent: #f2994a;
-  --color-accent-strong: #ffb469;
-  --color-accent-soft: #f2994a1f;
-  --color-accent-ink: #2c1704;
+  /* Surfaces */
+  --color-bg: #ffffff;
+  --color-bg-tint: #f7f8fc;
+  --color-surface: #ffffff;
+  --color-surface-2: #f4f6fb;
+  --color-surface-3: #eceff7;
+  --color-border: #e4e8f2;
+  --color-border-strong: #cfd6e6;
 
-  --color-cyan: #4fc3c9;
-  --color-cyan-soft: #4fc3c91f;
+  /* Ink — every value here clears 4.5:1 on white */
+  --color-ink: #091528;
+  --color-ink-muted: #5a6478;
+  --color-ink-faint: #68717f;
 
-  --color-good: #4fce8f;
-  --color-good-soft: #4fce8f1f;
-  --color-warning: #e8c14d;
-  --color-warning-soft: #e8c14d1f;
-  --color-danger: #e0655c;
-  --color-danger-soft: #e0655c1f;
+  /* Status */
+  --color-good: #14855a;
+  --color-good-soft: #e6f6ef;
+  --color-warning: #9a6200;
+  --color-warning-soft: #fdf3e3;
+  --color-danger: #c0392b;
+  --color-danger-soft: #fdeceb;
+
+  /* Accents kept for continuity with existing components */
+  --color-accent: #6f5afb;
+  --color-accent-strong: #5843e8;
+  --color-accent-soft: #efecff;
+  --color-accent-ink: #ffffff;
 }
 
 @layer base {
@@ -42,15 +64,17 @@
     border-color: var(--color-border);
   }
   html {
-    color-scheme: dark;
+    color-scheme: light;
     background: var(--color-bg);
     scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
   }
   body {
     background: var(--color-bg);
     color: var(--color-ink);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
   h1,
   h2,
@@ -58,78 +82,93 @@
   h4 {
     font-family: var(--font-display);
     font-weight: 700;
-    letter-spacing: 0.01em;
+    letter-spacing: -0.02em;
     text-wrap: balance;
+    color: var(--color-ink);
   }
   ::selection {
-    background: var(--color-accent-soft);
-    color: var(--color-accent-strong);
+    background: var(--color-violet-soft);
+    color: var(--color-violet-dark);
   }
   :focus-visible {
-    outline: 2px solid var(--color-accent);
+    outline: 2px solid var(--color-violet);
     outline-offset: 2px;
+    border-radius: 4px;
   }
   ::-webkit-scrollbar {
     width: 10px;
     height: 10px;
   }
   ::-webkit-scrollbar-track {
-    background: transparent;
+    background: var(--color-surface-2);
   }
   ::-webkit-scrollbar-thumb {
     background: var(--color-border-strong);
     border-radius: 6px;
   }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-ink-faint);
+  }
 }
 
 @layer utilities {
   .eyebrow {
-    font-family: var(--font-mono);
-    font-size: 0.6875rem;
-    letter-spacing: 0.14em;
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: var(--color-accent);
-    font-weight: 600;
+    color: var(--color-violet);
+    font-weight: 700;
+  }
+
+  /* The signature brand gradient — violet into cyan, as in the logo mark. */
+  .brand-gradient {
+    background-image: linear-gradient(120deg, var(--color-violet), var(--color-cyan));
+  }
+  .brand-gradient-text {
+    background-image: linear-gradient(120deg, var(--color-violet), var(--color-cyan-ink));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Soft depth for cards that need to lift off the tinted page background. */
+  .lift {
+    box-shadow:
+      0 1px 2px rgb(9 21 40 / 0.04),
+      0 8px 24px -12px rgb(9 21 40 / 0.12);
+  }
+  .lift-lg {
+    box-shadow:
+      0 2px 4px rgb(9 21 40 / 0.04),
+      0 24px 48px -20px rgb(9 21 40 / 0.18);
   }
 }
 
-/* Landing page scroll & ambient animations — reduced-motion respected below. */
-@keyframes radar-sweep {
-  from {
-    transform: translateX(-50%) rotate(0deg);
-  }
-  to {
-    transform: translateX(-50%) rotate(360deg);
-  }
+/* Landing-page motion. Everything here is decorative and switches off for
+   users who ask for reduced motion. */
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
 }
 @keyframes marquee {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-50%);
-  }
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+@keyframes pulse-ring {
+  0% { transform: scale(0.9); opacity: 0.6; }
+  70% { transform: scale(1.25); opacity: 0; }
+  100% { opacity: 0; }
 }
 
-.animate-radar-sweep {
-  animation: radar-sweep 40s linear infinite;
-  border-top-color: var(--color-accent);
-}
-.animate-radar-sweep-slow {
-  animation: radar-sweep 60s linear infinite reverse;
-  border-top-color: var(--color-cyan);
-}
-.animate-marquee {
-  animation: marquee 30s linear infinite;
-}
+.animate-float-slow { animation: float-slow 6s ease-in-out infinite; }
+.animate-marquee { animation: marquee 32s linear infinite; }
+.animate-pulse-ring { animation: pulse-ring 2.6s ease-out infinite; }
 
 @media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
-  }
-  .animate-radar-sweep,
-  .animate-radar-sweep-slow,
-  .animate-marquee {
+  html { scroll-behavior: auto; }
+  .animate-float-slow,
+  .animate-marquee,
+  .animate-pulse-ring {
     animation: none;
   }
 }

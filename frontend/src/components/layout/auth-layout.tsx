@@ -1,35 +1,67 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
+import { CheckCircle2 } from "lucide-react";
+import { Logo } from "@/components/brand/logo";
+
+const PROMISES = [
+  "Six live sources, scored against your CV",
+  "Ghost listings flagged before you waste a day",
+  "Outreach drafted and sent for you",
+];
 
 export function AuthLayout({ children }: { children: ReactNode }) {
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
-      <div className="relative hidden flex-col justify-between overflow-hidden bg-surface p-10 lg:flex">
+      {/* Brand panel. Navy is the one ground where the bright cyan is legible
+          (10.9:1 vs 1.7:1 on white), so the accent work happens here. */}
+      <div className="relative hidden flex-col justify-between overflow-hidden bg-navy p-10 lg:flex">
         <div
-          className="pointer-events-none absolute inset-0 opacity-40"
+          aria-hidden
+          className="pointer-events-none absolute inset-0 opacity-70"
           style={{
             backgroundImage:
-              "repeating-radial-gradient(circle at 50% 45%, transparent 0 60px, rgba(50,66,85,0.4) 61px 62px, transparent 63px 140px)",
+              "radial-gradient(circle at 30% 20%, rgba(111,90,251,0.45), transparent 55%), radial-gradient(circle at 80% 75%, rgba(14,219,247,0.28), transparent 50%)",
           }}
         />
-        <Link to="/" className="relative font-mono text-sm font-semibold tracking-wide text-ink">
-          HUNTOPS
+
+        <Link to="/" className="relative w-fit" aria-label="HuntOps home">
+          <Logo variant="white" height={28} />
         </Link>
-        <div className="relative max-w-sm">
-          <p className="eyebrow mb-3">The job search copilot</p>
-          <h1 className="text-3xl leading-tight text-ink">
-            Finds real openings.
+
+        <div className="relative max-w-md">
+          <h1 className="text-4xl leading-tight text-white">
+            Your job hunt,
             <br />
-            Scores your fit.
-            <br />
-            Emails the recruiter.
+            on autopilot.
           </h1>
+          <ul className="mt-8 space-y-3">
+            {PROMISES.map((p) => (
+              <li key={p} className="flex items-start gap-2.5 text-white/80">
+                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-cyan" strokeWidth={2} />
+                {p}
+              </li>
+            ))}
+          </ul>
         </div>
-        <p className="relative font-mono text-xs text-ink-faint">© 2026 HuntOps</p>
+
+        <div className="relative overflow-hidden rounded-xl border border-white/10">
+          <img
+            src="/brand/hero-dashboard.webp"
+            alt=""
+            aria-hidden
+            loading="lazy"
+            className="aspect-[16/7] w-full object-cover object-top opacity-90"
+          />
+        </div>
       </div>
 
-      <div className="flex items-center justify-center px-6 py-12">
-        <div className="w-full max-w-sm">{children}</div>
+      <div className="flex items-center justify-center bg-white px-6 py-12">
+        <div className="w-full max-w-sm">
+          <Link to="/" className="mb-8 inline-block lg:hidden" aria-label="HuntOps home">
+            <Logo height={28} />
+          </Link>
+          {children}
+        </div>
       </div>
     </div>
   );

@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 export const Card = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("rounded-xl border border-border bg-surface shadow-[0_1px_2px_rgba(0,0,0,0.4)]", className)}
+    className={cn("rounded-2xl border border-border bg-white", className)}
     {...props}
   />
 ));

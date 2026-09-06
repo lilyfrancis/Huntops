@@ -1,74 +1,112 @@
 import { Link } from "react-router-dom";
+import { ArrowRight, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Counter } from "@/components/landing/counter";
 import { Reveal } from "@/components/landing/reveal";
+import { Counter } from "@/components/landing/counter";
 
-const STATS = [
-  { to: 6, suffix: "", label: "job sources aggregated" },
-  { to: 30, suffix: "s", label: "avg. time to first score" },
-  { to: 500, suffix: "", label: "AI credits on Elite" },
+const PROOF = [
+  { to: 6, suffix: "", label: "live job sources" },
+  { to: 60, suffix: "s", label: "to your first matches" },
+  { to: 0, suffix: "", label: "job boards to refresh", literal: "0" },
 ];
 
 export function Hero() {
   return (
-    <section id="top" className="relative overflow-hidden pt-40 pb-28">
+    <section id="top" className="relative overflow-hidden pt-28 pb-16 sm:pt-32">
+      {/* Ambient brand wash. Decorative only — never carries meaning. */}
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute left-1/2 top-[-10%] h-[560px] w-[560px] -translate-x-1/2 animate-radar-sweep rounded-full border border-accent/10" />
-        <div className="absolute left-1/2 top-[-10%] h-[380px] w-[380px] -translate-x-1/2 animate-radar-sweep-slow rounded-full border border-cyan/10" />
-        <div className="absolute inset-x-0 top-0 h-[600px] bg-[radial-gradient(ellipse_at_top,_var(--color-accent-soft),_transparent_60%)]" />
+        <div className="absolute -top-40 left-1/2 h-[520px] w-[820px] -translate-x-1/2 rounded-full bg-violet-soft blur-3xl" />
+        <div className="absolute right-[-10%] top-40 h-[320px] w-[320px] rounded-full bg-cyan-soft blur-3xl" />
       </div>
 
-      <div className="mx-auto max-w-4xl px-6 text-center">
-        <Reveal>
-          <span className="eyebrow inline-flex items-center gap-2 rounded-full border border-border-strong bg-surface px-3 py-1">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-good" />
-            Live job intelligence, running now
-          </span>
-        </Reveal>
+      <div className="mx-auto grid max-w-6xl items-center gap-12 px-5 lg:grid-cols-[1.05fr_1fr]">
+        <div>
+          <Reveal>
+            <span className="inline-flex items-center gap-2 rounded-full border border-border bg-white px-3 py-1.5 text-xs font-semibold text-ink-muted lift">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-pulse-ring absolute inline-flex h-full w-full rounded-full bg-violet" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-violet" />
+              </span>
+              Sourcing jobs right now
+            </span>
+          </Reveal>
 
-        <Reveal delay={1}>
-          <h1 className="mt-6 text-5xl leading-[1.05] sm:text-6xl">
-            Stop refreshing job boards.
-            <br />
-            <span className="text-accent">Let HuntOps hunt.</span>
-          </h1>
-        </Reveal>
+          <Reveal delay={1}>
+            <h1 className="mt-5 text-4xl leading-[1.08] sm:text-5xl lg:text-6xl">
+              Stop refreshing job boards.
+              <br />
+              <span className="brand-gradient-text">Let HuntOps hunt.</span>
+            </h1>
+          </Reveal>
 
-        <Reveal delay={2}>
-          <p className="mx-auto mt-6 max-w-2xl text-lg text-ink-muted">
-            HuntOps pulls jobs from six live sources and your own inbox, scores every one
-            against your résumé, and — on Elite — reaches out to the recruiter for you.
-            One dashboard, zero tab-hoarding.
-          </p>
-        </Reveal>
+          <Reveal delay={2}>
+            <p className="mt-5 max-w-xl text-lg leading-relaxed text-ink-muted">
+              Tell us the role and the market you want. HuntOps pulls matching openings
+              from six live sources, scores every one against your CV, and reaches out to
+              the hiring manager for you.
+            </p>
+          </Reveal>
 
-        <Reveal delay={3}>
-          <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Button asChild size="lg">
-              <Link to="/register">Get started free</Link>
-            </Button>
-            <Button asChild variant="outline" size="lg">
-              <a href="#how-it-works">See how it works</a>
-            </Button>
+          <Reveal delay={3}>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <Button asChild size="lg">
+                <Link to="/register">
+                  Start free <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
+              <Button asChild variant="outline" size="lg">
+                <a href="#how">See how it works</a>
+              </Button>
+            </div>
+          </Reveal>
+
+          <Reveal delay={4}>
+            <ul className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm text-ink-muted">
+              {["No credit card", "No inbox to connect", "Free forever tier"].map((t) => (
+                <li key={t} className="flex items-center gap-1.5">
+                  <CheckCircle2 className="h-4 w-4 text-good" strokeWidth={2} />
+                  {t}
+                </li>
+              ))}
+            </ul>
+          </Reveal>
+        </div>
+
+        <Reveal delay={2} className="relative">
+          <div className="animate-float-slow overflow-hidden rounded-2xl border border-border bg-white lift-lg">
+            <img
+              src="/brand/hero-dashboard.webp"
+              alt="The HuntOps dashboard showing scored job matches"
+              width={1400}
+              height={1400}
+              className="w-full"
+              fetchPriority="high"
+            />
+          </div>
+
+          {/* Floating proof chip — the product's promise, stated as a number. */}
+          <div className="absolute -bottom-5 -left-4 hidden rounded-xl border border-border bg-white px-4 py-3 lift-lg sm:block">
+            <p className="text-2xl font-bold text-ink">
+              <Counter to={92} suffix="%" />
+            </p>
+            <p className="text-xs text-ink-muted">top match score today</p>
           </div>
         </Reveal>
-
-        <Reveal delay={4}>
-          <dl className="mx-auto mt-20 grid max-w-2xl grid-cols-3 gap-6 border-t border-border pt-10">
-            {STATS.map((stat) => (
-              <div key={stat.label}>
-                <dt className="sr-only">{stat.label}</dt>
-                <dd className="font-display text-4xl text-ink">
-                  <Counter to={stat.to} suffix={stat.suffix} />
-                </dd>
-                <p className="mt-1 font-mono text-[11px] uppercase tracking-widest text-ink-faint">
-                  {stat.label}
-                </p>
-              </div>
-            ))}
-          </dl>
-        </Reveal>
       </div>
+
+      <Reveal delay={4}>
+        <dl className="mx-auto mt-20 grid max-w-3xl grid-cols-3 gap-6 border-t border-border px-5 pt-10 text-center">
+          {PROOF.map((s) => (
+            <div key={s.label}>
+              <dt className="sr-only">{s.label}</dt>
+              <dd className="text-3xl font-bold text-ink sm:text-4xl">
+                {s.literal ?? <Counter to={s.to} suffix={s.suffix} />}
+              </dd>
+              <p className="mt-1 text-sm text-ink-muted">{s.label}</p>
+            </div>
+          ))}
+        </dl>
+      </Reveal>
     </section>
   );
 }

@@ -22,6 +22,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { cn, initials } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Logo } from "@/components/brand/logo";
 
 interface NavItem {
   to: string;
@@ -63,11 +64,10 @@ export function AppShell() {
   const items = NAV_BY_ROLE[user.role] ?? [];
 
   return (
-    <div className="flex min-h-screen bg-bg">
-      <aside className="flex w-60 shrink-0 flex-col border-r border-border bg-surface">
-        <Link to="/" className="flex items-center gap-2 px-5 py-5 font-mono text-sm font-semibold tracking-wide text-ink">
-          HUNTOPS
-          <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+    <div className="flex min-h-screen bg-bg-tint">
+      <aside className="flex w-60 shrink-0 flex-col border-r border-border bg-white">
+        <Link to="/" className="px-5 py-5" aria-label="HuntOps home">
+          <Logo height={26} />
         </Link>
 
         <nav className="flex flex-1 flex-col gap-0.5 px-3">
@@ -79,7 +79,7 @@ export function AppShell() {
               className={({ isActive }) =>
                 cn(
                   "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors",
-                  isActive ? "bg-surface-2 text-accent-strong" : "text-ink-muted hover:bg-surface-2 hover:text-ink"
+                  isActive ? "bg-violet-soft font-semibold text-violet-dark" : "text-ink-muted hover:bg-surface-2 hover:text-ink"
                 )
               }
             >
@@ -92,8 +92,8 @@ export function AppShell() {
         <div className="border-t border-border p-3">
           {user.role === "job_seeker" && (
             <div className="mb-2 flex items-center justify-between rounded-lg bg-surface-2 px-3 py-2">
-              <span className="font-mono text-[0.65rem] uppercase tracking-wide text-ink-faint">Credits</span>
-              <span className="font-mono text-sm font-semibold text-accent-strong">{user.ai_credits}</span>
+              <span className="text-[0.7rem] font-semibold uppercase tracking-wide text-ink-faint">Credits</span>
+              <span className="text-sm font-bold text-violet-dark">{user.ai_credits}</span>
             </div>
           )}
           <div className="flex items-center gap-2 rounded-lg px-2 py-1.5">

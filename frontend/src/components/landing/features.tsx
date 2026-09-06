@@ -1,82 +1,61 @@
-import {
-  Radar,
-  Target,
-  MailCheck,
-  Send,
-  MessageSquare,
-  Newspaper,
-  ShieldCheck,
-} from "lucide-react";
+import { Radar, Target, Ghost, Send, MessageSquare, Handshake } from "lucide-react";
 import { Reveal } from "@/components/landing/reveal";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const FEATURES = [
   {
     icon: Radar,
-    tone: "text-accent",
     title: "Real job aggregation",
-    body: "Six live sources, deduped and refreshed daily — not a stale scrape from last week.",
+    body: "Six live sources plus curated alert feeds, deduped and refreshed daily. Not a stale scrape from last week.",
   },
   {
     icon: Target,
-    tone: "text-cyan",
     title: "AI fit scoring",
-    body: "Every job is scored against your résumé by Claude, with a location-aware boost so nearby roles surface first.",
+    body: "Every opening scored against your CV — skills, experience and location — so the best work rises to the top.",
   },
   {
-    icon: MailCheck,
-    tone: "text-good",
-    title: "Email-alert bridge",
-    body: "Connect Gmail once. Job alerts already landing in your inbox get auto-labeled and extracted into your feed.",
+    icon: Ghost,
+    title: "Ghost-job detector",
+    body: "Flags listings that aren't a real, fillable seat, and tells you exactly why it thinks so.",
   },
   {
     icon: Send,
-    tone: "text-accent",
     title: "Autopilot Outreach",
-    body: "Elite finds the hiring recruiter via Apollo, drafts a pitch with AI, and sends it from your own Gmail — no copy-paste.",
+    body: "Finds the hiring manager, drafts a pitch in your voice, and sends it from your account. No copy-paste.",
   },
   {
     icon: MessageSquare,
-    tone: "text-cyan",
-    title: "Mock interview simulator",
+    title: "Mock interviews",
     body: "Practise the real screen for the role you're chasing, with every answer scored and rewritten stronger.",
   },
   {
-    icon: Newspaper,
-    tone: "text-good",
-    title: "Daily digest",
-    body: "One email each morning with your best new matches, so you never have to go looking.",
-  },
-  {
-    icon: ShieldCheck,
-    tone: "text-good",
-    title: "Built for both sides",
-    body: "Employers post and manage listings; admins moderate every job and account before it goes live.",
+    icon: Handshake,
+    title: "Negotiation coach",
+    body: "See where your offer sits against real listings, and get the exact words to counter with.",
   },
 ];
 
 export function Features() {
   return (
-    <section id="features" className="mx-auto max-w-6xl px-6 py-28">
-      <Reveal className="mx-auto max-w-2xl text-center">
-        <span className="eyebrow">What HuntOps does</span>
-        <h2 className="mt-3 text-4xl">Everything a job hunt needs, running on autopilot</h2>
-      </Reveal>
+    <section id="features" className="bg-bg-tint py-24">
+      <div className="mx-auto max-w-6xl px-5">
+        <Reveal className="mx-auto max-w-2xl text-center">
+          <span className="eyebrow">The platform</span>
+          <h2 className="mt-3 text-3xl sm:text-4xl">Everything the hunt needs, in one place</h2>
+        </Reveal>
 
-      <div className="mt-16 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        {FEATURES.map((feature, i) => (
-          <Reveal key={feature.title} delay={(i % 3) as 0 | 1 | 2}>
-            <Card className="h-full transition-colors hover:border-border-strong">
-              <CardHeader>
-                <feature.icon className={`h-6 w-6 ${feature.tone}`} strokeWidth={1.75} />
-                <CardTitle className="mt-3 text-lg">{feature.title}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-ink-muted">{feature.body}</p>
-              </CardContent>
-            </Card>
-          </Reveal>
-        ))}
+        <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {FEATURES.map((f, i) => (
+            <Reveal key={f.title} delay={(i % 3) as 0 | 1 | 2}>
+              <article className="group h-full rounded-2xl border border-border bg-white p-6 transition-all hover:border-violet/40 lift">
+                <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-violet-soft text-violet transition-colors group-hover:brand-gradient group-hover:text-white">
+                  <f.icon className="h-5 w-5" strokeWidth={2} />
+                </span>
+                <h3 className="mt-4 text-lg">{f.title}</h3>
+                <p className="mt-2 text-[0.95rem] leading-relaxed text-ink-muted">{f.body}</p>
+              </article>
+            </Reveal>
+          ))}
+        </div>
       </div>
     </section>
   );

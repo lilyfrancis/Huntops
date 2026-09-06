@@ -12,10 +12,10 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantClasses: Record<Variant, string> = {
-  solid: "bg-accent text-accent-ink hover:bg-accent-strong",
-  ghost: "text-ink hover:bg-surface-2",
-  outline: "border border-border-strong text-ink hover:border-accent hover:text-accent-strong",
-  danger: "bg-danger/10 text-danger border border-danger/30 hover:bg-danger/20",
+  solid: "bg-violet text-white hover:bg-violet-dark shadow-sm",
+  ghost: "text-ink-muted hover:bg-surface-2 hover:text-ink",
+  outline: "border border-border-strong bg-white text-ink hover:border-violet hover:text-violet",
+  danger: "bg-danger-soft text-danger border border-danger/25 hover:bg-danger/15",
 };
 
 const sizeClasses: Record<Size, string> = {
@@ -32,7 +32,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       <Comp
         ref={ref}
         className={cn(
-          "inline-flex items-center justify-center whitespace-nowrap rounded-lg font-medium font-mono text-[0.8rem] tracking-wide transition-colors disabled:pointer-events-none disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
+          "inline-flex items-center justify-center whitespace-nowrap rounded-xl font-semibold text-sm transition-all disabled:pointer-events-none disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
           variantClasses[variant],
           sizeClasses[size],
           className

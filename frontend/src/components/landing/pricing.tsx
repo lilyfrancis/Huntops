@@ -48,10 +48,10 @@ const PLANS = [
 
 export function Pricing() {
   return (
-    <section id="pricing" className="mx-auto max-w-6xl px-6 py-28">
+    <section id="pricing" className="mx-auto max-w-6xl px-5 py-24">
       <Reveal className="mx-auto max-w-2xl text-center">
         <span className="eyebrow">Pricing</span>
-        <h2 className="mt-3 text-4xl">Pay for reach, not for looking</h2>
+        <h2 className="mt-3 text-3xl sm:text-4xl">Pay for reach, not for looking</h2>
         <p className="mt-4 text-ink-muted">
           Every action that costs AI — a fit score, an extracted alert, a drafted outreach —
           spends credits. Upgrade when you need more reach, not because a paywall says so.
@@ -64,21 +64,21 @@ export function Pricing() {
             <Card
               className={cn(
                 "flex h-full flex-col",
-                plan.featured && "border-accent/50 shadow-[0_0_0_1px_var(--color-accent)_inset]",
+                plan.featured ? "border-violet/60 lift-lg" : "lift",
               )}
             >
               <CardHeader>
                 {plan.featured && (
-                  <span className="eyebrow mb-2 inline-block w-fit rounded-full bg-accent-soft px-2.5 py-1">
+                  <span className="eyebrow mb-2 inline-block w-fit rounded-full bg-violet-soft px-2.5 py-1">
                     Most popular
                   </span>
                 )}
                 <CardTitle className="text-lg">{plan.name}</CardTitle>
                 <div className="mt-2 flex items-baseline gap-1">
-                  <span className="font-display text-4xl text-ink">{plan.price}</span>
+                  <span className="text-4xl font-bold text-ink">{plan.price}</span>
                   <span className="text-sm text-ink-muted">{plan.cadence}</span>
                 </div>
-                <p className="mt-1 font-mono text-xs uppercase tracking-widest text-ink-faint">
+                <p className="mt-1 text-xs font-semibold uppercase tracking-widest text-ink-faint">
                   {plan.credits}
                 </p>
               </CardHeader>
