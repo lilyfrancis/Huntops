@@ -70,8 +70,8 @@ python3 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().
 Edit `.env`:
 
 ```
-DOMAIN=huntops.yourdomain.com
-TLS_EMAIL=you@yourdomain.com
+DOMAIN=huntops.site
+TLS_EMAIL=you@huntops.site
 POSTGRES_USER=huntops
 POSTGRES_PASSWORD=<generated>
 POSTGRES_DB=huntops
@@ -84,9 +84,9 @@ Edit `backend/.env` — these **must** change from the defaults:
 | `ENVIRONMENT` | `production` (startup validation refuses weak secrets here) |
 | `JWT_SECRET` | the generated hex string |
 | `TOKEN_ENCRYPTION_KEY` | the generated Fernet key — **losing this orphans every stored Gmail token** |
-| `CORS_ORIGINS` | `https://huntops.yourdomain.com` (never `*` in production) |
-| `FRONTEND_URL` | `https://huntops.yourdomain.com` — the Gmail OAuth callback redirects here |
-| `GOOGLE_OAUTH_REDIRECT_URI` | `https://huntops.yourdomain.com/api/integrations/gmail/callback`, and register this exact URI in Google Cloud Console |
+| `CORS_ORIGINS` | `https://huntops.site` (never `*` in production) |
+| `FRONTEND_URL` | `https://huntops.site` — the Gmail OAuth callback redirects here |
+| `GOOGLE_OAUTH_REDIRECT_URI` | `https://huntops.site/api/integrations/gmail/callback`, and register this exact URI in Google Cloud Console |
 | `ANTHROPIC_API_KEY` | required — every AI feature fails without it |
 | `STRIPE_*` | live keys + the webhook secret |
 
@@ -102,7 +102,7 @@ docker compose -f docker-compose.prod.yml up -d --build
 On first boot: the DB starts, the `migrate` container runs `alembic upgrade
 head` and exits, then the API, scheduler, frontend, and Caddy come up. Caddy
 obtains the certificate automatically. Give it a minute, then visit
-`https://huntops.yourdomain.com`.
+`https://huntops.site`.
 
 ```bash
 docker compose -f docker-compose.prod.yml ps
@@ -111,25 +111,23 @@ docker compose -f docker-compose.prod.yml logs -f api
 
 ## 4. Create the first admin
 
-Admin accounts cannot be self-registered (deliberately). Register normally
-through the UI, then promote:
+Admin accounts cannot be self-registered (deliberately), and nothing works
+until one exists: the job feed is fed entirely by admin-connected alert
+mailboxes, so with no admin there is nobody who can give the product any jobs.
+
+The script both creates a new admin and promotes an existing account, so you
+can either sign up through the UI first and promote yourself, or skip the UI
+entirely. It prompts for the password rather than taking it as an argument, so
+it never reaches your shell history.
 
 ```bash
-docker compose -f docker-compose.prod.yml exec api python -c "
-from app.db.base import SessionLocal
-from app.models.user import User
-from app.models.enums import UserRole
-s = SessionLocal()
-u = s.query(User).filter(User.email == 'you@yourdomain.com').first()
-u.role = UserRole.admin
-s.commit()
-print('promoted', u.email)
-"
+docker compose -f docker-compose.prod.yml exec api \
+  python -m app.scripts.create_admin you@huntops.site --name "Ops Admin"
 ```
 
 ## 5. Stripe webhook
 
-Point a Stripe webhook at `https://huntops.yourdomain.com/api/billing/webhook`
+Point a Stripe webhook at `https://huntops.site/api/billing/webhook`
 and put its signing secret in `STRIPE_WEBHOOK_SECRET`. The webhook is the
 **only** thing that can change a user's tier — without it, paid subscriptions
 never activate.

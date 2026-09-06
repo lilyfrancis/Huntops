@@ -85,7 +85,7 @@ Verify it resolves before continuing — Caddy requests your HTTPS certificate o
 first boot and will fail if DNS isn't live yet:
 
 ```bash
-dig +short yourdomain.com
+dig +short huntops.site
 ```
 
 DNS can take anywhere from a minute to an hour. Wait for it.
@@ -146,8 +146,8 @@ nano .env
 ```
 
 ```
-DOMAIN=yourdomain.com
-TLS_EMAIL=you@yourdomain.com
+DOMAIN=huntops.site
+TLS_EMAIL=you@huntops.site
 POSTGRES_USER=huntops
 POSTGRES_PASSWORD=<the generated one>
 POSTGRES_DB=huntops
@@ -165,13 +165,26 @@ Change these (leave `DATABASE_URL` alone — compose sets it):
 ENVIRONMENT=production
 JWT_SECRET=<generated>
 TOKEN_ENCRYPTION_KEY=<generated>
-CORS_ORIGINS=https://yourdomain.com
-FRONTEND_URL=https://yourdomain.com
+CORS_ORIGINS=https://huntops.site
+FRONTEND_URL=https://huntops.site
+GOOGLE_CLIENT_ID=<from Google Cloud Console>
+GOOGLE_CLIENT_SECRET=<from Google Cloud Console>
+GOOGLE_OAUTH_REDIRECT_URI=https://huntops.site/api/integrations/gmail/callback
 ANTHROPIC_API_KEY=sk-ant-...
 ```
 
-Everything else can stay empty for now — the app runs without Stripe, Gmail,
-and Apollo; those features simply stay off until you add their keys.
+The three Google values are what let you connect alert mailboxes, which is
+where every job in the feed comes from — without them the app runs but the
+feed only carries the public job-board sources. `GOOGLE_OAUTH_REDIRECT_URI`
+must be registered **byte for byte** as an Authorized redirect URI in the
+Google Cloud Console, or consent fails with `redirect_uri_mismatch`.
+
+Stripe and Apollo can stay empty; billing and recruiter discovery simply stay
+off until you add their keys.
+
+**`TOKEN_ENCRYPTION_KEY` is the one value you cannot lose.** It decrypts every
+stored mailbox token. Lose it and every connected mailbox has to be
+reconnected by hand. Keep a copy somewhere that is not this server.
 
 ---
 
@@ -197,30 +210,32 @@ You want `db`, `api`, `scheduler`, `web`, `caddy` all **running**, and `migrate`
 docker compose -f docker-compose.prod.yml logs migrate
 ```
 
-Now open **https://yourdomain.com**. You should get the landing page with a
+Now open **https://huntops.site**. You should get the landing page with a
 valid certificate.
 
 ---
 
-## Step 7 — Make yourself admin
+## Step 7 — Make yourself admin, then connect a mailbox
 
-Register through the site normally first, then:
+Nothing appears in anyone's feed until an admin connects an alert mailbox, so
+this step is not optional housekeeping — it is where the product gets its jobs.
 
 ```bash
-cd /opt/huntops
-docker compose -f docker-compose.prod.yml exec api python -c "
-from app.db.base import SessionLocal
-from app.models.user import User
-from app.models.enums import UserRole
-s = SessionLocal()
-u = s.query(User).filter(User.email == 'you@yourdomain.com').first()
-u.role = UserRole.admin
-s.commit()
-print('promoted', u.email)
-"
+cd /opt/huntops && docker compose -f docker-compose.prod.yml exec api \
+  python -m app.scripts.create_admin you@huntops.site --name "Ops Admin"
 ```
 
-Log out and back in — you'll land on the admin dashboard.
+It prompts for a password (twice, not echoed). If that email already has an
+account it promotes it instead, so signing up through the UI first also works.
+
+Log out and back in — you'll land on the admin dashboard. Go to **Alert
+mailboxes → Connect mailbox**, give it a market (`Canada`, `Nigeria`, …) and
+sign in as a Google account that already receives that country's LinkedIn,
+Indeed or Glassdoor job alerts. HuntOps creates its own label and routing
+filters in that inbox; it only ever reads what those filters catch.
+
+Repeat per market. The markets you create here are exactly the list users can
+pick from at signup.
 
 ---
 
@@ -287,7 +302,7 @@ Migrations run automatically on every update, before the new API starts.
 
 - **Stripe, Gmail OAuth, Apollo and Anthropic have only ever run against
   mocks.** Do one real transaction through each before launch — especially the
-  Stripe webhook (`https://yourdomain.com/api/billing/webhook`), because it is
+  Stripe webhook (`https://huntops.site/api/billing/webhook`), because it is
   the only thing that can activate a paid subscription.
 - There is **no CI and no committed end-to-end suite** — verification so far has
   been manual.
