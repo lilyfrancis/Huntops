@@ -9,18 +9,25 @@ from app.db.base import Base
 
 
 class EmailSyncRun(Base):
-    """Per-user audit row for one email-bridge sync attempt.
+    """Audit row for one email-bridge sync attempt.
 
     Kept separate from IngestionRun (which is per global source) because this
-    is scoped to one user's mailbox — admins can see aggregate health here
-    without exposing which user's inbox produced which jobs.
+    is scoped to a single mailbox rather than a whole API feed.
+
+    Exactly one of `mailbox_id` and `user_id` is set. New rows are written by
+    the central admin-owned mailbox sync and carry `mailbox_id`; rows written
+    before mailboxes existed carry `user_id` and are kept as history rather
+    than deleted, so the ops page doesn't lose its past.
     """
 
     __tablename__ = "email_sync_runs"
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    mailbox_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("alert_mailboxes.id", ondelete="CASCADE"), nullable=True, index=True
+    )
+    user_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True
     )
     status: Mapped[str] = mapped_column(String(20), nullable=False)  # "success" | "error"
     fetched_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)

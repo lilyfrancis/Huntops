@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.core.config import get_settings
 from app.core.security import require_admin
 from app.db.base import get_db
+from app.models.alert_mailbox import AlertMailbox
 from app.models.application import Application
 from app.models.email_sync_run import EmailSyncRun
 from app.models.enums import JobStatus, OutreachStatus, SubscriptionTier, UserRole
@@ -15,8 +16,9 @@ from app.models.job import Job
 from app.models.outreach import Outreach
 from app.models.user import User
 from app.schemas.job import JobOut, JobRejectRequest
+from app.schemas.mailbox import MailboxConnectRequest, MailboxOut, MailboxSyncResult, MailboxUpdate
 from app.schemas.user import UserOut
-from app.services import ghost_detection
+from app.services import alert_mailboxes, ghost_detection
 from app.services.aggregation import ingest_all
 
 settings = get_settings()
@@ -171,14 +173,20 @@ def list_email_sync_runs(
     limit: int = Query(20, ge=1, le=200),
     db: Session = Depends(get_db),
 ) -> list[dict]:
-    """Aggregate email-bridge health across all users — never exposes which
-    user's inbox a run belongs to beyond the id, since this is admin ops
-    visibility, not a way to browse individual mailboxes."""
+    """Health of every alert-mailbox sync, newest first.
+
+    Mailbox rows are named, because these are the operator's own inboxes and
+    naming them is the point. Legacy rows from when users mined their own
+    inboxes are still listed but carry only a user id, never an address.
+    """
     runs = db.query(EmailSyncRun).order_by(desc(EmailSyncRun.started_at)).limit(limit).all()
+    mailbox_labels = {m.id: m.label for m in db.query(AlertMailbox).all()}
     return [
         {
             "id": str(r.id),
-            "user_id": str(r.user_id),
+            "mailbox_id": str(r.mailbox_id) if r.mailbox_id else None,
+            "mailbox": mailbox_labels.get(r.mailbox_id),
+            "user_id": str(r.user_id) if r.user_id else None,
             "status": r.status,
             "fetched_count": r.fetched_count,
             "extracted_count": r.extracted_count,
@@ -189,3 +197,69 @@ def list_email_sync_runs(
         }
         for r in runs
     ]
+
+
+# ---------- alert mailboxes: the shared supply every user's feed is drawn from ----------
+
+@router.get("/mailboxes", response_model=list[MailboxOut])
+def list_mailboxes(db: Session = Depends(get_db)) -> list[AlertMailbox]:
+    return db.query(AlertMailbox).order_by(AlertMailbox.market, AlertMailbox.label).all()
+
+
+@router.post("/mailboxes/connect")
+def start_mailbox_connect(
+    payload: MailboxConnectRequest,
+    current_user: User = Depends(require_admin),
+) -> dict:
+    """Returns the Google consent URL for a new (or re-authorized) mailbox.
+
+    The market and labelling chosen here are signed into the OAuth state, so
+    they survive the trip through Google and can't be tampered with on the
+    way back.
+    """
+    return {
+        "authorization_url": alert_mailboxes.get_connect_url(
+            current_user, market=payload.market, label=payload.label, lanes=payload.lanes
+        )
+    }
+
+
+def _get_mailbox(mailbox_id: uuid.UUID, db: Session) -> AlertMailbox:
+    mailbox = db.get(AlertMailbox, mailbox_id)
+    if not mailbox:
+        raise HTTPException(status_code=404, detail="Mailbox not found")
+    return mailbox
+
+
+@router.patch("/mailboxes/{mailbox_id}", response_model=MailboxOut)
+def update_mailbox(
+    mailbox_id: uuid.UUID,
+    payload: MailboxUpdate,
+    db: Session = Depends(get_db),
+) -> AlertMailbox:
+    mailbox = _get_mailbox(mailbox_id, db)
+    for field, value in payload.model_dump(exclude_unset=True).items():
+        setattr(mailbox, field, value)
+    db.commit()
+    db.refresh(mailbox)
+    return mailbox
+
+
+@router.delete("/mailboxes/{mailbox_id}", status_code=204)
+def delete_mailbox(mailbox_id: uuid.UUID, db: Session = Depends(get_db)) -> None:
+    """Revokes the Google grant and removes the mailbox.
+
+    Jobs it already ingested stay — they are real listings, and deleting a
+    mailbox shouldn't empty the feed of everyone who was matched to them.
+    """
+    alert_mailboxes.disconnect(db, _get_mailbox(mailbox_id, db))
+
+
+@router.post("/mailboxes/{mailbox_id}/sync", response_model=MailboxSyncResult)
+def sync_mailbox(mailbox_id: uuid.UUID, db: Session = Depends(get_db)) -> dict:
+    return alert_mailboxes.sync_mailbox(db, _get_mailbox(mailbox_id, db))
+
+
+@router.post("/mailboxes/sync", response_model=list[MailboxSyncResult])
+def sync_all_mailboxes(db: Session = Depends(get_db)) -> list[dict]:
+    return alert_mailboxes.sync_all_mailboxes(db)

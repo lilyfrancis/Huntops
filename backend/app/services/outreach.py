@@ -20,10 +20,11 @@ from app.models.outreach import Outreach
 from app.models.recruiter_contact import RecruiterContact
 from app.models.resume import Resume
 from app.models.user import User
-from app.services import apollo, email_bridge, gmail_oauth, outreach_drafting
+from app.services import apollo, gmail_oauth, notifications, outreach_drafting
 from app.services.apollo import ApolloAPIError
 from app.services.credits import adjust_credits
 from app.services.gmail_oauth import GmailAPIError
+from app.services.gmail_tokens import get_valid_access_token
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -74,6 +75,31 @@ def _get_or_discover_recruiter(db: Session, job: Job) -> RecruiterContact | None
         return None
 
 
+def _send(db: Session, user: User, to: str, subject: str, body: str) -> bool:
+    """Send as the user if they connected Gmail, otherwise from the platform.
+
+    Connecting Gmail is optional in this product — the feed doesn't need it —
+    so outreach can't depend on it either. The platform fallback sets Reply-To
+    to the user's address, so a recruiter who hits reply still reaches the
+    person, not a noreply box.
+    """
+    connection = db.query(GmailConnection).filter(GmailConnection.user_id == user.id).first()
+    if connection is not None:
+        try:
+            access_token = get_valid_access_token(db, connection)
+            gmail_oauth.send_message(access_token, to, subject, body)
+            return True
+        except GmailAPIError as e:
+            # Fall through to the platform relay rather than failing outright:
+            # the draft is already paid for, and a sent-from-us email beats none.
+            logger.warning("Gmail send failed for user=%s, falling back to SMTP: %s", user.id, e)
+
+    sent = notifications.send_email(to, subject, body, reply_to=user.email)
+    if not sent:
+        logger.error("Outreach send failed for user=%s (no Gmail, and SMTP unavailable)", user.id)
+    return sent
+
+
 def initiate_outreach(db: Session, user: User, job: Job) -> Outreach:
     existing = db.query(Outreach).filter(Outreach.user_id == user.id, Outreach.job_id == job.id).first()
     if existing is not None:
@@ -114,18 +140,11 @@ def initiate_outreach(db: Session, user: User, job: Job) -> Outreach:
     db.flush()
 
     if contact and contact.email:
-        gmail_connection = db.query(GmailConnection).filter(GmailConnection.user_id == user.id).first()
-        if gmail_connection is None:
-            logger.info("User %s has a recruiter email but no connected Gmail — leaving as draft", user.id)
+        if _send(db, user, contact.email, draft.email_subject, draft.email_body):
+            result.status = OutreachStatus.sent
+            result.sent_at = datetime.now(timezone.utc)
         else:
-            try:
-                access_token = email_bridge.get_valid_access_token(db, gmail_connection)
-                gmail_oauth.send_message(access_token, contact.email, draft.email_subject, draft.email_body)
-                result.status = OutreachStatus.sent
-                result.sent_at = datetime.now(timezone.utc)
-            except GmailAPIError as e:
-                logger.error("Sending outreach failed for user=%s job=%s: %s", user.id, job.id, e)
-                result.status = OutreachStatus.failed
+            result.status = OutreachStatus.failed
 
     # The draft succeeded regardless of send outcome — that's the expensive
     # part (Apollo reveal + Sonnet draft), so it's what gets charged.

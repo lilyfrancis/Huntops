@@ -109,6 +109,10 @@ class Settings(BaseSettings):
     RUN_SCHEDULER: bool = True
 
     ENABLE_SCHEDULED_DIGEST: bool = True
+
+    # Autopilot acts in users' names without asking, so it is opt-in per user
+    # (UserPreference) *and* killable platform-wide from here.
+    ENABLE_SCHEDULED_AUTOPILOT: bool = True
     DIGEST_MAX_JOBS: int = 10
 
     # For the admin revenue estimate only — not used for actual billing,

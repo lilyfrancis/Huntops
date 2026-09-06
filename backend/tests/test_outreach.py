@@ -131,13 +131,37 @@ def test_draft_only_when_no_recruiter_found(mock_search, mock_draft, db_session)
 @patch("app.services.outreach.outreach_drafting.draft_outreach", return_value=FAKE_DRAFT)
 @patch("app.services.outreach.apollo.enrich_person", return_value={"email": "jane@acme.com", "name": "Jane", "title": "Recruiter"})
 @patch("app.services.outreach.apollo.search_people", return_value=[{"id": "p1", "name": "Jane", "title": "Recruiter"}])
-def test_draft_only_when_recruiter_found_but_gmail_not_connected(mock_search, mock_enrich, mock_draft, db_session):
+def test_platform_relay_sends_when_the_user_has_no_gmail(mock_search, mock_enrich, mock_draft, db_session):
+    """Connecting Gmail is optional in this product, so outreach can't depend
+    on it. The relay sends from our address with the user's as Reply-To, so a
+    recruiter hitting reply still reaches the person."""
     user = _elite_user_with_resume(db_session, "no-gmail@example.com")
     job = _job(db_session, title="Another Role")
 
-    result = outreach_service.initiate_outreach(db_session, user, job)
+    with patch("app.services.outreach.notifications.send_email", return_value=True) as mock_send:
+        result = outreach_service.initiate_outreach(db_session, user, job)
 
-    assert result.status == OutreachStatus.draft_no_contact
+    assert result.status == OutreachStatus.sent
+    assert result.sent_at is not None
+    mock_send.assert_called_once()
+    assert mock_send.call_args[0][0] == "jane@acme.com"
+    assert mock_send.call_args[1]["reply_to"] == "no-gmail@example.com"
+
+
+@patch("app.services.outreach.outreach_drafting.draft_outreach", return_value=FAKE_DRAFT)
+@patch("app.services.outreach.apollo.enrich_person", return_value={"email": "jane@acme.com", "name": "Jane", "title": "Recruiter"})
+@patch("app.services.outreach.apollo.search_people", return_value=[{"id": "p1", "name": "Jane", "title": "Recruiter"}])
+def test_send_failure_still_keeps_the_paid_for_draft(mock_search, mock_enrich, mock_draft, db_session):
+    """Drafting is the expensive half. If delivery fails the user must still
+    have the text to send by hand — losing it would mean charging for nothing."""
+    user = _elite_user_with_resume(db_session, "send-fails@example.com")
+    job = _job(db_session, title="Undeliverable Role")
+
+    with patch("app.services.outreach.notifications.send_email", return_value=False):
+        result = outreach_service.initiate_outreach(db_session, user, job)
+
+    assert result.status == OutreachStatus.failed
+    assert result.email_body == FAKE_DRAFT.email_body
 
 
 @patch("app.services.outreach.outreach_drafting.draft_outreach", return_value=FAKE_DRAFT)

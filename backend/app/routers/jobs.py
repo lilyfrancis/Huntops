@@ -1,16 +1,20 @@
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import desc
+from sqlalchemy import desc, nulls_last
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
-from app.core.security import get_current_user, require_employer
+from app.core.security import get_current_user, require_employer, require_job_seeker
 from app.db.base import get_db
-from app.models.enums import JobStatus, UserRole
+from app.models.application import Application
+from app.models.enums import JobStatus, OutreachStatus, UserRole
 from app.models.job import Job
+from app.models.job_match import JobMatch
+from app.models.outreach import Outreach
 from app.models.user import User
-from app.schemas.job import JobCreate, JobOut, JobUpdate
+from app.schemas.job import FeedItemOut, JobCreate, JobOut, JobUpdate
+from app.services import preferences
 from app.services.ghost_detection import GHOST_THRESHOLD
 from app.services.salary_parsing import parse_salary
 
@@ -69,6 +73,74 @@ def list_jobs(
 
     query = query.order_by(desc(Job.is_featured), desc(Job.created_at))
     return query.offset(skip).limit(limit).all()
+
+
+@router.get("/feed", response_model=list[FeedItemOut])
+def personalized_feed(
+    ignore_preferences: bool = False,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
+    current_user: User = Depends(require_job_seeker),
+    db: Session = Depends(get_db),
+) -> list[FeedItemOut]:
+    """This user's slice of the shared pool, best-scoring first.
+
+    Supply is central — one pool fed by the operator's alert mailboxes — so
+    what makes a feed personal is entirely the preference filter plus the
+    per-user fit scores. `ignore_preferences` is the escape hatch for someone
+    who wants to see everything without having to clear their settings.
+    """
+    prefs = preferences.get_or_create(db, current_user)
+    query = preferences.feed_query(db, None if ignore_preferences else prefs)
+
+    # Left join so an unscored job still appears; it just sorts below scored
+    # ones instead of vanishing until the next scoring run.
+    jobs = (
+        query.outerjoin(JobMatch, (JobMatch.job_id == Job.id) & (JobMatch.user_id == current_user.id))
+        # Explicit NULLS LAST: Postgres puts nulls first under DESC, SQLite last,
+        # so without this the unscored jobs lead the feed in production only.
+        .order_by(nulls_last(desc(JobMatch.fit_score)), desc(Job.is_featured), desc(Job.created_at))
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+    if not jobs:
+        return []
+
+    job_ids = [job.id for job in jobs]
+    matches = {
+        m.job_id: m
+        for m in db.query(JobMatch)
+        .filter(JobMatch.user_id == current_user.id, JobMatch.job_id.in_(job_ids))
+        .all()
+    }
+    applied = {
+        job_id
+        for (job_id,) in db.query(Application.job_id)
+        .filter(Application.candidate_id == current_user.id, Application.job_id.in_(job_ids))
+        .all()
+    }
+    outreached = {
+        job_id
+        for (job_id,) in db.query(Outreach.job_id)
+        .filter(
+            Outreach.user_id == current_user.id,
+            Outreach.job_id.in_(job_ids),
+            Outreach.status == OutreachStatus.sent,
+        )
+        .all()
+    }
+
+    return [
+        FeedItemOut(
+            job=JobOut.model_validate(job),
+            fit_score=matches[job.id].fit_score if job.id in matches else None,
+            fit_reason=matches[job.id].reason if job.id in matches else None,
+            applied=job.id in applied,
+            outreach_sent=job.id in outreached,
+        )
+        for job in jobs
+    ]
 
 
 @router.get("/employer/mine", response_model=list[JobOut])

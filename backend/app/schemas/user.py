@@ -4,6 +4,7 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict, EmailStr, field_validator
 
 from app.models.enums import SubscriptionTier, UserRole
+from app.schemas.preference import PreferenceUpdate
 
 
 class UserCreate(BaseModel):
@@ -12,6 +13,12 @@ class UserCreate(BaseModel):
     full_name: str
     role: UserRole
     company_name: str | None = None
+
+    # Job seekers pick their market and job type during signup, so the feed is
+    # already theirs the first time they see it. Optional so the API stays
+    # usable without it, and so an employer registration doesn't carry a
+    # meaningless field.
+    preferences: PreferenceUpdate | None = None
 
     @field_validator("role")
     @classmethod

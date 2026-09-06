@@ -13,6 +13,7 @@ from app.routers import (
     admin,
     applications,
     auth,
+    autopilot,
     billing,
     digest,
     health,
@@ -77,6 +78,7 @@ app.include_router(interviews.router)
 app.include_router(stats.router)
 app.include_router(negotiation.router)
 app.include_router(digest.router)
+app.include_router(autopilot.router)
 app.include_router(admin.router)
 
 

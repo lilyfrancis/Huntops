@@ -43,6 +43,13 @@ class Job(Base):
     source_url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
 
     lane: Mapped[JobLane | None] = mapped_column(Enum(JobLane, name="job_lane"), nullable=True, index=True)
+
+    # Which market's supply this belongs to, e.g. "Canada". Set from the alert
+    # mailbox a job arrived through; null for the global API sources, which are
+    # remote-first and belong to everyone. Distinct from `restricted_to`: that
+    # is a hiring restriction guessed from the listing text, this is a fact
+    # about where the job came from, so the feed filter can trust it.
+    market: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
     is_remote: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     # Heuristic geographic restriction extracted at ingest time, e.g. "US", "UK".
     # Null means no restriction detected (open to apply from anywhere).

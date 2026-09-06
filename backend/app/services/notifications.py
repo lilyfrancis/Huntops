@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 settings = get_settings()
 
 
-def send_email(to: str, subject: str, body_text: str) -> bool:
+def send_email(to: str, subject: str, body_text: str, reply_to: str | None = None) -> bool:
     if not settings.SMTP_HOST:
         logger.info("SMTP not configured — skipping email to %s (%s)", to, subject)
         return False
@@ -22,6 +22,10 @@ def send_email(to: str, subject: str, body_text: str) -> bool:
     message["To"] = to
     message["From"] = settings.SMTP_FROM_EMAIL
     message["Subject"] = subject
+    if reply_to:
+        # Outreach relayed on a user's behalf: the envelope is ours (so SPF and
+        # DKIM still pass) but a reply has to reach the person, not a noreply box.
+        message["Reply-To"] = reply_to
 
     try:
         with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=15) as server:

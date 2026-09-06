@@ -50,6 +50,7 @@ class JobOut(BaseModel):
     lane: JobLane | None
     is_remote: bool
     restricted_to: str | None
+    market: str | None
     ghost_score: int | None
     ghost_flags: list[str]
     created_at: datetime
@@ -62,3 +63,31 @@ class JobOut(BaseModel):
 
 class JobRejectRequest(BaseModel):
     reason: str = Field(min_length=3)
+
+
+class FeedItemOut(BaseModel):
+    """A job as it appears in *this* user's feed.
+
+    Everything the card needs to render and act comes in one payload: the
+    listing, how it scored for this user, and whether they already acted on
+    it. The alternative — the client fetching matches and applications
+    separately and joining them — is three round trips and a race where an
+    Apply button reappears on a job that was just applied to.
+    """
+
+    job: JobOut
+    fit_score: float | None = None
+    fit_reason: str | None = None
+    applied: bool = False
+    outreach_sent: bool = False
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def can_apply_directly(self) -> bool:
+        """Internal listings accept an application here; external ones can't.
+
+        An aggregated job lives on someone else's site behind their own form.
+        We cannot submit it, so the honest affordance for those is outreach to
+        a human plus a link out — never a button that pretends to apply.
+        """
+        return self.job.source == "internal"

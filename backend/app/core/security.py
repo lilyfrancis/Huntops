@@ -44,7 +44,9 @@ def validate_password_strength(password: str) -> None:
         )
 
 
-def _create_token(subject: str, token_type: TokenType, expires_delta: timedelta) -> str:
+def _create_token(
+    subject: str, token_type: TokenType, expires_delta: timedelta, **extra: Any
+) -> str:
     now = datetime.now(timezone.utc)
     payload: dict[str, Any] = {
         "sub": subject,
@@ -53,6 +55,7 @@ def _create_token(subject: str, token_type: TokenType, expires_delta: timedelta)
         "exp": now + expires_delta,
         "jti": str(uuid.uuid4()),
     }
+    payload.update(extra)
     return jwt.encode(payload, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
 
 
@@ -64,11 +67,34 @@ def create_refresh_token(user_id: uuid.UUID) -> str:
     return _create_token(str(user_id), TokenType.refresh, timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS))
 
 
-def create_oauth_state_token(user_id: uuid.UUID) -> str:
+class OAuthPurpose(str, Enum):
+    """Which flow a Gmail consent was started for.
+
+    Both flows land on the same Google-registered redirect URI, so the purpose
+    has to ride inside the signed state. It must be signed, not a query param:
+    an attacker who could flip "user" to "admin_mailbox" on the way back would
+    turn their own consent into a mailbox feeding every user's job pool.
+    """
+
+    user_inbox = "user_inbox"
+    admin_mailbox = "admin_mailbox"
+
+
+def create_oauth_state_token(
+    user_id: uuid.UUID, purpose: OAuthPurpose = OAuthPurpose.user_inbox, **claims: Any
+) -> str:
     """Short-lived signed state for OAuth redirects — the callback is hit by the
     browser with no Authorization header, so this is how it recovers which
-    user initiated the flow without trusting an unsigned query param."""
-    return _create_token(str(user_id), TokenType.oauth_state, timedelta(minutes=10))
+    user initiated the flow, and which flow it was, without trusting an
+    unsigned query param.
+
+    `claims` carries anything the caller chose before the consent screen and
+    needs back afterwards (a mailbox's market, say). Signed, so the round trip
+    through the user's browser can't rewrite it.
+    """
+    return _create_token(
+        str(user_id), TokenType.oauth_state, timedelta(minutes=10), purpose=purpose.value, **claims
+    )
 
 
 def decode_token(token: str, expected_type: TokenType) -> dict:

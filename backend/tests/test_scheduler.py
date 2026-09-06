@@ -20,11 +20,42 @@ def test_daily_aggregation_alerts_admin_on_crash(mock_alert, mock_ingest):
     assert "aggregation" in mock_alert.call_args[0][0].lower()
 
 
-@patch("app.services.scheduler.sync_all_connected_users", side_effect=RuntimeError("gmail api down"))
+@patch("app.services.scheduler.sync_all_mailboxes", side_effect=RuntimeError("gmail api down"))
 @patch("app.services.scheduler.notifications.alert_admin")
 def test_daily_email_sync_alerts_admin_on_crash(mock_alert, mock_sync):
     scheduler._run_email_sync()
     mock_alert.assert_called_once()
+
+
+@patch("app.services.scheduler.notifications.alert_admin")
+def test_daily_email_sync_alerts_admin_when_a_single_mailbox_fails(mock_alert):
+    """A mailbox that stops syncing is a market whose feed quietly stops
+    filling — the run "succeeds" and nobody finds out until users complain."""
+    failure = {
+        "mailbox": "alerts-uk@huntops.site", "market": "UK", "status": "error",
+        "fetched": 0, "extracted": 0, "inserted": 0, "error": "invalid_grant",
+    }
+    ok = {
+        "mailbox": "alerts-ca@huntops.site", "market": "Canada", "status": "success",
+        "fetched": 3, "extracted": 5, "inserted": 5, "error": None,
+    }
+    with patch("app.services.scheduler.sync_all_mailboxes", return_value=[failure, ok]):
+        scheduler._run_email_sync()
+
+    mock_alert.assert_called_once()
+    assert "invalid_grant" in mock_alert.call_args[0][1]
+
+
+@patch("app.services.scheduler.notifications.alert_admin")
+def test_daily_email_sync_stays_quiet_when_every_mailbox_is_healthy(mock_alert):
+    healthy = {
+        "mailbox": "alerts-ca@huntops.site", "market": "Canada", "status": "success",
+        "fetched": 3, "extracted": 5, "inserted": 5, "error": None,
+    }
+    with patch("app.services.scheduler.sync_all_mailboxes", return_value=[healthy]):
+        scheduler._run_email_sync()
+
+    mock_alert.assert_not_called()
 
 
 def test_daily_digest_scores_persists_and_sends(db_session):

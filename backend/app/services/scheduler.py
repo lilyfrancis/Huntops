@@ -5,10 +5,10 @@ from sqlalchemy import desc
 
 from app.core.config import get_settings
 from app.db.base import SessionLocal
-from app.services import digest, ghost_detection, matching, notifications
+from app.services import autopilot, digest, ghost_detection, matching, notifications, preferences
 from app.services.aggregation import ingest_all
 from app.services.ai_client import AIResponseError
-from app.services.email_bridge import sync_all_connected_users
+from app.services.alert_mailboxes import sync_all_mailboxes
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -43,8 +43,16 @@ def _run_ghost_rescan() -> None:
 def _run_email_sync() -> None:
     db = SessionLocal()
     try:
-        summary = sync_all_connected_users(db)
-        logger.info("Scheduled email sync complete for %d users", len(summary))
+        results = sync_all_mailboxes(db)
+        failed = [r for r in results if r["status"] != "success"]
+        logger.info("Scheduled mailbox sync complete: %d mailbox(es), %d failed", len(results), len(failed))
+        if failed:
+            # A silently dead mailbox is a market whose feed quietly stops
+            # filling, which nobody notices until users complain.
+            notifications.alert_admin(
+                "Alert mailbox sync errors",
+                "\n".join(f"{r['mailbox']} ({r['market']}): {r['error']}" for r in failed),
+            )
     except Exception as e:
         logger.error("Scheduled email sync failed: %s", e)
         notifications.alert_admin("Daily email sync job crashed", str(e))
@@ -53,7 +61,7 @@ def _run_email_sync() -> None:
 
 
 def _run_daily_digest() -> None:
-    from app.models.enums import JobStatus, UserRole
+    from app.models.enums import UserRole
     from app.models.job import Job
     from app.models.resume import Resume
     from app.models.user import User
@@ -67,16 +75,23 @@ def _run_daily_digest() -> None:
             .filter(User.role == UserRole.job_seeker, User.is_suspended.is_(False))
             .all()
         )
-        candidate_jobs = (
-            db.query(Job)
-            .filter(Job.status == JobStatus.active)
-            .order_by(desc(Job.created_at))
-            .limit(settings.MAX_MATCH_CANDIDATES)
-            .all()
-        )
 
         for user in seekers:
             resume = db.query(Resume).filter(Resume.user_id == user.id).first()
+            # Candidates are drawn per user now, not once for everyone: supply
+            # is a single pool spanning every market, so a shared candidate set
+            # would spend a Canadian marketer's scoring budget on UK engineering
+            # roles they asked not to see.
+            prefs = preferences.get_or_create(db, user)
+            candidate_jobs = (
+                preferences.feed_query(db, prefs)
+                .order_by(desc(Job.created_at))
+                .limit(settings.MAX_MATCH_CANDIDATES)
+                .all()
+            )
+            if not candidate_jobs:
+                continue
+
             try:
                 scored = matching.score_jobs(resume, candidate_jobs, user.home_market)
                 matching.persist_matches(db, user, scored)
@@ -95,6 +110,18 @@ def _run_daily_digest() -> None:
     except Exception as e:
         logger.error("Scheduled digest failed: %s", e)
         notifications.alert_admin("Daily digest job crashed", str(e))
+    finally:
+        db.close()
+
+
+def _run_autopilot() -> None:
+    db = SessionLocal()
+    try:
+        summary = autopilot.run_all(db)
+        logger.info("Scheduled autopilot complete: %s", summary)
+    except Exception as e:
+        logger.error("Scheduled autopilot failed: %s", e)
+        notifications.alert_admin("Daily autopilot job crashed", str(e))
     finally:
         db.close()
 
@@ -130,6 +157,11 @@ def start_scheduler() -> BackgroundScheduler | None:
     if settings.ENABLE_SCHEDULED_DIGEST:
         # After both — the digest scores against jobs aggregation/email-sync just refreshed.
         _scheduler.add_job(_run_daily_digest, "cron", hour=7, minute=30, id="daily_digest")
+    if settings.ENABLE_SCHEDULED_AUTOPILOT:
+        # Last, and only after the digest: autopilot acts on fit scores, and the
+        # digest run is what refreshes them. Firing first would have it applying
+        # on yesterday's scores against today's jobs.
+        _scheduler.add_job(_run_autopilot, "cron", hour=8, minute=0, id="daily_autopilot")
 
     if _scheduler.get_jobs():
         _scheduler.start()

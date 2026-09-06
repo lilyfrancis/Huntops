@@ -1,10 +1,15 @@
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from app.core.security import get_current_user
+from app.core.security import get_current_user, require_job_seeker
 from app.db.base import get_db
+from app.models.enums import JobLane, JobType
 from app.models.user import User
+from app.schemas.preference import PreferenceOptions, PreferenceOut, PreferenceUpdate
 from app.schemas.user import UserOut, UserProfileUpdate
+from app.services import alert_mailboxes, preferences
 
 router = APIRouter(prefix="/api/users", tags=["users"])
 
@@ -27,3 +32,43 @@ def update_profile(
     db.commit()
     db.refresh(current_user)
     return current_user
+
+
+@router.get("/preferences/options", response_model=PreferenceOptions)
+def preference_options(
+    current_user: User = Depends(require_job_seeker),
+    db: Session = Depends(get_db),
+) -> PreferenceOptions:
+    return PreferenceOptions(
+        markets=alert_mailboxes.known_markets(db),
+        lanes=[lane.value for lane in JobLane if lane is not JobLane.other],
+        job_types=[job_type.value for job_type in JobType],
+    )
+
+
+@router.get("/preferences", response_model=PreferenceOut)
+def get_preferences(
+    current_user: User = Depends(require_job_seeker),
+    db: Session = Depends(get_db),
+):
+    return preferences.get_or_create(db, current_user)
+
+
+@router.put("/preferences", response_model=PreferenceOut)
+def update_preferences(
+    payload: PreferenceUpdate,
+    current_user: User = Depends(require_job_seeker),
+    db: Session = Depends(get_db),
+):
+    prefs = preferences.get_or_create(db, current_user)
+    for field, value in payload.model_dump(exclude_unset=True).items():
+        setattr(prefs, field, value)
+
+    # First save is what counts as onboarded — the app stops asking after this,
+    # so it must not be re-stamped on every later settings tweak.
+    if prefs.onboarded_at is None:
+        prefs.onboarded_at = datetime.now(timezone.utc)
+
+    db.commit()
+    db.refresh(prefs)
+    return prefs

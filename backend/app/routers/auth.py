@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
@@ -18,6 +19,7 @@ from app.core.security import (
 from app.db.base import get_db
 from app.models.enums import UserRole
 from app.models.user import User
+from app.models.user_preference import UserPreference
 from app.schemas.user import AccessTokenOut, RefreshRequest, TokenPair, UserCreate, UserLogin, UserOut
 from app.services.credits import adjust_credits
 
@@ -59,6 +61,17 @@ def register(request: Request, payload: UserCreate, db: Session = Depends(get_db
     )
     db.add(user)
     db.flush()  # assigns user.id without committing yet
+
+    if payload.role == UserRole.job_seeker:
+        # Written in the same transaction as the user: a signup that created an
+        # account but lost the market they chose would drop them into an
+        # unfiltered feed with no sign anything went wrong.
+        prefs = UserPreference(user_id=user.id)
+        if payload.preferences is not None:
+            for field, value in payload.preferences.model_dump(exclude_unset=True).items():
+                setattr(prefs, field, value)
+            prefs.onboarded_at = datetime.now(timezone.utc)
+        db.add(prefs)
 
     adjust_credits(db, user, action="signup_bonus", amount=settings.FREE_TIER_CREDITS)
 

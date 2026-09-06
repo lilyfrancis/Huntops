@@ -87,6 +87,22 @@ def _auth_headers(access_token: str) -> dict:
     return {"Authorization": f"Bearer {access_token}"}
 
 
+def get_profile_email(access_token: str) -> str:
+    """The address of the mailbox this grant belongs to.
+
+    Asked of Gmail rather than typed in by the admin: a typo would silently
+    attach a market's whole feed to the wrong inbox, and there is no later
+    point at which that mistake becomes visible.
+    """
+    resp = httpx.get(f"{GMAIL_API_BASE}/profile", headers=_auth_headers(access_token), timeout=HTTP_TIMEOUT)
+    if resp.status_code >= 400:
+        raise GmailAPIError(f"Reading mailbox profile failed: {resp.text[:500]}")
+    address = resp.json().get("emailAddress")
+    if not address:
+        raise GmailAPIError("Gmail returned no email address for this account")
+    return address
+
+
 def ensure_label(access_token: str, name: str) -> str:
     """Return the Gmail-assigned id for `name`, creating it if it doesn't exist."""
     resp = httpx.get(f"{GMAIL_API_BASE}/labels", headers=_auth_headers(access_token), timeout=HTTP_TIMEOUT)
