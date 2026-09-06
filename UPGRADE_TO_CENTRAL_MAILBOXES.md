@@ -3,9 +3,11 @@
 Run these on the Lightsail box, in order. Everything is one line so nothing
 breaks on a lost newline when pasting.
 
-This release does two things at once: it changes the domain to `huntops.site`,
-and it moves the job supply from per-user Gmail to admin-connected alert
-mailboxes. The database changes are additive — no existing data is deleted.
+This release changes the domain to `huntops.site` and moves the job supply
+from per-user Gmail to admin-configured alert mailboxes read over IMAP. It also
+switches billing from Stripe to Paystack.
+
+No Google Cloud project, OAuth client or verification is needed for any of it.
 
 ---
 
@@ -47,21 +49,20 @@ cd /opt/huntops && sed -i 's/^DOMAIN=.*/DOMAIN=huntops.site/' .env && grep '^DOM
 Then the application env:
 
 ```bash
-cd /opt/huntops && sed -i 's|^CORS_ORIGINS=.*|CORS_ORIGINS=https://huntops.site|' backend/.env && sed -i 's|^FRONTEND_URL=.*|FRONTEND_URL=https://huntops.site|' backend/.env && sed -i 's|^GOOGLE_OAUTH_REDIRECT_URI=.*|GOOGLE_OAUTH_REDIRECT_URI=https://huntops.site/api/integrations/gmail/callback|' backend/.env
+cd /opt/huntops && sed -i 's|^CORS_ORIGINS=.*|CORS_ORIGINS=https://huntops.site|' backend/.env && sed -i 's|^FRONTEND_URL=.*|FRONTEND_URL=https://huntops.site|' backend/.env
 ```
 
-Check all three actually took — `sed` silently does nothing if the key wasn't
+Check both actually took — `sed` silently does nothing if the key wasn't
 already in the file:
 
 ```bash
-cd /opt/huntops && grep -E '^(CORS_ORIGINS|FRONTEND_URL|GOOGLE_OAUTH_REDIRECT_URI)=' backend/.env
+cd /opt/huntops && grep -E '^(CORS_ORIGINS|FRONTEND_URL)=' backend/.env
 ```
 
-You must see all three lines with `huntops.site` in them. If one is missing,
-append it:
+Then add the Paystack keys, which are new in this release:
 
 ```bash
-cd /opt/huntops && echo 'GOOGLE_OAUTH_REDIRECT_URI=https://huntops.site/api/integrations/gmail/callback' >> backend/.env
+cd /opt/huntops && printf 'PAYSTACK_SECRET_KEY=sk_live_xxx\nPAYSTACK_PLAN_PRO=PLN_xxx\nPAYSTACK_PLAN_ELITE=PLN_xxx\nBILLING_CURRENCY=NGN\n' >> backend/.env
 ```
 
 ---
@@ -107,19 +108,18 @@ cd /opt/huntops && docker compose -f docker-compose.prod.yml logs migrate | tail
 
 ---
 
-## 6. Update Google Cloud Console
+## 6. Point the Paystack webhook at the new domain
 
-The redirect URI is checked byte for byte by Google, so it has to be
-registered before any mailbox can be connected.
+In the Paystack dashboard, **Settings → API Keys & Webhooks**, set the webhook
+URL to:
 
-1. Go to **Google Cloud Console → APIs & Services → Credentials**
-2. Open your OAuth 2.0 Client ID
-3. Under **Authorized redirect URIs**, add exactly:
-   `https://huntops.site/api/integrations/gmail/callback`
-4. Under **Authorized JavaScript origins**, add `https://huntops.site`
-5. Save. Changes can take a few minutes to take effect.
+```
+https://huntops.site/api/billing/webhook
+```
 
-Leave the old URI in place until you are sure the new one works.
+There is no separate signing secret — Paystack signs with the same secret key
+you configured above. The webhook is the **only** thing that grants a paid
+tier, so without it subscriptions take payment and never activate.
 
 ---
 
@@ -136,25 +136,31 @@ promotes it instead.
 
 ---
 
-## 8. Connect a mailbox per market
+## 8. Add a mailbox per market
 
 Open `https://huntops.site`, sign in as the admin, go to
-**Alert mailboxes → Connect mailbox**.
+**Alert mailboxes → Add mailbox**.
 
-For each market:
+For each market you want to serve:
 
-1. Type the market name — `Canada`, `Nigeria`, `United Kingdom`. This exact
-   string is what users pick at signup, so keep it clean and consistent.
-2. Optionally name it and tag the job families it covers.
-3. **Continue to Google** and sign in as the account that receives that
-   country's job alerts.
+1. **Mailbox address** — e.g. `alerts-canada@huntops.site`. Create it on
+   whatever mail host you already use for the domain; it does not have to be
+   Google.
+2. **Market** — `Canada`, `Nigeria`, `United Kingdom`. This exact string is
+   what users pick at signup, so keep it clean and consistent.
+3. **IMAP host, username and password.** If the mailbox has two-factor
+   authentication, this must be an **app password**, not the account password.
 
-HuntOps creates a `HuntOps` label in that inbox and filters routing your
-LinkedIn/Indeed/Glassdoor alert mail into it. It only ever reads what those
-filters catch.
+Saving runs a connection test straight away, so a wrong password shows up while
+you are still looking at the form rather than as an empty feed tomorrow. The
+password is encrypted at rest and never sent back to the browser.
 
-Then hit **Sync** on each one to pull immediately rather than waiting for the
+Then subscribe each mailbox to that country's LinkedIn, Indeed or Glassdoor
+job alerts, and hit **Sync** to pull immediately rather than waiting for the
 07:10 UTC run.
+
+The first sync reads the last few days; every sync after that resumes from
+where it stopped, so nothing is read — or paid for — twice.
 
 ---
 
@@ -175,6 +181,8 @@ Then, in the browser:
 - **Autopilot** is off by default. Turning it on and pressing *Run autopilot
   now* should either act or tell you why it didn't.
 - **Admin → Ops health** lists each mailbox sync with its own name.
+- **Profile → Billing** shows plan prices in your configured currency, and a
+  test Paystack payment activates the tier via the webhook.
 
 ---
 
@@ -194,6 +202,7 @@ schema back:
 cd /opt/huntops && docker compose -f docker-compose.prod.yml run --rm migrate alembic downgrade 0009_dedupe_uniques
 ```
 
-That drops the mailbox, preference and autopilot tables and deletes mailbox
-sync-run rows, which have no user to attribute them to once mailboxes are
-gone. Everything else is untouched.
+That drops the mailbox, preference and autopilot tables, reverts the billing
+columns to their Stripe names, and deletes mailbox sync-run rows, which have no
+user to attribute them to once mailboxes are gone. Ingested jobs, users,
+applications and everything else are untouched.

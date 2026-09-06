@@ -78,7 +78,10 @@ class Settings(BaseSettings):
     ENABLE_USER_GMAIL_CONNECT: bool = False
     EMAIL_ALERT_SENDER_DOMAINS: str = "linkedin.com,indeed.com,glassdoor.com,jobberman.com,myjobmag.com,theladders.com"
     ENABLE_SCHEDULED_EMAIL_SYNC: bool = True
-    EMAIL_SYNC_QUERY_WINDOW: str = "newer_than:2d"
+    # How far back a mailbox reads on its very first sync, or after a server
+    # renumbers a folder and the stored UID cursor becomes meaningless.
+    # Steady-state syncs are UID-incremental and ignore this.
+    EMAIL_SYNC_LOOKBACK_DAYS: int = 3
 
     # Apollo (recruiter discovery) + outreach drafting — Autopilot Outreach,
     # gated to the elite tier and metered in credits since both an Apollo

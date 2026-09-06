@@ -137,7 +137,7 @@ contain `/`, `+` and `=`, which break URL parsing and produce a baffling
 "could not connect" error.
 
 ⚠️ **Save `TOKEN_ENCRYPTION_KEY` somewhere safe.** If you lose it, every stored
-Gmail connection becomes unreadable and users must reconnect.
+mailbox password becomes unreadable and every mailbox must be re-entered.
 
 ### Fill in the two config files
 
@@ -167,9 +167,6 @@ JWT_SECRET=<generated>
 TOKEN_ENCRYPTION_KEY=<generated>
 CORS_ORIGINS=https://huntops.site
 FRONTEND_URL=https://huntops.site
-GOOGLE_CLIENT_ID=<from Google Cloud Console>
-GOOGLE_CLIENT_SECRET=<from Google Cloud Console>
-GOOGLE_OAUTH_REDIRECT_URI=https://huntops.site/api/integrations/gmail/callback
 ANTHROPIC_API_KEY=sk-ant-...
 ```
 
@@ -183,8 +180,8 @@ Paystack and Apollo can stay empty; billing and recruiter discovery simply stay
 off until you add their keys.
 
 **`TOKEN_ENCRYPTION_KEY` is the one value you cannot lose.** It decrypts every
-stored mailbox token. Lose it and every connected mailbox has to be
-reconnected by hand. Keep a copy somewhere that is not this server.
+stored mailbox password. Lose it and every mailbox has to be re-entered by
+hand. Keep a copy somewhere that is not this server.
 
 ---
 
@@ -229,13 +226,19 @@ It prompts for a password (twice, not echoed). If that email already has an
 account it promotes it instead, so signing up through the UI first also works.
 
 Log out and back in — you'll land on the admin dashboard. Go to **Alert
-mailboxes → Connect mailbox**, give it a market (`Canada`, `Nigeria`, …) and
-sign in as a Google account that already receives that country's LinkedIn,
-Indeed or Glassdoor job alerts. HuntOps creates its own label and routing
-filters in that inbox; it only ever reads what those filters catch.
+mailboxes → Add mailbox** and give it:
 
-Repeat per market. The markets you create here are exactly the list users can
-pick from at signup.
+- the mailbox address, e.g. `alerts-canada@huntops.site`
+- a market (`Canada`, `Nigeria`, …) — this exact string is what users pick at
+  signup, so keep the spelling consistent
+- the IMAP host, username and password for that mailbox
+
+If the mailbox has two-factor authentication, use an **app password**, not the
+account password. Saving runs a connection test immediately, so a wrong
+password surfaces while you are looking at the form.
+
+Repeat per market, then hit **Sync** on each to pull straight away rather than
+waiting for the 07:10 UTC run.
 
 ---
 
@@ -300,7 +303,7 @@ Migrations run automatically on every update, before the new API starts.
 
 ## Before you take real users
 
-- **Paystack, Gmail OAuth, Apollo and Anthropic have only ever run against
+- **Paystack, Apollo and Anthropic have only ever run against
   mocks.** Do one real transaction through each before launch — especially the
   Paystack webhook (`https://huntops.site/api/billing/webhook`), because it is
   the only thing that can activate a paid subscription.

@@ -70,14 +70,12 @@ def create_refresh_token(user_id: uuid.UUID) -> str:
 class OAuthPurpose(str, Enum):
     """Which flow a Gmail consent was started for.
 
-    Both flows land on the same Google-registered redirect URI, so the purpose
-    has to ride inside the signed state. It must be signed, not a query param:
-    an attacker who could flip "user" to "admin_mailbox" on the way back would
-    turn their own consent into a mailbox feeding every user's job pool.
+    Only one flow remains — alert mailboxes moved to IMAP — but the claim stays
+    in the state so a second flow can never be added without deciding what it
+    is, and so an old token minted for a different purpose can't be replayed.
     """
 
     user_inbox = "user_inbox"
-    admin_mailbox = "admin_mailbox"
 
 
 def create_oauth_state_token(

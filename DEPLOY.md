@@ -34,7 +34,8 @@ backend in PHP and migrating Postgres to MySQL. Take the VPS.
 - A domain with an **A record already pointing at the VPS IP** (Caddy requests
   the TLS certificate on first boot; if DNS doesn't resolve yet, that fails)
 - API keys as needed: Anthropic (required for all AI features), Paystack,
-  Google OAuth (Gmail bridge), Apollo (outreach), SMTP (digest email)
+  Apollo (outreach), SMTP (digest email). Alert mailboxes need only an
+  IMAP host and password, entered in the admin UI.
 
 ## 1. Prepare the server
 
@@ -83,10 +84,10 @@ Edit `backend/.env` — these **must** change from the defaults:
 |---|---|
 | `ENVIRONMENT` | `production` (startup validation refuses weak secrets here) |
 | `JWT_SECRET` | the generated hex string |
-| `TOKEN_ENCRYPTION_KEY` | the generated Fernet key — **losing this orphans every stored Gmail token** |
+| `TOKEN_ENCRYPTION_KEY` | the generated Fernet key — **losing this orphans every stored mailbox password** |
 | `CORS_ORIGINS` | `https://huntops.site` (never `*` in production) |
-| `FRONTEND_URL` | `https://huntops.site` — the Gmail OAuth callback redirects here |
-| `GOOGLE_OAUTH_REDIRECT_URI` | `https://huntops.site/api/integrations/gmail/callback`, and register this exact URI in Google Cloud Console |
+| `FRONTEND_URL` | `https://huntops.site` |
+| `GOOGLE_*` | only for the optional send-as-your-Gmail feature, off by default |
 | `ANTHROPIC_API_KEY` | required — every AI feature fails without it |
 | `PAYSTACK_SECRET_KEY` | live secret key — it signs the webhooks too, so there is no second secret |
 | `PAYSTACK_PLAN_PRO` / `PAYSTACK_PLAN_ELITE` | plan codes from the Paystack dashboard |
@@ -189,5 +190,7 @@ duplicating a unique index.
 
 - **No CI**, and no committed end-to-end test suite — browser verification so
   far has been ad-hoc.
-- **Paystack, Anthropic, Apollo, and Gmail have only ever run against mocks.**
+- **Paystack, Anthropic and Apollo have only ever run against mocks.** IMAP
+  is exercised against a real server in the test suite, but not against a
+  real provider.
   Exercise each once in staging with real keys before launch.

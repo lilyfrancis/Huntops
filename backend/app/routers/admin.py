@@ -16,9 +16,16 @@ from app.models.job import Job
 from app.models.outreach import Outreach
 from app.models.user import User
 from app.schemas.job import JobOut, JobRejectRequest
-from app.schemas.mailbox import MailboxConnectRequest, MailboxOut, MailboxSyncResult, MailboxUpdate
+from app.schemas.mailbox import (
+    MailboxOut,
+    MailboxSyncResult,
+    MailboxTestResult,
+    MailboxUpdate,
+    MailboxUpsert,
+)
 from app.schemas.user import UserOut
 from app.services import alert_mailboxes, ghost_detection
+from app.services.imap_client import ImapError
 from app.services.aggregation import ingest_all
 
 settings = get_settings()
@@ -207,22 +214,34 @@ def list_mailboxes(db: Session = Depends(get_db)) -> list[AlertMailbox]:
     return db.query(AlertMailbox).order_by(AlertMailbox.market, AlertMailbox.label).all()
 
 
-@router.post("/mailboxes/connect")
-def start_mailbox_connect(
-    payload: MailboxConnectRequest,
+@router.put("/mailboxes", response_model=MailboxOut)
+def upsert_mailbox(
+    payload: MailboxUpsert,
     current_user: User = Depends(require_admin),
-) -> dict:
-    """Returns the Google consent URL for a new (or re-authorized) mailbox.
+    db: Session = Depends(get_db),
+) -> AlertMailbox:
+    """Add a mailbox, or update the one already on that address.
 
-    The market and labelling chosen here are signed into the OAuth state, so
-    they survive the trip through Google and can't be tampered with on the
-    way back.
+    PUT rather than POST because it is idempotent on the email address:
+    re-submitting is how an operator rotates a password or moves hosts.
     """
-    return {
-        "authorization_url": alert_mailboxes.get_connect_url(
-            current_user, market=payload.market, label=payload.label, lanes=payload.lanes
+    try:
+        return alert_mailboxes.upsert_mailbox(
+            db,
+            admin_id=current_user.id,
+            email_address=payload.email_address,
+            market=payload.market,
+            imap_host=payload.imap_host,
+            imap_port=payload.imap_port,
+            imap_username=payload.imap_username,
+            imap_password=payload.imap_password,
+            imap_use_ssl=payload.imap_use_ssl,
+            imap_folder=payload.imap_folder,
+            label=payload.label,
+            lanes=payload.lanes,
         )
-    }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 def _get_mailbox(mailbox_id: uuid.UUID, db: Session) -> AlertMailbox:
@@ -230,6 +249,20 @@ def _get_mailbox(mailbox_id: uuid.UUID, db: Session) -> AlertMailbox:
     if not mailbox:
         raise HTTPException(status_code=404, detail="Mailbox not found")
     return mailbox
+
+
+@router.post("/mailboxes/{mailbox_id}/test", response_model=MailboxTestResult)
+def test_mailbox(mailbox_id: uuid.UUID, db: Session = Depends(get_db)) -> MailboxTestResult:
+    """Log in and open the folder, nothing more.
+
+    Exists so an operator finds out a password is wrong while they are looking
+    at the form, rather than from an empty feed the next morning.
+    """
+    try:
+        alert_mailboxes.test_connection(_get_mailbox(mailbox_id, db))
+    except ImapError as e:
+        return MailboxTestResult(ok=False, detail=str(e))
+    return MailboxTestResult(ok=True, detail="Connected and opened the folder successfully")
 
 
 @router.patch("/mailboxes/{mailbox_id}", response_model=MailboxOut)
@@ -248,12 +281,12 @@ def update_mailbox(
 
 @router.delete("/mailboxes/{mailbox_id}", status_code=204)
 def delete_mailbox(mailbox_id: uuid.UUID, db: Session = Depends(get_db)) -> None:
-    """Revokes the Google grant and removes the mailbox.
+    """Removes the mailbox and its stored credentials.
 
     Jobs it already ingested stay — they are real listings, and deleting a
-    mailbox shouldn't empty the feed of everyone who was matched to them.
+    mailbox shouldn't empty the feed of everyone matched to them.
     """
-    alert_mailboxes.disconnect(db, _get_mailbox(mailbox_id, db))
+    alert_mailboxes.delete_mailbox(db, _get_mailbox(mailbox_id, db))
 
 
 @router.post("/mailboxes/{mailbox_id}/sync", response_model=MailboxSyncResult)

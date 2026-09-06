@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, EmailStr, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 from app.models.enums import JobLane
 
@@ -15,24 +15,29 @@ def _validate_lanes(v: list[str]) -> list[str]:
     return v
 
 
-class MailboxConnectRequest(BaseModel):
-    """Market and labelling are chosen *before* the consent screen.
+class MailboxUpsert(BaseModel):
+    """Add a mailbox, or update the one already on that address."""
 
-    Google's redirect gives us back only a code and our own signed state, so
-    anything the admin picked has to survive the round trip inside that state
-    rather than being asked for afterwards.
-    """
-
+    email_address: EmailStr
     market: str
+    imap_host: str
+    imap_port: int = Field(default=993, ge=1, le=65535)
+    # Defaults to the email address, which is what most hosts expect.
+    imap_username: str | None = None
+    # Optional on update: editing the market must not require retyping (or
+    # worse, blanking) the password.
+    imap_password: str | None = None
+    imap_use_ssl: bool = True
+    imap_folder: str = "INBOX"
     label: str | None = None
     lanes: list[str] = []
 
-    @field_validator("market")
+    @field_validator("market", "imap_host")
     @classmethod
-    def market_not_blank(cls, v: str) -> str:
+    def not_blank(cls, v: str) -> str:
         v = v.strip()
         if not v:
-            raise ValueError("Market is required — it is what users filter their feed by")
+            raise ValueError("This field is required")
         return v
 
     @field_validator("lanes")
@@ -54,6 +59,10 @@ class MailboxUpdate(BaseModel):
 
 
 class MailboxOut(BaseModel):
+    """Note the absence of the password. There is no read path for it — a
+    secret that can be fetched back out of the API is a secret one XSS away
+    from being someone else's."""
+
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
@@ -61,8 +70,13 @@ class MailboxOut(BaseModel):
     label: str
     market: str
     lanes: list[str]
+    imap_host: str
+    imap_port: int
+    imap_username: str
+    imap_use_ssl: bool
+    imap_folder: str
     is_active: bool
-    connected_at: datetime
+    created_at: datetime
     last_synced_at: datetime | None
     last_error: str | None
 
@@ -75,3 +89,8 @@ class MailboxSyncResult(BaseModel):
     extracted: int
     inserted: int
     error: str | None = None
+
+
+class MailboxTestResult(BaseModel):
+    ok: bool
+    detail: str

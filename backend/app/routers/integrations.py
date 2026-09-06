@@ -6,12 +6,11 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
-from app.core.security import decode_token, require_job_seeker, OAuthPurpose, TokenType
+from app.core.security import decode_token, require_job_seeker, TokenType
 from app.db.base import get_db
-from app.models.enums import UserRole
 from app.models.gmail_connection import GmailConnection
 from app.models.user import User
-from app.services import alert_mailboxes, email_bridge
+from app.services import email_bridge
 from app.services.gmail_oauth import GmailAPIError
 
 router = APIRouter(prefix="/api/integrations/gmail", tags=["integrations"])
@@ -27,13 +26,6 @@ def _seeker_redirect(status_value: str, message: str | None = None) -> RedirectR
     if message:
         params["message"] = message
     return _frontend_redirect("/app/integrations", params)
-
-
-def _admin_redirect(status_value: str, message: str | None = None) -> RedirectResponse:
-    params = {"mailbox": status_value}
-    if message:
-        params["message"] = message
-    return _frontend_redirect("/admin/mailboxes", params)
 
 
 @router.get("/connect")
@@ -64,10 +56,10 @@ def callback(
 ) -> RedirectResponse:
     """Hit directly by the browser after the Google consent screen — no
     Authorization header available, so the signed `state` param is how this
-    recovers who started the flow and which of the two flows it was.
+    recovers who started the flow.
 
-    Redirects back into the app with the outcome as a query param rather
-    than returning JSON, since a browser lands here directly.
+    Only serves the optional send-as-your-Gmail flow. Alert mailboxes are read
+    over IMAP and never touch OAuth.
     """
     if error:
         return _seeker_redirect("error", f"Google returned an error: {error}")
@@ -79,40 +71,18 @@ def callback(
     except HTTPException:
         return _seeker_redirect("error", "OAuth state is invalid or expired — please try connecting again")
 
-    purpose = payload.get("purpose", OAuthPurpose.user_inbox.value)
-    redirect = _admin_redirect if purpose == OAuthPurpose.admin_mailbox.value else _seeker_redirect
-
     try:
         user = db.get(User, uuid.UUID(payload["sub"]))
     except (ValueError, TypeError, KeyError):
         user = None
     if not user:
-        return redirect("error", "User not found")
-
-    if purpose == OAuthPurpose.admin_mailbox.value:
-        # Re-checked here, not just at /connect: the state is minted before the
-        # consent screen, and an admin demoted in between must not still be able
-        # to attach a mailbox to everyone's feed.
-        if user.role != UserRole.admin:
-            return redirect("error", "Only an admin can connect an alert mailbox")
-        try:
-            alert_mailboxes.connect_from_oauth_code(
-                db,
-                code=code,
-                admin_id=user.id,
-                market=payload.get("market", ""),
-                label=payload.get("label"),
-                lanes=payload.get("lanes") or [],
-            )
-        except GmailAPIError as e:
-            return redirect("error", str(e))
-        return redirect("connected")
+        return _seeker_redirect("error", "User not found")
 
     try:
         email_bridge.handle_oauth_callback(db, user, code)
     except GmailAPIError as e:
-        return redirect("error", str(e))
-    return redirect("connected")
+        return _seeker_redirect("error", str(e))
+    return _seeker_redirect("connected")
 
 
 @router.get("/status")

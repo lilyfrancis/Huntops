@@ -191,10 +191,21 @@ export interface AlertMailbox {
   label: string;
   market: string;
   lanes: JobLane[];
+  imap_host: string;
+  imap_port: number;
+  imap_username: string;
+  imap_use_ssl: boolean;
+  imap_folder: string;
   is_active: boolean;
-  connected_at: string;
+  created_at: string;
   last_synced_at: string | null;
   last_error: string | null;
+  /* No password field, deliberately — the API has no read path for it. */
+}
+
+export interface MailboxTestResult {
+  ok: boolean;
+  detail: string;
 }
 
 export interface MailboxSyncResult {

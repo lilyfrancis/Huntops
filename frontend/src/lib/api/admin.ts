@@ -7,11 +7,21 @@ import type {
   Job,
   JobLane,
   MailboxSyncResult,
+  MailboxTestResult,
   User,
 } from "../types";
 
-export interface MailboxConnectPayload {
+export interface MailboxUpsertPayload {
+  email_address: string;
   market: string;
+  imap_host: string;
+  imap_port?: number;
+  imap_username?: string;
+  /* Omit on edit to keep the stored one — the API never returns it, so a form
+     cannot round-trip it. */
+  imap_password?: string;
+  imap_use_ssl?: boolean;
+  imap_folder?: string;
   label?: string;
   lanes?: JobLane[];
 }
@@ -44,8 +54,8 @@ export const adminApi = {
   analytics: () => api.get<AdminAnalytics>("/api/admin/analytics"),
 
   mailboxes: () => api.get<AlertMailbox[]>("/api/admin/mailboxes"),
-  connectMailbox: (payload: MailboxConnectPayload) =>
-    api.post<{ authorization_url: string }>("/api/admin/mailboxes/connect", payload),
+  upsertMailbox: (payload: MailboxUpsertPayload) => api.put<AlertMailbox>("/api/admin/mailboxes", payload),
+  testMailbox: (id: string) => api.post<MailboxTestResult>(`/api/admin/mailboxes/${id}/test`),
   updateMailbox: (id: string, payload: MailboxUpdatePayload) =>
     api.patch<AlertMailbox>(`/api/admin/mailboxes/${id}`, payload),
   deleteMailbox: (id: string) => api.delete<void>(`/api/admin/mailboxes/${id}`),

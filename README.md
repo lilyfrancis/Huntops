@@ -11,10 +11,10 @@ the wow-features that followed it.
 **Phase 1 — Foundation**: auth, roles, job/application CRUD, real Paystack billing. ✅
 **Phase 2 — Real supply & fit intelligence**: live job aggregation, résumé
 parsing, geo-aware fit scoring. ✅
-**Phase 3 — Email-alert bridge**: per-user Gmail OAuth, auto-provisioned
+**Phase 3 — Email-alert bridge**: admin-owned IMAP mailboxes, auto-provisioned
 label + filters, AI extraction of jobs from alert emails. ✅
 **Phase 4 — Autopilot Outreach**: Apollo recruiter discovery, AI-drafted
-pitches, sending via the user's own Gmail. ✅ — the flagship feature.
+pitches, sent from the platform or the user's own Gmail. ✅ — the flagship feature.
 **Phase 5 — Reach & retention**: daily digest email, consolidated admin
 analytics, scheduled-job failure alerting, rate limiting on AI-costing
 endpoints. ✅
@@ -86,16 +86,24 @@ benchmarked against real listings — never a guessed number. ✅
 
 ## What's in Phase 3
 
-- **Per-user Gmail OAuth**, not one shared mailbox. Job Engine's own spec was
+- **Admin-owned mailboxes read over IMAP**, not per-user OAuth. Job Engine's own spec was
   explicit that it only ever handled one hand-configured inbox with manually
   created Gmail filters — this is the multi-tenant version, sized honestly
   as the trickiest piece in the whole blueprint's rebuild plan.
-- **Zero manual setup**: connecting an account programmatically creates the
-  "HuntOps" Gmail label and routing filters for known job-alert senders
-  (LinkedIn, Indeed, Glassdoor, Jobberman, MyJobMag, TheLadders) via the
-  Gmail API — the user never touches Gmail's settings UI.
-- **Encrypted tokens at rest**: refresh/access tokens are Fernet-encrypted
-  before hitting the database, decrypted only in memory when a sync runs.
+- **No OAuth anywhere in the supply path**: the mailboxes belong to the
+  operator, so there is nobody to ask for consent. IMAP means no Google
+  project, no consent screen, no scopes, no verification and no per-seat
+  Workspace bill — and any provider that speaks IMAP will do.
+- **Mail from unknown senders is never sent to the extractor.** These are real
+  mailboxes carrying ordinary post; only mail from a configured job-alert
+  domain costs an AI call.
+- **Incremental by UID, not by date.** Extraction is one AI call per message,
+  so a sync resumes exactly where the last one stopped. UIDVALIDITY is stored
+  alongside the cursor: a server that renumbers a folder invalidates every
+  stored UID, and resuming from a stale one would silently skip real mail.
+- **Encrypted passwords at rest**: Fernet-encrypted before hitting the
+  database, decrypted only in memory when a sync runs, and with no read path
+  out through the API.
 - **Same extraction + normalization pipeline as Phase 2**: emails are parsed
   by Claude into structured postings, then flow through the exact same
   `normalize_common` / lane-inference / geo-heuristic functions aggregation
@@ -158,7 +166,7 @@ benchmarked against real listings — never a guessed number. ✅
   endpoint.
 - **Request logging + expanded health check**: every request logs method,
   path, status, and duration; `/api/health/detailed` now reports whether
-  Anthropic/Apollo/Gmail OAuth/SMTP are configured and whether the
+  Anthropic/Apollo/Paystack/SMTP are configured and whether the
   scheduler is actually running, not just database/Paystack.
 
 ## What's in Phase 6
@@ -166,7 +174,7 @@ benchmarked against real listings — never a guessed number. ✅
 - **Full role-based app** built on Vite, React 19, TypeScript, Tailwind v4,
   Radix UI primitives, and TanStack React Query — covering the job seeker
   (feed, matches, résumé upload, applications, Autopilot Outreach, digest
-  preview, Gmail connect, profile), employer (post/manage jobs, review
+  preview, autopilot, profile), employer (post/manage jobs, review
   applicants), and admin (analytics, pending-job moderation, user
   approval, ops health) surfaces end to end.
 - **JWT auth with silent refresh**: access + refresh tokens with a
@@ -179,7 +187,7 @@ benchmarked against real listings — never a guessed number. ✅
   `restricted_to` despite the model having them; `ApplicationOut` only
   exposed a bare candidate UUID, unusable for an employer reviewing
   applicants, so `candidate_name`/`candidate_email` are now denormalized
-  onto `Application` at apply-time (migration `0005`); and the Gmail OAuth
+  onto `Application` at apply-time (migration `0005`); and the mailbox
   callback returned raw JSON instead of redirecting back into the app.
 - **Verified with a real end-to-end browser run**, not just a compile
   check: Playwright drives the full business flow — employer registers,
@@ -221,14 +229,14 @@ backend/
     core/       settings, JWT/password security, rate limiter
     db/         SQLAlchemy engine/session
     models/     User, Job, Application, CreditLedgerEntry, Resume, JobMatch,
-                IngestionRun, GmailConnection, EmailSyncRun,
+                IngestionRun, AlertMailbox, GmailConnection, EmailSyncRun,
                 RecruiterContact, Outreach
     schemas/    Pydantic request/response models, AI response schemas
     routers/    auth, users, jobs, applications, billing, resumes, matches,
-                integrations (Gmail), outreach, digest, admin, health
+                integrations (Gmail send-as), outreach, digest, admin, health
     services/   credits ledger, Paystack billing, AI client, résumé parsing,
                 notifications (SMTP digest/alerts), daily digest builder,
-                job-fit matching, job aggregation, Gmail OAuth + message
+                job-fit matching, job aggregation, IMAP mailboxes + message
                 parsing + sending, email-alert bridge, Apollo recruiter
                 discovery, outreach drafting/orchestration, daily scheduler
   alembic/      migrations (0001 core, 0002 aggregation + matching,
@@ -325,31 +333,40 @@ fetched: 0` rather than an error. Set `ENABLE_SCHEDULED_AGGREGATION=false`
 to disable the daily 07:00 UTC run and only trigger ingestion manually via
 `POST /api/admin/jobs/aggregate`.
 
-## Gmail setup
+## Alert mailbox setup
 
-1. In [Google Cloud Console](https://console.cloud.google.com/apis/credentials),
-   create an OAuth 2.0 Client ID (Web application), enable the Gmail API for
-   the project, and add `GOOGLE_OAUTH_REDIRECT_URI`'s value to the client's
-   authorized redirect URIs.
-2. Set `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` and a real
-   `TOKEN_ENCRYPTION_KEY` (see `.env.example` for how to generate one).
-3. A job seeker calls `GET /api/integrations/gmail/connect`, visits the
-   returned URL, and consents. Google redirects back to
-   `/api/integrations/gmail/callback`, which creates the Gmail label/filters
-   and stores encrypted tokens — no manual Gmail configuration needed.
-4. `POST /api/integrations/gmail/sync` triggers an immediate sync;
-   otherwise it runs daily at 07:10 UTC via the scheduler.
+1. Set a real `TOKEN_ENCRYPTION_KEY` (see `.env.example` for how to generate
+   one). It encrypts every stored mailbox password; losing it means
+   re-entering them all.
+2. Create a mailbox on whatever host you like — `alerts-canada@huntops.site`,
+   say — and subscribe it to that country's LinkedIn, Indeed or Glassdoor job
+   alerts.
+3. As an admin, go to **Alert mailboxes → Add mailbox** and enter the address,
+   the market it serves, and its IMAP host, username and password. If the
+   mailbox has two-factor authentication, use an **app password**. Saving runs
+   a connection test immediately.
+4. **Sync** pulls straight away; otherwise it runs daily at 07:10 UTC.
+
+The market string is exactly what users pick at signup, so keep the spelling
+consistent — `Canada`, not `canada` and `CA`.
+
+### Sending outreach from a user's own Gmail (optional, off by default)
+
+The one place OAuth still applies. It needs an External Google OAuth client and
+verification for the `gmail.send` scope, so it is gated behind
+`ENABLE_USER_GMAIL_CONNECT`. With it off, outreach is sent from the platform
+with the user's address as Reply-To, which needs no Google access at all.
 
 ## Apollo + Outreach setup
 
 1. Get a **master** API key from [Apollo.io](https://developer.apollo.io/) —
    a non-master key gets a 403 on people search — and set `APOLLO_API_KEY`.
-2. A job seeker needs an Elite subscription, an uploaded résumé, and
-   (optionally, to enable actual sending rather than draft-only output) a
-   connected Gmail account from the Phase 3 setup above.
+2. A job seeker needs an Elite subscription and an uploaded résumé. Sending
+   works without any Gmail connection — the platform relay handles it, with
+   the user's address as Reply-To.
 3. `POST /api/outreach {"job_id": "..."}` runs the whole flow: find/reuse a
    recruiter contact for the job's company, draft a personalized pitch, and
-   send it if a recruiter email and connected Gmail are both available.
+   send it if a recruiter email was found.
    Costs `OUTREACH_CREDIT_COST` (default 30) credits on first request for a
    given job; repeat requests for the same job return the cached result for
    free. `GET /api/outreach/mine` lists everything a user has sent or drafted.
