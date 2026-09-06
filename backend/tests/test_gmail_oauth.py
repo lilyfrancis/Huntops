@@ -1,3 +1,4 @@
+import uuid
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -14,12 +15,41 @@ def test_encrypt_decrypt_roundtrip():
 
 
 def test_build_authorization_url_includes_required_params():
-    url = gmail_oauth.build_authorization_url(state="abc123")
+    url = gmail_oauth.build_authorization_url(state="abc123", scopes=gmail_oauth.MAILBOX_SCOPES)
     assert "client_id=" in url
     assert "state=abc123" in url
     assert "access_type=offline" in url
     assert "prompt=consent" in url
     assert "gmail.readonly" in url
+
+
+def test_connecting_your_own_gmail_never_asks_to_read_it():
+    """The integrations page promises "we never read your mail". This is the
+    line that has to be true for that promise to hold."""
+    from app.models.user import User
+    from app.services import email_bridge
+
+    user = User(id=uuid.uuid4(), email="x@example.com", password_hash="x", full_name="X", role="job_seeker")
+    url = email_bridge.get_connect_url(user)
+
+    assert "gmail.send" in url
+    assert "gmail.readonly" not in url
+    assert "gmail.labels" not in url
+    assert "gmail.settings" not in url
+
+
+def test_an_alert_mailbox_asks_for_read_and_filter_access_but_not_send():
+    """Operator mailboxes are read, laballed and filtered — never sent from.
+    Send belongs to the user's own grant."""
+    from app.models.user import User
+    from app.services import alert_mailboxes
+
+    admin = User(id=uuid.uuid4(), email="a@example.com", password_hash="x", full_name="A", role="admin")
+    url = alert_mailboxes.get_connect_url(admin, market="Canada", label=None, lanes=[])
+
+    assert "gmail.readonly" in url
+    assert "gmail.labels" in url
+    assert "gmail.send" not in url
 
 
 @patch("app.services.gmail_oauth.httpx.post")

@@ -62,7 +62,7 @@ def get_connect_url(admin: User, *, market: str, label: str | None, lanes: list[
     state = create_oauth_state_token(
         admin.id, OAuthPurpose.admin_mailbox, market=market, label=label, lanes=lanes
     )
-    return gmail_oauth.build_authorization_url(state)
+    return gmail_oauth.build_authorization_url(state, gmail_oauth.MAILBOX_SCOPES)
 
 
 def connect_from_oauth_code(

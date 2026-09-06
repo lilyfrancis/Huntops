@@ -39,7 +39,7 @@ __all__ = [
 
 def get_connect_url(user: User) -> str:
     state = create_oauth_state_token(user.id, OAuthPurpose.user_inbox)
-    return gmail_oauth.build_authorization_url(state)
+    return gmail_oauth.build_authorization_url(state, gmail_oauth.SEND_SCOPES)
 
 
 def resolve_user_id_from_state(state: str) -> uuid.UUID:

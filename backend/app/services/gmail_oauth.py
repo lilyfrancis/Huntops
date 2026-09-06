@@ -18,10 +18,21 @@ REVOKE_URL = "https://oauth2.googleapis.com/revoke"
 GMAIL_API_BASE = "https://gmail.googleapis.com/gmail/v1/users/me"
 HTTP_TIMEOUT = 15.0
 
-SCOPES = [
+# Two flows, two very different asks — kept apart on purpose.
+#
+# An operator's alert mailbox has to be read, labelled and filtered. A job
+# seeker connecting their own account is only ever sent *from*; asking them for
+# read access to their entire inbox to do that is over-asking, and the UI
+# already (correctly) promises we don't. It also matters for Google review:
+# gmail.readonly is a *restricted* scope needing a security assessment, while
+# gmail.send alone is merely sensitive.
+MAILBOX_SCOPES = [
     "https://www.googleapis.com/auth/gmail.readonly",
     "https://www.googleapis.com/auth/gmail.labels",
     "https://www.googleapis.com/auth/gmail.settings.basic",
+]
+
+SEND_SCOPES = [
     "https://www.googleapis.com/auth/gmail.send",
 ]
 
@@ -30,12 +41,14 @@ class GmailAPIError(Exception):
     pass
 
 
-def build_authorization_url(state: str) -> str:
+def build_authorization_url(state: str, scopes: list[str]) -> str:
+    """`scopes` is required, not defaulted: a default here is how the send-only
+    flow would silently start asking for inbox read access again."""
     params = {
         "client_id": settings.GOOGLE_CLIENT_ID,
         "redirect_uri": settings.GOOGLE_OAUTH_REDIRECT_URI,
         "response_type": "code",
-        "scope": " ".join(SCOPES),
+        "scope": " ".join(scopes),
         "access_type": "offline",
         "prompt": "consent",  # forces a refresh_token even on repeat consent
         "state": state,
