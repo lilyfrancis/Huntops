@@ -19,6 +19,8 @@ import { RootRedirect } from "@/pages/RootRedirect";
 */
 const LoginPage = lazy(() => import("@/pages/LoginPage").then((m) => ({ default: m.LoginPage })));
 const RegisterPage = lazy(() => import("@/pages/RegisterPage").then((m) => ({ default: m.RegisterPage })));
+const PrivacyPage = lazy(() => import("@/pages/PrivacyPage").then((m) => ({ default: m.PrivacyPage })));
+const TermsPage = lazy(() => import("@/pages/TermsPage").then((m) => ({ default: m.TermsPage })));
 const NotFoundPage = lazy(() => import("@/pages/NotFoundPage").then((m) => ({ default: m.NotFoundPage })));
 
 const JobFeedPage = lazy(() => import("@/pages/jobseeker/JobFeedPage").then((m) => ({ default: m.JobFeedPage })));
@@ -55,6 +57,10 @@ export function App() {
             <Route path="/" element={<RootRedirect />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            {/* Public and unauthenticated: Google, Paystack and the app stores
+                all fetch these before they will trust the product. */}
+            <Route path="/privacy" element={<PrivacyPage />} />
+            <Route path="/terms" element={<TermsPage />} />
 
             <Route element={<ProtectedRoute roles={["job_seeker"]} />}>
               <Route element={<AppShell />}>

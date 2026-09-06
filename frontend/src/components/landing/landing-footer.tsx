@@ -12,6 +12,8 @@ export function LandingFooter() {
         <div className="flex items-center gap-6 text-sm font-medium text-ink-muted">
           <a href="#how" className="transition-colors hover:text-ink">How it works</a>
           <a href="#pricing" className="transition-colors hover:text-ink">Pricing</a>
+          <Link to="/privacy" className="transition-colors hover:text-ink">Privacy</Link>
+          <Link to="/terms" className="transition-colors hover:text-ink">Terms</Link>
           <Link to="/login" className="transition-colors hover:text-ink">Sign in</Link>
         </div>
       </div>

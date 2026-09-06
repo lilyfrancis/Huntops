@@ -111,6 +111,65 @@
   }
 }
 
+@layer components {
+  /* Long-form legal prose. Scoped to .legal so it can't leak into the app,
+     where headings are display-font and much tighter. */
+  .legal {
+    color: var(--color-ink-muted);
+    line-height: 1.7;
+  }
+  .legal h2 {
+    font-size: 1.125rem;
+    margin-top: 2.5rem;
+    margin-bottom: 0.75rem;
+    color: var(--color-ink);
+  }
+  .legal h3 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin-top: 1.5rem;
+    margin-bottom: 0.4rem;
+    color: var(--color-ink);
+  }
+  .legal p {
+    margin-bottom: 1rem;
+  }
+  .legal ul {
+    margin: 0 0 1rem 1.15rem;
+    list-style: disc;
+  }
+  .legal li {
+    margin-bottom: 0.45rem;
+  }
+  .legal a {
+    color: var(--color-violet-dark);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .legal strong {
+    color: var(--color-ink);
+    font-weight: 600;
+  }
+  .legal table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1.25rem;
+    font-size: 0.9rem;
+  }
+  .legal th,
+  .legal td {
+    border: 1px solid var(--color-border);
+    padding: 0.55rem 0.7rem;
+    text-align: left;
+    vertical-align: top;
+  }
+  .legal th {
+    background: var(--color-surface-2);
+    color: var(--color-ink);
+    font-weight: 600;
+  }
+}
+
 @layer utilities {
   .eyebrow {
     font-size: 0.75rem;
