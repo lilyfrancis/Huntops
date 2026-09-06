@@ -36,8 +36,14 @@ class User(Base):
     is_approved: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     is_suspended: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
-    stripe_customer_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
-    stripe_subscription_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    paystack_customer_code: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
+    paystack_subscription_code: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
+    # Paystack hands out this token exactly once, on the subscription.create
+    # webhook, and cancelling a subscription requires it alongside the code.
+    # It is not re-fetchable, so losing it means a user who cannot cancel
+    # without someone opening the Paystack dashboard for them.
+    paystack_email_token: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc)

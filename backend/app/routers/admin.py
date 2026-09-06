@@ -162,7 +162,8 @@ def get_analytics(db: Session = Depends(get_db)) -> dict:
             "recent_runs_checked": len(recent_runs), "success_rate": ingestion_success_rate,
         },
         "revenue": {
-            "monthly_recurring_estimate_usd": round(pro_count * settings.PRO_PRICE_USD + elite_count * settings.ELITE_PRICE_USD, 2),
+            "monthly_recurring_estimate": round(pro_count * settings.PRO_PRICE + elite_count * settings.ELITE_PRICE, 2),
+            "currency": settings.BILLING_CURRENCY,
             "pro_subs": pro_count, "elite_subs": elite_count,
         },
     }

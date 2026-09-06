@@ -8,7 +8,7 @@ This repo is being built in phases against the product blueprint
 Autopilot Outreach → Reach & retention → Frontend → Landing page), plus
 the wow-features that followed it.
 
-**Phase 1 — Foundation**: auth, roles, job/application CRUD, real Stripe billing. ✅
+**Phase 1 — Foundation**: auth, roles, job/application CRUD, real Paystack billing. ✅
 **Phase 2 — Real supply & fit intelligence**: live job aggregation, résumé
 parsing, geo-aware fit scoring. ✅
 **Phase 3 — Email-alert bridge**: per-user Gmail OAuth, auto-provisioned
@@ -43,13 +43,13 @@ benchmarked against real listings — never a guessed number. ✅
 - **Applications**: one application per candidate/job pair, employer-side
   status pipeline, applicant list scoped to the owning employer only.
 - **Credits & billing**: every user has a cached `ai_credits` balance backed
-  by an immutable ledger. Stripe Checkout creates real subscriptions (Free /
+  by an immutable ledger. Paystack creates real subscriptions (Free /
   Pro / Elite); a webhook — not a self-serve endpoint — is the only thing
   that can change a user's tier. This deliberately replaces the prior
   prototype's `/users/upgrade` endpoint, which let anyone grant themselves
   premium credits for free.
 - **Ops basics**: `/health` for liveness, `/api/health/detailed` (admin-only)
-  for DB + Stripe config checks, startup validation that fails fast on unsafe
+  for DB + Paystack config checks, startup validation that fails fast on unsafe
   config in production.
 
 ## What's in Phase 2
@@ -159,7 +159,7 @@ benchmarked against real listings — never a guessed number. ✅
 - **Request logging + expanded health check**: every request logs method,
   path, status, and duration; `/api/health/detailed` now reports whether
   Anthropic/Apollo/Gmail OAuth/SMTP are configured and whether the
-  scheduler is actually running, not just database/Stripe.
+  scheduler is actually running, not just database/Paystack.
 
 ## What's in Phase 6
 
@@ -226,7 +226,7 @@ backend/
     schemas/    Pydantic request/response models, AI response schemas
     routers/    auth, users, jobs, applications, billing, resumes, matches,
                 integrations (Gmail), outreach, digest, admin, health
-    services/   credits ledger, Stripe billing, AI client, résumé parsing,
+    services/   credits ledger, Paystack billing, AI client, résumé parsing,
                 notifications (SMTP digest/alerts), daily digest builder,
                 job-fit matching, job aggregation, Gmail OAuth + message
                 parsing + sending, email-alert bridge, Apollo recruiter
@@ -244,7 +244,7 @@ docker-compose.yml   Postgres + API for local dev
 
 ```bash
 cp backend/.env.example backend/.env
-# edit backend/.env: JWT_SECRET, Stripe test keys, ANTHROPIC_API_KEY
+# edit backend/.env: JWT_SECRET, Paystack test keys, ANTHROPIC_API_KEY
 docker compose up --build
 ```
 
@@ -278,7 +278,7 @@ by default (see `vite.config.ts`; override with `VITE_API_BASE_URL`).
 ## Tests
 
 No external services required — the suite runs against an in-memory SQLite
-DB with Stripe and Anthropic calls mocked, and aggregation sources exercised
+DB with Paystack and Anthropic calls mocked, and aggregation sources exercised
 with realistic fixture responses rather than live HTTP calls:
 
 ```bash
@@ -286,18 +286,28 @@ cd backend
 pytest -v
 ```
 
-## Stripe setup
+## Paystack setup
 
-1. Create two recurring Prices in the Stripe Dashboard (test mode) for Pro
-   and Elite — copy their `price_...` IDs into `STRIPE_PRICE_PRO` /
-   `STRIPE_PRICE_ELITE`.
-2. Add a webhook endpoint pointing at `/api/billing/webhook` listening for
-   `checkout.session.completed`, `customer.subscription.updated`, and
-   `customer.subscription.deleted`; copy the signing secret into
-   `STRIPE_WEBHOOK_SECRET`.
-3. `POST /api/billing/checkout-session {"tier": "pro"}` (authenticated)
-   returns a Checkout URL; `GET /api/billing/portal` returns a self-serve
-   billing portal URL for plan changes/cancellation.
+1. Create two **Plans** in the Paystack dashboard (Pro and Elite), monthly
+   interval, in whichever currency your account is settled in. Copy their
+   `PLN_...` codes into `PAYSTACK_PLAN_PRO` / `PAYSTACK_PLAN_ELITE`. The
+   amount lives on the plan; the app never sends a price.
+2. Put the secret key in `PAYSTACK_SECRET_KEY`. It authenticates API calls
+   **and** signs incoming webhooks (HMAC-SHA512 over the raw body) — there is
+   no separate webhook secret.
+3. Add a webhook URL of `https://<your-domain>/api/billing/webhook` under
+   Settings → API Keys & Webhooks. The handled events are
+   `subscription.create`, `charge.success`, `subscription.disable`,
+   `subscription.not_renew` and `invoice.payment_failed`; anything else is
+   acknowledged and ignored so Paystack never retries it forever.
+4. `POST /api/billing/checkout-session {"tier": "pro"}` (authenticated)
+   returns the hosted payment URL. `GET /api/billing/portal` returns
+   Paystack's manage-subscription link, and `POST /api/billing/cancel`
+   disables the subscription directly.
+
+The webhook is the only thing that grants a tier. The post-payment redirect
+proves nothing — a user could type that URL — so the UI shows "confirming"
+and waits for the signed server-to-server event.
 
 ## AI setup
 

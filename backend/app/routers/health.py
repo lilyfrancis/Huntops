@@ -34,7 +34,12 @@ def detailed_health_check(db: Session = Depends(get_db)) -> dict:
     except Exception as e:  # pragma: no cover
         checks["database"] = {"status": "unhealthy", "error": str(e)}
 
-    checks["stripe"] = {"configured": bool(settings.STRIPE_SECRET_KEY and settings.STRIPE_WEBHOOK_SECRET)}
+    # One key does both jobs on Paystack: it authenticates API calls and signs
+    # webhooks, so there is no second secret to be half-configured.
+    checks["paystack"] = {
+        "configured": bool(settings.PAYSTACK_SECRET_KEY),
+        "plans_configured": bool(settings.PAYSTACK_PLAN_PRO and settings.PAYSTACK_PLAN_ELITE),
+    }
     checks["anthropic"] = {"configured": bool(settings.ANTHROPIC_API_KEY)}
     checks["apollo"] = {"configured": bool(settings.APOLLO_API_KEY)}
     checks["gmail_oauth"] = {"configured": bool(settings.GOOGLE_CLIENT_ID and settings.GOOGLE_CLIENT_SECRET)}

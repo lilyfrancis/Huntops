@@ -32,7 +32,9 @@ export function AnalyticsPage() {
         <StatTile
           icon={DollarSign}
           label="MRR estimate"
-          value={`$${data.revenue.monthly_recurring_estimate_usd.toLocaleString()}`}
+          /* The currency comes from the server: billing in naira reported
+                 under a dollar sign is a number nobody can act on. */
+          value={`${data.revenue.monthly_recurring_estimate.toLocaleString()} ${data.revenue.currency}`}
           sub={`${data.revenue.pro_subs} Pro, ${data.revenue.elite_subs} Elite`}
         />
         <StatTile

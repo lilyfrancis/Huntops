@@ -4,10 +4,9 @@ os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
 os.environ.setdefault("JWT_SECRET", "test-secret-not-for-production-use-only-in-ci")
 os.environ.setdefault("ENVIRONMENT", "test")
 os.environ.setdefault("ENABLE_SIGNUP", "true")
-os.environ.setdefault("STRIPE_SECRET_KEY", "sk_test_dummy")
-os.environ.setdefault("STRIPE_WEBHOOK_SECRET", "whsec_dummy")
-os.environ.setdefault("STRIPE_PRICE_PRO", "price_test_pro")
-os.environ.setdefault("STRIPE_PRICE_ELITE", "price_test_elite")
+os.environ.setdefault("PAYSTACK_SECRET_KEY", "sk_test_dummy")
+os.environ.setdefault("PAYSTACK_PLAN_PRO", "PLN_test_pro")
+os.environ.setdefault("PAYSTACK_PLAN_ELITE", "PLN_test_elite")
 
 import pytest
 from fastapi.testclient import TestClient

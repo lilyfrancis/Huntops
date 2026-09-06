@@ -251,7 +251,25 @@ export interface AdminAnalytics {
   applications: { total: number };
   outreach: { total: number; sent: number; success_rate: number | null };
   ingestion_health: { recent_runs_checked: number; success_rate: number | null };
-  revenue: { monthly_recurring_estimate_usd: number; pro_subs: number; elite_subs: number };
+  revenue: { monthly_recurring_estimate: number; currency: string; pro_subs: number; elite_subs: number };
+}
+
+export interface Plan {
+  tier: SubscriptionTier;
+  price: number;
+  currency: string;
+  /* False when no Paystack plan code is configured for the tier — buying it
+     would only ever return a 400, so don't offer the button. */
+  available: boolean;
+}
+
+export interface SubscriptionStatus {
+  tier: SubscriptionTier;
+  /* False for a free user, and also for a paid one who cancelled but whose
+     paid period hasn't ended — there is nothing left to manage in that state. */
+  has_subscription: boolean;
+  currency: string;
+  plans: Plan[];
 }
 
 export interface ApiErrorBody {

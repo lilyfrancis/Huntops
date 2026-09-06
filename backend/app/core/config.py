@@ -34,11 +34,12 @@ class Settings(BaseSettings):
     PRO_TIER_CREDITS: int = 100
     ELITE_TIER_CREDITS: int = 500
 
-    # Stripe
-    STRIPE_SECRET_KEY: str = ""
-    STRIPE_WEBHOOK_SECRET: str = ""
-    STRIPE_PRICE_PRO: str = ""
-    STRIPE_PRICE_ELITE: str = ""
+    # Paystack. Plan codes come from the Paystack dashboard; the *price* lives
+    # on the plan there, never here, so the two can't drift apart.
+    PAYSTACK_SECRET_KEY: str = ""
+    PAYSTACK_PUBLIC_KEY: str = ""
+    PAYSTACK_PLAN_PRO: str = ""
+    PAYSTACK_PLAN_ELITE: str = ""
     FRONTEND_URL: str = "http://localhost:5173"
 
     # AI (Anthropic) — cheap Haiku tier for scoring/extraction, Sonnet reserved
@@ -115,10 +116,13 @@ class Settings(BaseSettings):
     ENABLE_SCHEDULED_AUTOPILOT: bool = True
     DIGEST_MAX_JOBS: int = 10
 
-    # For the admin revenue estimate only — not used for actual billing,
-    # which is entirely Stripe-driven (see services/billing.py).
-    PRO_PRICE_USD: float = 24.0
-    ELITE_PRICE_USD: float = 89.0
+    # For the admin revenue estimate only — not used for actual billing, which
+    # is entirely Paystack-driven (see services/billing.py). Kept in sync with
+    # the Paystack plans by hand; the currency is named so the dashboard can't
+    # quietly report naira totals under a dollar sign.
+    BILLING_CURRENCY: str = "USD"
+    PRO_PRICE: float = 24.0
+    ELITE_PRICE: float = 89.0
 
     @property
     def allowed_resume_extensions_list(self) -> List[str]:
@@ -154,10 +158,13 @@ def validate_settings_on_startup(settings: Settings) -> None:
             errors.append("JWT_SECRET must be a strong random value (32+ chars) in production")
         if settings.CORS_ORIGINS == "*":
             warnings.append("CORS_ORIGINS is '*' — restrict to real origins before launch")
-        if not settings.STRIPE_SECRET_KEY:
-            warnings.append("STRIPE_SECRET_KEY is unset — billing endpoints will fail")
-        if not settings.STRIPE_WEBHOOK_SECRET:
-            warnings.append("STRIPE_WEBHOOK_SECRET is unset — webhook signature checks will fail")
+        if not settings.PAYSTACK_SECRET_KEY:
+            warnings.append(
+                "PAYSTACK_SECRET_KEY is unset — checkout will fail, and webhook signatures "
+                "cannot be verified (the same key signs them)"
+            )
+        if settings.PAYSTACK_SECRET_KEY and not (settings.PAYSTACK_PLAN_PRO and settings.PAYSTACK_PLAN_ELITE):
+            warnings.append("PAYSTACK_PLAN_PRO / PAYSTACK_PLAN_ELITE are unset — paid tiers cannot be purchased")
 
     if errors:
         for e in errors:

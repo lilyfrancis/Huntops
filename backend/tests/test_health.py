@@ -33,6 +33,6 @@ def test_detailed_health_reports_all_integrations(client):
     resp = client.get("/api/health/detailed", headers=admin_headers)
     assert resp.status_code == 200
     body = resp.json()
-    for key in ("database", "stripe", "anthropic", "apollo", "gmail_oauth", "smtp", "scheduler"):
+    for key in ("database", "paystack", "anthropic", "apollo", "gmail_oauth", "smtp", "scheduler"):
         assert key in body
     assert body["scheduler"]["running"] is False  # scheduler doesn't start in the test environment

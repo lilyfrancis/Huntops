@@ -57,8 +57,11 @@ def test_analytics_reports_counts_and_revenue_estimate(client, db_session):
     from app.services.aggregation import settings as agg_settings  # noqa: F401
     from app.routers.admin import settings as admin_settings
 
-    expected = round(1 * admin_settings.PRO_PRICE_USD + 1 * admin_settings.ELITE_PRICE_USD, 2)
-    assert body["revenue"]["monthly_recurring_estimate_usd"] >= expected - 0.01
+    expected = round(1 * admin_settings.PRO_PRICE + 1 * admin_settings.ELITE_PRICE, 2)
+    assert body["revenue"]["monthly_recurring_estimate"] >= expected - 0.01
+    # Named, not assumed: billing in naira reported under a dollar sign would
+    # be a number nobody could act on.
+    assert body["revenue"]["currency"] == admin_settings.BILLING_CURRENCY
 
 
 def test_analytics_ingestion_health_null_when_no_runs(client):

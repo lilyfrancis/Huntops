@@ -28,8 +28,27 @@ jobs:
           JWT_SECRET: "ci-test-secret-not-for-production-use-only"
           ENVIRONMENT: "test"
           ENABLE_SIGNUP: "true"
-          STRIPE_SECRET_KEY: "sk_test_dummy"
-          STRIPE_WEBHOOK_SECRET: "whsec_dummy"
-          STRIPE_PRICE_PRO: "price_test_pro"
-          STRIPE_PRICE_ELITE: "price_test_elite"
+          PAYSTACK_SECRET_KEY: "sk_test_dummy"
+          PAYSTACK_PLAN_PRO: "PLN_test_pro"
+          PAYSTACK_PLAN_ELITE: "PLN_test_elite"
         run: python -m pytest -v
+
+  frontend-build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci
+
+      # `tsc -b && vite build` — the build is the typecheck. Added after a
+      # bad import reached a commit because nothing checked the frontend.
+      - run: npm run build

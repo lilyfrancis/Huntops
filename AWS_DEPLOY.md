@@ -179,7 +179,7 @@ feed only carries the public job-board sources. `GOOGLE_OAUTH_REDIRECT_URI`
 must be registered **byte for byte** as an Authorized redirect URI in the
 Google Cloud Console, or consent fails with `redirect_uri_mismatch`.
 
-Stripe and Apollo can stay empty; billing and recruiter discovery simply stay
+Paystack and Apollo can stay empty; billing and recruiter discovery simply stay
 off until you add their keys.
 
 **`TOKEN_ENCRYPTION_KEY` is the one value you cannot lose.** It decrypts every
@@ -300,9 +300,9 @@ Migrations run automatically on every update, before the new API starts.
 
 ## Before you take real users
 
-- **Stripe, Gmail OAuth, Apollo and Anthropic have only ever run against
+- **Paystack, Gmail OAuth, Apollo and Anthropic have only ever run against
   mocks.** Do one real transaction through each before launch — especially the
-  Stripe webhook (`https://huntops.site/api/billing/webhook`), because it is
+  Paystack webhook (`https://huntops.site/api/billing/webhook`), because it is
   the only thing that can activate a paid subscription.
 - There is **no CI and no committed end-to-end suite** — verification so far has
   been manual.
