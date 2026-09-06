@@ -29,6 +29,10 @@ HTTP_TIMEOUT = 15.0
 MAILBOX_SCOPES = [
     "https://www.googleapis.com/auth/gmail.readonly",
     "https://www.googleapis.com/auth/gmail.labels",
+    # Optional. Only used to create the routing filters automatically, and it
+    # is a *restricted* scope — dropping it is one fewer thing to justify to
+    # Google, at the cost of the operator creating the filter by hand once per
+    # mailbox. Connecting without it works; the mailbox just says so.
     "https://www.googleapis.com/auth/gmail.settings.basic",
 ]
 
@@ -137,17 +141,32 @@ def ensure_label(access_token: str, name: str) -> str:
     return resp.json()["id"]
 
 
-def ensure_filter(access_token: str, domain: str, label_id: str) -> None:
-    """Best-effort: route mail from `domain` into `label_id`. Ignores duplicate-filter errors."""
+def ensure_filter(access_token: str, domain: str, label_id: str) -> bool:
+    """Route mail from `domain` into `label_id`. True if the filter now exists.
+
+    Returns rather than raises because a filter we couldn't create is a
+    degraded mailbox, not a failed connection — the caller decides what to say
+    about it. It has to *report* the failure though: this previously only
+    caught transport errors, so a 403 from a missing settings scope came back
+    as an ordinary response and was discarded, leaving a mailbox that silently
+    ingested nothing with no indication why.
+    """
     try:
-        httpx.post(
+        resp = httpx.post(
             f"{GMAIL_API_BASE}/settings/filters",
             headers=_auth_headers(access_token),
             json={"criteria": {"from": domain}, "action": {"addLabelIds": [label_id]}},
             timeout=HTTP_TIMEOUT,
         )
     except httpx.HTTPError:
-        pass
+        return False
+
+    if resp.status_code < 400:
+        return True
+    # An identical filter already being there is the state we wanted.
+    if resp.status_code == 409 or "already exist" in resp.text.lower():
+        return True
+    return False
 
 
 def list_message_ids(access_token: str, label_id: str, query: str) -> list[str]:

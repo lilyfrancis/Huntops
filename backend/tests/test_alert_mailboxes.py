@@ -277,3 +277,41 @@ def test_deleting_a_mailbox_keeps_the_jobs_it_ingested(client, db_session):
         client.delete(f"/api/admin/mailboxes/{mailbox.id}", headers=headers)
 
     assert db_session.query(Job).count() == 1
+
+
+# ---------- connecting without the optional settings scope ----------
+
+def _connect(db_session, admin_id, *, filters_ok: bool):
+    with patch("app.services.alert_mailboxes.gmail_oauth.exchange_code_for_tokens",
+               return_value={"access_token": "a", "refresh_token": "r", "expires_in": 3600}), \
+         patch("app.services.alert_mailboxes.gmail_oauth.get_profile_email",
+               return_value="alerts-new@huntops.site"), \
+         patch("app.services.alert_mailboxes.gmail_oauth.ensure_label", return_value="Label_9"), \
+         patch("app.services.alert_mailboxes.gmail_oauth.ensure_filter", return_value=filters_ok):
+        return alert_mailboxes.connect_from_oauth_code(
+            db_session, code="c", admin_id=admin_id, market="Canada", label=None, lanes=[]
+        )
+
+
+def test_a_mailbox_whose_filters_failed_says_what_to_do_about_it(db_session):
+    """gmail.settings.basic is restricted, so declining it is a legitimate
+    choice — but then nothing lands under the label and the mailbox finds no
+    jobs. It has to say so, and say how to fix it by hand."""
+    admin = User(email="filter-admin@example.com", password_hash="x", full_name="A", role=UserRole.admin)
+    db_session.add(admin)
+    db_session.flush()
+
+    mailbox = _connect(db_session, admin.id, filters_ok=False)
+
+    assert mailbox.last_error is not None
+    assert "linkedin.com" in mailbox.last_error
+    assert "add a filter" in mailbox.last_error
+    assert "no jobs" in mailbox.last_error
+
+
+def test_a_mailbox_whose_filters_worked_carries_no_error(db_session):
+    admin = User(email="ok-admin@example.com", password_hash="x", full_name="A", role=UserRole.admin)
+    db_session.add(admin)
+    db_session.flush()
+
+    assert _connect(db_session, admin.id, filters_ok=True).last_error is None

@@ -91,3 +91,26 @@ def test_list_message_ids(mock_get):
     mock_get.return_value = MagicMock(status_code=200, json=lambda: {"messages": [{"id": "m1"}, {"id": "m2"}]})
     ids = gmail_oauth.list_message_ids("token", "Label_1", "newer_than:2d")
     assert ids == ["m1", "m2"]
+
+
+# ---------- filter creation has to report failure, not swallow it ----------
+
+@patch("app.services.gmail_oauth.httpx.post")
+def test_ensure_filter_reports_a_permission_failure(mock_post):
+    """A 403 from a missing settings scope comes back as an ordinary response,
+    not an exception. Discarding it leaves a mailbox that ingests nothing with
+    no indication why."""
+    mock_post.return_value = MagicMock(status_code=403, text='{"error": "insufficient scope"}')
+    assert gmail_oauth.ensure_filter("token", "linkedin.com", "Label_1") is False
+
+
+@patch("app.services.gmail_oauth.httpx.post")
+def test_ensure_filter_treats_an_existing_filter_as_success(mock_post):
+    mock_post.return_value = MagicMock(status_code=409, text="Filter already exists")
+    assert gmail_oauth.ensure_filter("token", "linkedin.com", "Label_1") is True
+
+
+@patch("app.services.gmail_oauth.httpx.post")
+def test_ensure_filter_succeeds_on_creation(mock_post):
+    mock_post.return_value = MagicMock(status_code=200, text="{}")
+    assert gmail_oauth.ensure_filter("token", "linkedin.com", "Label_1") is True

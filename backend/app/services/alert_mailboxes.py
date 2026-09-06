@@ -113,8 +113,27 @@ def connect_from_oauth_code(
         mailbox.last_error = None
 
     mailbox.label_id = gmail_oauth.ensure_label(access_token, settings.GMAIL_LABEL_NAME)
-    for domain in settings.email_alert_sender_domains_list:
-        gmail_oauth.ensure_filter(access_token, domain, mailbox.label_id)
+
+    unfiltered = [
+        domain
+        for domain in settings.email_alert_sender_domains_list
+        if not gmail_oauth.ensure_filter(access_token, domain, mailbox.label_id)
+    ]
+    if unfiltered:
+        # Without filters nothing lands under the label, so the mailbox really
+        # will ingest zero jobs — surfacing it as an error is correct, and the
+        # message has to say what to do rather than just that something broke.
+        # The usual cause is connecting without gmail.settings.basic, which is
+        # a legitimate choice: it is a restricted scope, and doing this by hand
+        # once per mailbox avoids having to justify it to Google.
+        mailbox.last_error = (
+            f"Could not create routing filters for: {', '.join(unfiltered)}. "
+            f"In this mailbox's Gmail settings, add a filter for mail from each of those "
+            f"domains that applies the \"{settings.GMAIL_LABEL_NAME}\" label. "
+            f"Until then this mailbox will find no jobs."
+        )
+    else:
+        mailbox.last_error = None
 
     db.commit()
     db.refresh(mailbox)
