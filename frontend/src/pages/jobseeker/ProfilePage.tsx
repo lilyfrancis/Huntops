@@ -20,7 +20,7 @@ interface ProfileFormValues {
 }
 
 const TIERS: { id: "pro" | "elite"; name: string; price: string; blurb: string }[] = [
-  { id: "pro", name: "Pro", price: "$24/mo", blurb: "Geo-aware matching, email-alert bridge, 100 credits" },
+  { id: "pro", name: "Pro", price: "$24/mo", blurb: "Geo-aware matching, interview practice, negotiation coach, 100 credits" },
   { id: "elite", name: "Elite", price: "$89/mo", blurb: "Everything in Pro + Autopilot Outreach, 500 credits" },
 ];
 
