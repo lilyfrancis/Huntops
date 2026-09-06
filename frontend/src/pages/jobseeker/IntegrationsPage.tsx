@@ -64,6 +64,23 @@ export function IntegrationsPage() {
 
       {isLoading ? (
         <PageSpinner />
+      ) : !status?.available && !status?.connected ? (
+        /* The feature is switched off, so there is no button to press. Say
+           what happens instead, rather than leaving a page that looks broken. */
+        <Card className="max-w-lg">
+          <CardHeader>
+            <CardTitle>Not available</CardTitle>
+            <CardDescription>Nothing is missing from your account</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-ink-muted">
+              Outreach is sent for you from HuntOps with{" "}
+              <span className="font-medium text-ink">{user?.email}</span> as the reply-to address,
+              so anyone who replies reaches you directly. Sending from your own Gmail instead isn't
+              offered right now.
+            </p>
+          </CardContent>
+        </Card>
       ) : (
         <Card className="max-w-lg">
           <CardHeader className="flex-row items-center justify-between">
@@ -108,7 +125,7 @@ export function IntegrationsPage() {
               >
                 <Unplug className="h-3.5 w-3.5" /> Disconnect
               </Button>
-            ) : (
+            ) : !status?.available ? null : (
               <Button size="sm" onClick={() => connectMutation.mutate()} disabled={connectMutation.isPending}>
                 {connectMutation.isPending ? "Redirecting…" : "Connect Gmail"}
               </Button>

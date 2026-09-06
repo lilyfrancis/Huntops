@@ -29,7 +29,20 @@ def _seed_connection(session, user_id, expires_in_minutes=60) -> GmailConnection
 
 # ---------- integration router tests ----------
 
-def test_connect_endpoint_returns_authorization_url(client):
+def test_connect_is_refused_when_the_feature_is_off(client):
+    """Default state. The OAuth client is an Internal Workspace app, so Google
+    blocks consent for anyone outside the Workspace — starting the flow would
+    only hand a job seeker an access-denied screen with no explanation."""
+    data = register_user(client, email="connect-off@example.com")
+    resp = client.get("/api/integrations/gmail/connect", headers=auth_headers(data["access_token"]))
+    assert resp.status_code == 404
+    assert "reply-to" in resp.json()["detail"]
+
+
+def test_connect_returns_an_authorization_url_when_enabled(client, monkeypatch):
+    from app.routers import integrations
+
+    monkeypatch.setattr(integrations.settings, "ENABLE_USER_GMAIL_CONNECT", True)
     data = register_user(client, email="connect@example.com")
     resp = client.get("/api/integrations/gmail/connect", headers=auth_headers(data["access_token"]))
     assert resp.status_code == 200
@@ -40,7 +53,21 @@ def test_status_endpoint_reports_not_connected_by_default(client):
     data = register_user(client, email="status@example.com")
     resp = client.get("/api/integrations/gmail/status", headers=auth_headers(data["access_token"]))
     assert resp.status_code == 200
-    assert resp.json() == {"connected": False, "connected_at": None}
+    assert resp.json() == {"available": False, "connected": False, "connected_at": None}
+
+
+def test_status_still_reports_a_connection_made_before_the_feature_was_switched_off(client, db_session):
+    """Someone who connected earlier keeps control of it — the feature going
+    away must not strand a live grant with no way to revoke it."""
+    from app.models.user import User
+
+    data = register_user(client, email="legacy-connection@example.com")
+    user = db_session.query(User).filter(User.email == "legacy-connection@example.com").one()
+    _seed_connection(db_session, user.id)
+
+    body = client.get("/api/integrations/gmail/status", headers=auth_headers(data["access_token"])).json()
+    assert body["available"] is False
+    assert body["connected"] is True
 
 
 def _redirect_query(resp) -> dict:
@@ -65,10 +92,13 @@ def test_callback_rejects_invalid_state(client):
 
 
 @patch("app.routers.integrations.email_bridge.handle_oauth_callback")
-def test_callback_connects_gmail_for_the_right_user(mock_handle, client):
+def test_callback_connects_gmail_for_the_right_user(mock_handle, client, monkeypatch):
     from datetime import datetime, timezone
     from types import SimpleNamespace
 
+    from app.routers import integrations
+
+    monkeypatch.setattr(integrations.settings, "ENABLE_USER_GMAIL_CONNECT", True)
     data = register_user(client, email="callback@example.com")
     mock_handle.return_value = SimpleNamespace(connected_at=datetime.now(timezone.utc))
 

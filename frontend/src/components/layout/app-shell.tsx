@@ -8,7 +8,6 @@ import {
   Radio,
   LayoutDashboard,
   LogOut,
-  Mail,
   MessageSquare,
   Newspaper,
   PlusCircle,
@@ -44,7 +43,6 @@ const NAV_BY_ROLE: Record<string, NavItem[]> = {
     { to: "/app/interviews", label: "Interviews", icon: MessageSquare },
     { to: "/app/negotiation", label: "Negotiation", icon: Handshake },
     { to: "/app/digest", label: "Digest", icon: Newspaper },
-    { to: "/app/integrations", label: "Send-as Gmail", icon: Mail },
     { to: "/app/profile", label: "Profile", icon: Settings },
   ],
   employer: [

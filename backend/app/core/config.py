@@ -66,6 +66,16 @@ class Settings(BaseSettings):
     GOOGLE_OAUTH_REDIRECT_URI: str = "http://localhost:8000/api/integrations/gmail/callback"
     TOKEN_ENCRYPTION_KEY: str = ""
     GMAIL_LABEL_NAME: str = "HuntOps"
+
+    # Whether job seekers may connect their own Gmail so outreach sends from
+    # their address. Off by default because the OAuth client is an *Internal*
+    # Workspace app: only accounts in our own Workspace can consent, so a job
+    # seeker with a personal Gmail gets an access-blocked error from Google
+    # rather than a working feature. Turning this on requires registering a
+    # separate External OAuth client and going through Google verification.
+    # With it off, outreach sends via the platform relay with the user's
+    # address as Reply-To — which needs no Google access at all.
+    ENABLE_USER_GMAIL_CONNECT: bool = False
     EMAIL_ALERT_SENDER_DOMAINS: str = "linkedin.com,indeed.com,glassdoor.com,jobberman.com,myjobmag.com,theladders.com"
     ENABLE_SCHEDULED_EMAIL_SYNC: bool = True
     EMAIL_SYNC_QUERY_WINDOW: str = "newer_than:2d"

@@ -36,6 +36,7 @@ def detailed_health_check(db: Session = Depends(get_db)) -> dict:
 
     # One key does both jobs on Paystack: it authenticates API calls and signs
     # webhooks, so there is no second secret to be half-configured.
+    checks["user_gmail_connect"] = {"enabled": settings.ENABLE_USER_GMAIL_CONNECT}
     checks["paystack"] = {
         "configured": bool(settings.PAYSTACK_SECRET_KEY),
         "plans_configured": bool(settings.PAYSTACK_PLAN_PRO and settings.PAYSTACK_PLAN_ELITE),

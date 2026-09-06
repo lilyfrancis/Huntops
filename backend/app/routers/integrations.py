@@ -40,9 +40,18 @@ def _admin_redirect(status_value: str, message: str | None = None) -> RedirectRe
 def connect(current_user: User = Depends(require_job_seeker)) -> dict:
     """Optional: connect your own Gmail so outreach sends from your address.
 
-    This no longer has anything to do with the job feed — that comes from the
-    operator's central alert mailboxes whether or not you connect anything.
+    This has nothing to do with the job feed — that comes from the operator's
+    central alert mailboxes whether or not you connect anything.
     """
+    if not settings.ENABLE_USER_GMAIL_CONNECT:
+        # Refused rather than attempted: with an Internal OAuth client, Google
+        # blocks consent for anyone outside our Workspace, so starting the flow
+        # would only hand the user an access-denied screen with no explanation.
+        raise HTTPException(
+            status_code=404,
+            detail="Connecting your own Gmail isn't available. Outreach is sent on your behalf "
+                   "with your address as the reply-to, so replies still reach you.",
+        )
     return {"authorization_url": email_bridge.get_connect_url(current_user)}
 
 
@@ -112,9 +121,15 @@ def status(
     db: Session = Depends(get_db),
 ) -> dict:
     connection = db.query(GmailConnection).filter(GmailConnection.user_id == current_user.id).first()
-    if not connection:
-        return {"connected": False, "connected_at": None}
-    return {"connected": True, "connected_at": connection.connected_at}
+    # `available` is separate from `connected` so the UI can explain an absent
+    # feature instead of rendering a button that 404s. A user who connected
+    # before the feature was switched off still sees their connection, and can
+    # still disconnect it.
+    return {
+        "available": settings.ENABLE_USER_GMAIL_CONNECT,
+        "connected": connection is not None,
+        "connected_at": connection.connected_at if connection else None,
+    }
 
 
 @router.delete("", status_code=204)

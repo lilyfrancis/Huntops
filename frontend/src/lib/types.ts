@@ -122,6 +122,9 @@ export interface Outreach {
 }
 
 export interface GmailStatus {
+  /* Whether the feature is offered at all. Separate from `connected` so the UI
+     can explain an absent feature rather than render a button that 404s. */
+  available: boolean;
   connected: boolean;
   connected_at: string | null;
 }
