@@ -27,7 +27,7 @@ from app.models.job import Job
 from app.services import aggregation, imap_client
 from app.services.ai_client import AIResponseError
 from app.services.email_extraction import extract_jobs_from_email
-from app.services.gmail_message import detect_provider
+from app.services.alert_senders import detect_provider
 from app.services.imap_client import Credentials, ImapError
 
 logger = logging.getLogger(__name__)
