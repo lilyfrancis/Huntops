@@ -22,6 +22,11 @@ import type { AlertMailbox, JobLane } from "@/lib/types";
 /* Saves the operator looking up settings for the hosts they're most likely
    to use. Not exhaustive, and the fields stay editable. */
 const HOST_PRESETS: { label: string; host: string; port: number }[] = [
+  // Hostinger sells two different mail products and they have different IMAP
+  // hosts. hPanel → Emails → Configuration settings shows which one an
+  // account is on; guessing wrong just fails the connection test.
+  { label: "Hostinger Email", host: "imap.hostinger.com", port: 993 },
+  { label: "Hostinger (Titan)", host: "imap.titan.email", port: 993 },
   { label: "Zoho", host: "imap.zoho.com", port: 993 },
   // The region is part of the hostname and must match where the WorkMail
   // organisation was created — not where the app is hosted. Edit it below.
