@@ -130,6 +130,14 @@ function AddDialog({
             A mailbox you own that receives this market's job alerts. HuntOps reads it over IMAP —
             no OAuth, no consent screen, and it works with any provider.
           </p>
+          {/* Asked more than once: a send-only relay looks like "our email
+              provider" and gets tried here, where it cannot work. */}
+          <p className="rounded-lg border border-border bg-surface-2 px-3 py-2 text-xs text-ink-muted">
+            This must be somewhere you can <strong className="font-semibold text-ink">log in and read
+            mail</strong>. A send-only relay — Amazon SES, SendGrid, Postmark — cannot be used here:
+            those deliver outbound mail, they do not store an inbox. Use one for the digest and
+            outreach instead, via <code className="font-mono">SMTP_*</code>.
+          </p>
 
           <div className="space-y-1.5">
             <Label htmlFor="email_address">Mailbox address</Label>
