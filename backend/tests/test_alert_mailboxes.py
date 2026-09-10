@@ -391,3 +391,51 @@ def test_deleting_a_mailbox_keeps_the_jobs_it_ingested(client, db_session):
     client.delete(f"/api/admin/mailboxes/{mailbox.id}", headers=headers)
 
     assert db_session.query(Job).count() == 1
+
+
+# ---------- diagnosing a mailbox that produces nothing ----------
+
+def test_a_mailbox_that_recognised_no_senders_says_what_it_saw(db_session):
+    """The exact shape of "I set it up and nothing happened": mail is arriving,
+    but from a board that isn't in the allowlist, or through a forwarder that
+    rewrote the From header. Without this it reads as success, 0 inserted."""
+    mailbox = _seed_mailbox(db_session)
+
+    with patch("app.services.alert_mailboxes.imap_client.fetch_messages", return_value=([
+        FetchedMessage(uid=1, sender="Bayt <alerts@some-board.example>", body="a"),
+        FetchedMessage(uid=2, sender="Bayt <alerts@some-board.example>", body="b"),
+        FetchedMessage(uid=3, sender="Forwarder <noreply@forwarder.example>", body="c"),
+    ], 42)):
+        summary = alert_mailboxes.sync_mailbox(db_session, mailbox)
+
+    assert summary["skipped_senders"] == {"some-board.example": 2, "forwarder.example": 1}
+
+    db_session.refresh(mailbox)
+    assert "recognised no job-alert senders" in mailbox.last_error
+    assert "some-board.example (2)" in mailbox.last_error
+    assert "From header" in mailbox.last_error  # names the forwarding cause too
+
+
+def test_a_mailbox_that_recognised_something_is_not_flagged(db_session):
+    """One stray personal email alongside real alerts is normal, not a fault."""
+    mailbox = _seed_mailbox(db_session)
+
+    with patch("app.services.alert_mailboxes.imap_client.fetch_messages", return_value=([
+        FetchedMessage(uid=1, sender=LINKEDIN, body="a"),
+        FetchedMessage(uid=2, sender="A Friend <hi@example.com>", body="b"),
+    ], 42)), \
+         patch("app.services.alert_mailboxes.extract_jobs_from_email", return_value=[]):
+        summary = alert_mailboxes.sync_mailbox(db_session, mailbox)
+
+    assert summary["skipped_senders"] == {"example.com": 1}
+    db_session.refresh(mailbox)
+    assert mailbox.last_error is None
+
+
+def test_a_quiet_sync_with_no_mail_at_all_is_not_flagged(db_session):
+    """Nothing arrived since the last run — the normal case, not a failure."""
+    mailbox = _seed_mailbox(db_session)
+    _sync(db_session, mailbox, messages=[], postings=[])
+
+    db_session.refresh(mailbox)
+    assert mailbox.last_error is None

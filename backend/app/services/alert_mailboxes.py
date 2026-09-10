@@ -12,6 +12,7 @@ which slice they see.
 """
 
 import logging
+import re
 import urllib.parse
 import uuid
 from datetime import datetime, timezone
@@ -50,6 +51,12 @@ def fallback_url(provider: str, title: str, company: str) -> str:
     query = urllib.parse.quote(f"{title} {company}".strip())
     template = _FALLBACK_SEARCH_TEMPLATES.get(provider, _FALLBACK_SEARCH_TEMPLATES["linkedin"])
     return template.format(q=query)
+
+
+def _sender_domain(sender: str) -> str:
+    """The domain out of a From header, for reporting what was skipped."""
+    match = re.search(r"[\w.+-]+@([\w-]+\.[\w.-]+)", sender or "")
+    return match.group(1).lower() if match else "(no address in From header)"
 
 
 def credentials_for(mailbox: AlertMailbox) -> Credentials:
@@ -154,6 +161,11 @@ def sync_mailbox(db: Session, mailbox: AlertMailbox) -> dict:
     started_at = datetime.now(timezone.utc)
     status, error = "success", None
     fetched = extracted_total = inserted_total = 0
+    recognised = 0
+    # Which senders were passed over. Reported back so an operator setting a
+    # mailbox up can see *why* nothing came out of it, rather than reading
+    # "success, 0 inserted" and having to guess.
+    skipped_senders: dict[str, int] = {}
 
     try:
         messages, current_validity = imap_client.fetch_messages(
@@ -170,7 +182,10 @@ def sync_mailbox(db: Session, mailbox: AlertMailbox) -> dict:
                 # Not from a configured job-alert sender. The mailbox is the
                 # operator's, so it carries ordinary mail too — spending an AI
                 # call on a receipt would be waste, and might invent a "job".
+                domain = _sender_domain(message.sender)
+                skipped_senders[domain] = skipped_senders.get(domain, 0) + 1
                 continue
+            recognised += 1
 
             clean_text = aggregation.strip_html(message.body)
             try:
@@ -209,7 +224,21 @@ def sync_mailbox(db: Session, mailbox: AlertMailbox) -> dict:
             mailbox.last_seen_uid = max(m.uid for m in messages)
         mailbox.uid_validity = current_validity
         mailbox.last_synced_at = datetime.now(timezone.utc)
-        mailbox.last_error = None
+
+        if fetched and not recognised:
+            # Mail arrived and none of it looked like a job alert. Usually a
+            # board that isn't in EMAIL_ALERT_SENDER_DOMAINS, or a forwarder
+            # that rewrote the From header — both of which otherwise present
+            # as a permanently empty feed with a green "success" beside it.
+            top = sorted(skipped_senders.items(), key=lambda kv: -kv[1])[:5]
+            mailbox.last_error = (
+                f"Read {fetched} message(s) but recognised no job-alert senders. "
+                f"Saw: {', '.join(f'{d} ({n})' for d, n in top)}. "
+                f"Add the missing domains to EMAIL_ALERT_SENDER_DOMAINS, or check that "
+                f"forwarding preserves the original From header."
+            )
+        else:
+            mailbox.last_error = None
     except ImapError as e:
         status, error = "error", str(e)[:2000]
         mailbox.last_error = error
@@ -235,7 +264,8 @@ def sync_mailbox(db: Session, mailbox: AlertMailbox) -> dict:
         "fetched": fetched,
         "extracted": extracted_total,
         "inserted": inserted_total,
-        "error": error,
+        "skipped_senders": skipped_senders,
+        "error": error or mailbox.last_error,
     }
 
 

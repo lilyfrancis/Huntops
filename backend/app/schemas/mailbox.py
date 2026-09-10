@@ -88,6 +88,10 @@ class MailboxSyncResult(BaseModel):
     fetched: int
     extracted: int
     inserted: int
+    # Sender domain -> how many messages from it were passed over. Shown so an
+    # operator can see why a mailbox produced nothing, instead of reading
+    # "success, 0 inserted" and guessing.
+    skipped_senders: dict[str, int] = {}
     error: str | None = None
 
 
