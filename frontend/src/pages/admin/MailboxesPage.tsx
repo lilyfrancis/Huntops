@@ -22,8 +22,11 @@ import type { AlertMailbox, JobLane } from "@/lib/types";
 /* Saves the operator looking up settings for the hosts they're most likely
    to use. Not exhaustive, and the fields stay editable. */
 const HOST_PRESETS: { label: string; host: string; port: number }[] = [
-  { label: "Gmail / Workspace", host: "imap.gmail.com", port: 993 },
   { label: "Zoho", host: "imap.zoho.com", port: 993 },
+  // The region is part of the hostname and must match where the WorkMail
+  // organisation was created — not where the app is hosted. Edit it below.
+  { label: "Amazon WorkMail", host: "imap.mail.eu-west-1.awsapps.com", port: 993 },
+  { label: "Gmail / Workspace", host: "imap.gmail.com", port: 993 },
   { label: "Outlook / Microsoft 365", host: "outlook.office365.com", port: 993 },
   { label: "Fastmail", host: "imap.fastmail.com", port: 993 },
 ];
