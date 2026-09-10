@@ -29,3 +29,25 @@ def test_a_lookalike_domain_is_not_matched():
     """endswith on a bare domain would match notlinkedin.com. The dot matters."""
     assert detect_provider("phish <jobs@notlinkedin.com>") is None
     assert detect_provider("phish <jobs@linkedin.com.evil.example>") is None
+
+
+def test_the_regional_boards_for_every_live_market_are_recognised():
+    """A board missing from the allowlist is silently ignored — the mailbox
+    syncs "successfully" and the market's feed stays empty with no error
+    anywhere. Each market we open needs its own boards added."""
+    cases = {
+        # UK
+        "Reed <jobalerts@reed.co.uk>": "reed",
+        "Totaljobs <alerts@totaljobs.com>": "totaljobs",
+        # Canada
+        "Job Bank <noreply@jobbank.gc.ca>": "jobbank",
+        "Workopolis <alerts@workopolis.com>": "workopolis",
+        # Gulf / UAE
+        "Bayt.com <alerts@bayt.com>": "bayt",
+        "GulfTalent <jobs@gulftalent.com>": "gulftalent",
+        "Naukrigulf <alerts@naukrigulf.com>": "naukrigulf",
+        # Nigeria
+        "Jobberman <alerts@jobberman.com>": "jobberman",
+    }
+    for sender, expected in cases.items():
+        assert detect_provider(sender) == expected, sender

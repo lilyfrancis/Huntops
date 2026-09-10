@@ -76,7 +76,23 @@ class Settings(BaseSettings):
     # With it off, outreach sends via the platform relay with the user's
     # address as Reply-To — which needs no Google access at all.
     ENABLE_USER_GMAIL_CONNECT: bool = False
-    EMAIL_ALERT_SENDER_DOMAINS: str = "linkedin.com,indeed.com,glassdoor.com,jobberman.com,myjobmag.com,theladders.com"
+    # Which senders count as job alerts. A mailbox is the operator's own and
+    # carries ordinary post too, so anything not on this list is skipped
+    # without costing an AI call — which also means an alert from a board that
+    # is missing here is silently ignored. Add per market as you open them;
+    # subdomains match automatically (jobalerts.linkedin.com).
+    EMAIL_ALERT_SENDER_DOMAINS: str = (
+        # Global
+        "linkedin.com,indeed.com,glassdoor.com,ziprecruiter.com,theladders.com,"
+        # UK
+        "reed.co.uk,totaljobs.com,cv-library.co.uk,jobsite.co.uk,adzuna.co.uk,"
+        # Canada
+        "workopolis.com,jobbank.gc.ca,eluta.ca,jobillico.com,"
+        # Gulf / UAE
+        "bayt.com,gulftalent.com,naukrigulf.com,dubizzle.com,"
+        # Nigeria
+        "jobberman.com,myjobmag.com,hotnigerianjobs.com"
+    )
     ENABLE_SCHEDULED_EMAIL_SYNC: bool = True
     # How far back a mailbox reads on its very first sync, or after a server
     # renumbers a folder and the stored UID cursor becomes meaningless.
