@@ -74,11 +74,20 @@ domain. If DNS is not pointing here yet, that request fails and it will keep
 retrying against a rate limit.
 
 ```bash
-dig +short huntops.site && curl -s ifconfig.me && echo
+echo "A record:  $(dig +short A huntops.site)"; echo "This box:  $(curl -4 -s ifconfig.me)"; echo "AAAA:      $(dig +short AAAA huntops.site)"
 ```
 
-The two must print the same IP address. If they don't, stop and wait for DNS
-to propagate — everything below still works later.
+The first two must match. `curl -4` is not optional: without it curl uses IPv6
+where the box has it, and reports the box's IPv6 address — which looks like a
+mismatch when nothing is wrong.
+
+The third line should be **empty**, or an IPv6 address this box actually
+answers on. A stale AAAA record is the nastiest version of this problem:
+browsers prefer IPv6, so the site fails for some visitors and works fine for
+you, and every IPv4 check you run says everything is healthy.
+
+If the first two don't match, stop and wait for DNS to propagate — everything
+below still works later.
 
 ---
 
