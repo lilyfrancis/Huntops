@@ -16,9 +16,25 @@ settings = get_settings()
 _EMAIL_RE = re.compile(r"([\w.+-]+@([\w-]+\.[\w.-]+))")
 
 
-def detect_provider(sender: str) -> str | None:
+def load_domains(db) -> list[str]:
+    """The allowlist, from the database.
+
+    Read once per sync run and passed down, rather than queried per message:
+    a mailbox batch is hundreds of messages and this list changes about once a
+    month.
+    """
+    from app.models.alert_sender import AlertSender
+
+    return [domain for (domain,) in db.query(AlertSender.domain).all()]
+
+
+def detect_provider(sender: str, domains: list[str] | None = None) -> str | None:
     """Map a From header to a known job-alert provider slug (e.g. "linkedin"),
-    or None if the sender's domain isn't in EMAIL_ALERT_SENDER_DOMAINS.
+    or None if the sender's domain isn't on the allowlist.
+
+    `domains` is the list loaded from the database. It falls back to the
+    configured default only so the function stays usable without a session —
+    production always passes the real list.
 
     Returning None is what stops an ordinary email in the operator's mailbox
     being sent to the extractor, so a receipt never costs an AI call or gets
@@ -37,7 +53,7 @@ def detect_provider(sender: str) -> str | None:
     if address in settings.email_alert_sender_excludes_list:
         return None
 
-    for known_domain in settings.email_alert_sender_domains_list:
+    for known_domain in (settings.email_alert_sender_domains_list if domains is None else domains):
         # endswith guards the subdomain case (jobalerts.linkedin.com) without
         # matching a lookalike domain that merely ends in the same letters.
         if domain == known_domain or domain.endswith(f".{known_domain}"):

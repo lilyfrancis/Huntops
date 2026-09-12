@@ -22,7 +22,21 @@ limiter.enabled = False
 
 @pytest.fixture(autouse=True)
 def _fresh_schema():
+    """Tables are built from the models, so the seed rows that migration 0015
+    inserts are absent. The allowlist is seeded here to match, or every test
+    touching a mailbox would see an empty one and recognise no senders."""
     Base.metadata.create_all(bind=engine)
+
+    from app.core.config import get_settings
+    from app.models.alert_sender import AlertSender
+
+    session = SessionLocal()
+    session.add_all([
+        AlertSender(domain=domain) for domain in get_settings().email_alert_sender_domains_list
+    ])
+    session.commit()
+    session.close()
+
     yield
     Base.metadata.drop_all(bind=engine)
 

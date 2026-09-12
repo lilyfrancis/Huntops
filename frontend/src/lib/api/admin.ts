@@ -2,6 +2,7 @@ import { api } from "../api-client";
 import type {
   AdminAnalytics,
   AlertMailbox,
+  AlertSender,
   EmailSyncRun,
   IngestionRun,
   Job,
@@ -61,4 +62,9 @@ export const adminApi = {
   deleteMailbox: (id: string) => api.delete<void>(`/api/admin/mailboxes/${id}`),
   syncMailbox: (id: string) => api.post<MailboxSyncResult>(`/api/admin/mailboxes/${id}/sync`),
   syncAllMailboxes: () => api.post<MailboxSyncResult[]>("/api/admin/mailboxes/sync"),
+
+  alertSenders: () => api.get<AlertSender[]>("/api/admin/alert-senders"),
+  addAlertSender: (domain: string, note?: string) =>
+    api.post<AlertSender>("/api/admin/alert-senders", { domain, note }),
+  deleteAlertSender: (id: string) => api.delete<void>(`/api/admin/alert-senders/${id}`),
 };

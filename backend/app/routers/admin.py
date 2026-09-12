@@ -8,6 +8,7 @@ from app.core.config import get_settings
 from app.core.security import require_admin
 from app.db.base import get_db
 from app.models.alert_mailbox import AlertMailbox
+from app.models.alert_sender import AlertSender
 from app.models.application import Application
 from app.models.email_sync_run import EmailSyncRun
 from app.models.enums import JobStatus, OutreachStatus, SubscriptionTier, UserRole
@@ -17,6 +18,8 @@ from app.models.outreach import Outreach
 from app.models.user import User
 from app.schemas.job import JobOut, JobRejectRequest
 from app.schemas.mailbox import (
+    AlertSenderCreate,
+    AlertSenderOut,
     MailboxOut,
     MailboxSyncResult,
     MailboxTestResult,
@@ -297,3 +300,44 @@ def sync_mailbox(mailbox_id: uuid.UUID, db: Session = Depends(get_db)) -> dict:
 @router.post("/mailboxes/sync", response_model=list[MailboxSyncResult])
 def sync_all_mailboxes(db: Session = Depends(get_db)) -> list[dict]:
     return alert_mailboxes.sync_all_mailboxes(db)
+
+
+# ---------- alert senders: which domains count as job alerts ----------
+
+@router.get("/alert-senders", response_model=list[AlertSenderOut])
+def list_alert_senders(db: Session = Depends(get_db)) -> list[AlertSender]:
+    return db.query(AlertSender).order_by(AlertSender.note, AlertSender.domain).all()
+
+
+@router.post("/alert-senders", response_model=AlertSenderOut, status_code=201)
+def add_alert_sender(
+    payload: AlertSenderCreate,
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> AlertSender:
+    """Adding a board takes effect on the next sync — no redeploy.
+
+    Re-adding an existing domain returns it rather than erroring: the natural
+    way to reach this is from a mailbox reporting an unrecognised sender, and
+    clicking twice should not be a failure.
+    """
+    existing = db.query(AlertSender).filter(AlertSender.domain == payload.domain).first()
+    if existing:
+        return existing
+
+    sender = AlertSender(domain=payload.domain, note=payload.note, added_by_id=current_user.id)
+    db.add(sender)
+    db.commit()
+    db.refresh(sender)
+    return sender
+
+
+@router.delete("/alert-senders/{sender_id}", status_code=204)
+def delete_alert_sender(sender_id: uuid.UUID, db: Session = Depends(get_db)) -> None:
+    """Removing a domain stops future mail from it being read. Jobs already
+    ingested stay — they are real listings."""
+    sender = db.get(AlertSender, sender_id)
+    if not sender:
+        raise HTTPException(status_code=404, detail="Sender not found")
+    db.delete(sender)
+    db.commit()

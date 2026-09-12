@@ -1,3 +1,4 @@
+import re
 import uuid
 from datetime import datetime
 
@@ -98,3 +99,31 @@ class MailboxSyncResult(BaseModel):
 class MailboxTestResult(BaseModel):
     ok: bool
     detail: str
+
+
+class AlertSenderCreate(BaseModel):
+    domain: str
+    note: str | None = None
+
+    @field_validator("domain")
+    @classmethod
+    def looks_like_a_domain(cls, v: str) -> str:
+        """Stored bare and lowercase. People paste "Bayt <alerts@bayt.com>" or
+        "https://bayt.com/" — both should become "bayt.com" rather than an
+        entry that silently matches nothing."""
+        v = v.strip().lower()
+        if "@" in v:
+            v = v.rsplit("@", 1)[-1]
+        v = v.removeprefix("https://").removeprefix("http://").split("/")[0].strip(" <>")
+        if not re.fullmatch(r"[a-z0-9-]+(\.[a-z0-9-]+)+", v):
+            raise ValueError("Enter a bare domain, e.g. bayt.com")
+        return v
+
+
+class AlertSenderOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    domain: str
+    note: str | None
+    created_at: datetime

@@ -14,6 +14,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { ChipGroup } from "@/components/ui/chip-group";
 import { humanize } from "@/lib/labels";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { AlertSendersCard } from "@/components/admin/alert-senders-card";
 import { adminApi, preferencesApi } from "@/lib/api";
 import { ApiError } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
@@ -481,6 +482,12 @@ export function MailboxesPage() {
 
       {/* Keyed so switching between add and edit remounts with fresh state
           rather than showing the previous mailbox's values. */}
+      {/* Directly under the mailboxes, because the way anyone arrives here is
+          a mailbox reporting a sender it did not recognise. */}
+      <div className="mt-10">
+        <AlertSendersCard />
+      </div>
+
       {dialog.open && (
         <AddDialog
           key={dialog.editing?.id ?? "new"}

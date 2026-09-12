@@ -1,4 +1,5 @@
 from app.models.alert_mailbox import AlertMailbox
+from app.models.alert_sender import AlertSender
 from app.models.application import Application
 from app.models.autopilot_action import AutopilotAction
 from app.models.credit_ledger import CreditLedgerEntry
@@ -26,6 +27,7 @@ __all__ = [
     "IngestionRun",
     "GmailConnection",
     "AlertMailbox",
+    "AlertSender",
     "EmailSyncRun",
     "RecruiterContact",
     "Outreach",

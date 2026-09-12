@@ -28,7 +28,7 @@ from app.models.job import Job
 from app.services import aggregation, imap_client
 from app.services.ai_client import AIResponseError
 from app.services.email_extraction import extract_jobs_from_email
-from app.services.alert_senders import detect_provider
+from app.services.alert_senders import detect_provider, load_domains
 from app.services.imap_client import Credentials, ImapError
 
 logger = logging.getLogger(__name__)
@@ -175,6 +175,10 @@ def sync_mailbox(db: Session, mailbox: AlertMailbox) -> dict:
     # "success, 0 inserted" and having to guess.
     skipped_senders: dict[str, int] = {}
 
+    # Loaded once per run rather than per message: a batch is hundreds of
+    # messages and this list changes about once a month.
+    domains = load_domains(db)
+
     try:
         messages, current_validity = imap_client.fetch_messages(
             credentials_for(mailbox),
@@ -185,7 +189,7 @@ def sync_mailbox(db: Session, mailbox: AlertMailbox) -> dict:
         fetched = len(messages)
 
         for message in messages:
-            provider = detect_provider(message.sender)
+            provider = detect_provider(message.sender, domains)
             if provider is None:
                 # Not from a configured job-alert sender. The mailbox is the
                 # operator's, so it carries ordinary mail too — spending an AI
@@ -242,8 +246,8 @@ def sync_mailbox(db: Session, mailbox: AlertMailbox) -> dict:
             mailbox.last_error = (
                 f"Read {fetched} message(s) but recognised no job-alert senders. "
                 f"Saw: {', '.join(f'{d} ({n})' for d, n in top)}. "
-                f"Add the missing domains to EMAIL_ALERT_SENDER_DOMAINS, or check that "
-                f"forwarding preserves the original From header."
+                f"Add the missing domains under Alert senders, or check that forwarding "
+                f"preserves the original From header."
             )
         else:
             mailbox.last_error = None
