@@ -42,26 +42,43 @@ def create_checkout_session(
     return CheckoutSessionOut(checkout_url=url)
 
 
-@router.get("/status", response_model=SubscriptionStatusOut)
-def subscription_status(current_user: User = Depends(get_current_user)) -> SubscriptionStatusOut:
+@router.get("/plans", response_model=list[PlanOut])
+def public_plans() -> list[PlanOut]:
+    """The pricing table, unauthenticated.
+
+    Exists because the landing page had its own hardcoded copy and the two
+    drifted: it advertised $29/$79 while the app charged $24/$89. A visitor
+    read one number and was billed another, which reads as a bait and switch
+    rather than the oversight it was. One source, no second copy to drift.
+    """
+    return _plans()
+
+
+def _plans() -> list[PlanOut]:
     plan_codes = billing_service.tier_plan_codes()
     prices = {SubscriptionTier.pro: settings.PRO_PRICE, SubscriptionTier.elite: settings.ELITE_PRICE}
+    return [
+        PlanOut(
+            tier=tier,
+            price=price,
+            currency=settings.BILLING_CURRENCY,
+            # A tier with no plan code cannot be bought, so the UI must not
+            # offer a button that would only ever return a 400.
+            available=bool(plan_codes.get(tier)),
+        )
+        for tier, price in prices.items()
+    ]
+
+
+@router.get("/status", response_model=SubscriptionStatusOut)
+def subscription_status(current_user: User = Depends(get_current_user)) -> SubscriptionStatusOut:
     return SubscriptionStatusOut(
         tier=current_user.subscription_tier,
         has_subscription=bool(current_user.paystack_subscription_code),
         currency=settings.BILLING_CURRENCY,
-        plans=[
-            PlanOut(
-                tier=tier,
-                price=price,
-                currency=settings.BILLING_CURRENCY,
-                # A tier with no plan code cannot be bought, so the UI must not
-                # offer a button that would only ever return a 400.
-                available=bool(plan_codes.get(tier)),
-            )
-            for tier, price in prices.items()
-        ],
+        plans=_plans(),
     )
+
 
 
 @router.get("/portal", response_model=BillingPortalOut)

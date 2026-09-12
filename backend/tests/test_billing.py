@@ -372,3 +372,33 @@ def test_status_marks_a_tier_with_no_plan_code_unavailable(client, monkeypatch):
     by_tier = {p["tier"]: p for p in plans}
     assert by_tier["pro"]["available"] is True
     assert by_tier["elite"]["available"] is False
+
+
+# ---------- one source for the price ----------
+
+def test_the_pricing_table_is_public(client):
+    """The landing page needs it before anyone has an account, and it had its
+    own hardcoded copy that drifted — advertising $29/$79 while the app
+    charged $24/$89."""
+    resp = client.get("/api/billing/plans")
+
+    assert resp.status_code == 200
+    assert {p["tier"] for p in resp.json()} == {"pro", "elite"}
+
+
+def test_the_public_and_signed_in_prices_are_the_same_numbers(client):
+    """The whole point: two endpoints, one source, no drift."""
+    data = register_user(client, email="same-price@example.com")
+    public = client.get("/api/billing/plans").json()
+    signed_in = client.get("/api/billing/status", headers=auth_headers(data["access_token"])).json()["plans"]
+
+    assert public == signed_in
+
+
+def test_the_price_shown_comes_from_config(client, monkeypatch):
+    monkeypatch.setattr(settings, "PRO_PRICE", 7500.0)
+    monkeypatch.setattr(settings, "BILLING_CURRENCY", "NGN")
+
+    plan = next(p for p in client.get("/api/billing/plans").json() if p["tier"] == "pro")
+    assert plan["price"] == 7500.0
+    assert plan["currency"] == "NGN"
