@@ -93,6 +93,18 @@ class Settings(BaseSettings):
         # Nigeria
         "jobberman.com,myjobmag.com,hotnigerianjobs.com"
     )
+
+    # Addresses on an allowed domain that are never job alerts. Job boards use
+    # the same domain to tell an *employer* that someone applied to their
+    # posting, or that a sponsored listing renewed — mail that matches the
+    # allowlist, costs an AI call, and can be misread as a vacancy. Matched on
+    # the full address, case-insensitively.
+    EMAIL_ALERT_SENDER_EXCLUDES: str = (
+        "employers-noreply@indeed.com,no-reply@indeed.com,"
+        "employer@indeed.com,noreply-employer@glassdoor.com,"
+        "invitationsr@linkedin.com,messages-noreply@linkedin.com,"
+        "notifications-noreply@linkedin.com,updates-noreply@linkedin.com"
+    )
     ENABLE_SCHEDULED_EMAIL_SYNC: bool = True
     # How far back a mailbox reads on its very first sync, or after a server
     # renumbers a folder and the stored UID cursor becomes meaningless.
@@ -160,6 +172,10 @@ class Settings(BaseSettings):
     @property
     def email_alert_sender_domains_list(self) -> List[str]:
         return [d.strip() for d in self.EMAIL_ALERT_SENDER_DOMAINS.split(",") if d.strip()]
+
+    @property
+    def email_alert_sender_excludes_list(self) -> List[str]:
+        return [a.strip().lower() for a in self.EMAIL_ALERT_SENDER_EXCLUDES.split(",") if a.strip()]
 
     @property
     def cors_origins_list(self) -> List[str]:

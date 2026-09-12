@@ -13,7 +13,7 @@ from app.core.config import get_settings
 
 settings = get_settings()
 
-_EMAIL_RE = re.compile(r"[\w.+-]+@([\w-]+\.[\w.-]+)")
+_EMAIL_RE = re.compile(r"([\w.+-]+@([\w-]+\.[\w.-]+))")
 
 
 def detect_provider(sender: str) -> str | None:
@@ -27,7 +27,16 @@ def detect_provider(sender: str) -> str | None:
     match = _EMAIL_RE.search(sender or "")
     if not match:
         return None
-    domain = match.group(1).lower()
+
+    address, domain = match.group(1).lower(), match.group(2).lower()
+
+    # Checked before the domain match, because these *are* on allowed domains.
+    # Boards use the same domain to tell an employer that someone applied to
+    # their posting — mail that would otherwise cost an AI call and could be
+    # read as a vacancy that does not exist.
+    if address in settings.email_alert_sender_excludes_list:
+        return None
+
     for known_domain in settings.email_alert_sender_domains_list:
         # endswith guards the subdomain case (jobalerts.linkedin.com) without
         # matching a lookalike domain that merely ends in the same letters.

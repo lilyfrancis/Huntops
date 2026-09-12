@@ -51,3 +51,23 @@ def test_the_regional_boards_for_every_live_market_are_recognised():
     }
     for sender, expected in cases.items():
         assert detect_provider(sender) == expected, sender
+
+
+def test_employer_side_mail_on_an_allowed_domain_is_excluded():
+    """Boards use the same domain to tell an *employer* that someone applied
+    to their posting, or that a sponsored listing renewed. That mail matches
+    the allowlist, costs an AI call, and reads enough like a job description
+    that the extractor can invent a vacancy from it.
+
+    Found by looking at a real alert mailbox: "New application for Remote
+    Sales Executive" and "You sponsored your job" were both arriving from
+    indeed.com alongside the genuine alerts.
+    """
+    assert detect_provider("Indeed <employers-noreply@indeed.com>") is None
+    assert detect_provider("Indeed <no-reply@indeed.com>") is None
+    # The real alert sender, on a subdomain, still works.
+    assert detect_provider("Indeed <donotreply@jobalert.indeed.com>") == "indeed"
+
+
+def test_the_exclusion_is_case_insensitive():
+    assert detect_provider("Indeed <Employers-NoReply@Indeed.com>") is None
