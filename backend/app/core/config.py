@@ -150,6 +150,18 @@ class Settings(BaseSettings):
     # runs every scheduled job, so digests and aggregation fire N times.
     RUN_SCHEDULER: bool = True
 
+    # WhatsApp (Meta Cloud API) — an alternative digest channel. Email open
+    # rates are poor in these markets; WhatsApp is where people read.
+    #
+    # A business-initiated message must use a template approved by Meta in
+    # advance, so the digest becomes a short nudge with counts plus a link,
+    # not the list itself. Create a template with three body parameters:
+    #   "Hi {{1}}, you have {{2}} new job matches on HuntOps today. Top one: {{3}}"
+    WHATSAPP_PHONE_NUMBER_ID: str = ""
+    WHATSAPP_ACCESS_TOKEN: str = ""
+    WHATSAPP_TEMPLATE_NAME: str = "huntops_daily_digest"
+    WHATSAPP_TEMPLATE_LANGUAGE: str = "en"
+
     ENABLE_SCHEDULED_DIGEST: bool = True
 
     # Autopilot acts in users' names without asking, so it is opt-in per user

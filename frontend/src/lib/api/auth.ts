@@ -22,5 +22,6 @@ export const authApi = {
     company_name?: string;
     home_market?: string;
     positioning_statement?: string;
+    whatsapp_number?: string;
   }) => api.put<User>("/api/users/profile", payload),
 };

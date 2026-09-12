@@ -159,8 +159,47 @@ def _readable(error: Exception) -> str:
     return text[:300]
 
 
+def check_whatsapp() -> CheckResult:
+    """Reads the phone number's own profile — the cheapest authenticated call
+    Meta offers, and it sends nothing."""
+    from app.services import whatsapp
+
+    if not whatsapp.is_configured():
+        return _unconfigured("whatsapp", "the digest goes by email only")
+
+    try:
+        resp = httpx.get(
+            f"https://graph.facebook.com/{whatsapp.GRAPH_VERSION}/{settings.WHATSAPP_PHONE_NUMBER_ID}",
+            headers={"Authorization": f"Bearer {settings.WHATSAPP_ACCESS_TOKEN}"},
+            params={"fields": "display_phone_number,verified_name,quality_rating"},
+            timeout=HTTP_TIMEOUT,
+        )
+    except httpx.HTTPError as e:
+        return CheckResult("whatsapp", True, False, f"Could not reach Meta: {e}")
+
+    if resp.status_code == 401:
+        return CheckResult("whatsapp", True, False, "Token rejected. A temporary token expires after 24 hours — use a permanent System User token.")
+    if resp.status_code >= 400:
+        return CheckResult("whatsapp", True, False, f"Meta returned {resp.status_code}: {resp.text[:200]}")
+
+    data = resp.json()
+    number = data.get("display_phone_number", "?")
+    quality = data.get("quality_rating")
+    detail = f"Connected as {data.get('verified_name', 'unnamed')} ({number})"
+    if quality and quality.upper() not in ("GREEN", "UNKNOWN"):
+        # A number that gets blocked enough drops to RED and stops delivering
+        # entirely, with no error on send.
+        detail += f" — quality rating is {quality}, deliverability is at risk"
+        return CheckResult("whatsapp", True, False, detail)
+    return CheckResult(
+        "whatsapp", True, True,
+        f"{detail}. Template '{settings.WHATSAPP_TEMPLATE_NAME}' must be approved in Meta separately.",
+    )
+
+
 CHECKS = {
     "anthropic": check_anthropic,
+    "whatsapp": check_whatsapp,
     "apollo": check_apollo,
     "smtp": check_smtp,
     "paystack": check_paystack,

@@ -46,3 +46,28 @@ def format_digest_email(matches: list[tuple[JobMatch, Job]]) -> tuple[str, str]:
 
     body = "\n".join(lines)
     return subject, body
+
+
+def format_digest_whatsapp(user: User, matches: list[tuple[JobMatch, Job]]) -> list[str] | None:
+    """Parameters for the approved template, or None when there is nothing to say.
+
+    Returns None rather than an empty digest on purpose. A daily "no matches
+    today" email is ignorable; the same thing as a WhatsApp notification every
+    morning gets the number blocked, and a block is permanent.
+
+    Order matches the template:
+      "Hi {{1}}, you have {{2}} new job matches on HuntOps today. Top one: {{3}}"
+    """
+    if not matches:
+        return None
+
+    top_match, top_job = matches[0]
+    # Meta rejects a parameter containing a newline or a run of spaces, and
+    # job titles arrive from job boards with both.
+    top = " ".join(f"{top_job.title} at {top_job.company_name or 'a company'}".split())
+
+    return [
+        user.full_name.split()[0] if user.full_name.strip() else "there",
+        str(len(matches)),
+        top[:120],
+    ]

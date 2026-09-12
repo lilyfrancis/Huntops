@@ -357,6 +357,31 @@ verification for the `gmail.send` scope, so it is gated behind
 `ENABLE_USER_GMAIL_CONNECT`. With it off, outreach is sent from the platform
 with the user's address as Reply-To, which needs no Google access at all.
 
+## WhatsApp digest setup (optional)
+
+Email open rates for a daily digest are poor in several of the markets this
+serves; WhatsApp is where people actually read.
+
+1. In [Meta for Developers](https://developers.facebook.com/apps), create an
+   app, add **WhatsApp**, and note the **Phone number ID**.
+2. Create a **System User** token with `whatsapp_business_messaging`. Do not
+   use the temporary token on the setup page — it expires in 24 hours and the
+   digest stops with no error.
+3. Under **Message templates**, create one named `huntops_daily_digest` with
+   three body parameters:
+   `Hi {{1}}, you have {{2}} new job matches on HuntOps today. Top one: {{3}}`
+   Approval usually takes minutes.
+4. Set `WHATSAPP_PHONE_NUMBER_ID` and `WHATSAPP_ACCESS_TOKEN`.
+
+A business-initiated message can only be a pre-approved template, so the
+WhatsApp digest is a short nudge with counts and the top match, not the list —
+which is better anyway, since ten jobs in a chat message is unreadable. Users
+pick their channel in preferences and add a number on their profile.
+
+Nothing is sent when a user has no matches: a daily "nothing today" email is
+ignorable, the same on WhatsApp gets the number blocked, and a block is
+permanent.
+
 ## Apollo + Outreach setup
 
 1. Get a **master** API key from [Apollo.io](https://developer.apollo.io/) —

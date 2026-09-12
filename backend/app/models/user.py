@@ -28,6 +28,11 @@ class User(Base):
     # sales into RevOps" — never fabricated content, just tone/emphasis.
     positioning_statement: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
+    # E.164, e.g. "+2348031234567". Normalised before storage — the WhatsApp
+    # API silently fails on anything else, so a number that cannot be made
+    # valid is refused at entry rather than found broken at 07:30.
+    whatsapp_number: Mapped[str | None] = mapped_column(String(20), nullable=True)
+
     subscription_tier: Mapped[SubscriptionTier] = mapped_column(
         Enum(SubscriptionTier, name="subscription_tier"), nullable=False, default=SubscriptionTier.free
     )

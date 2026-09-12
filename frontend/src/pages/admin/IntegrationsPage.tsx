@@ -29,6 +29,11 @@ const INTEGRATIONS: Record<string, { title: string; powers: string; envVar: stri
     powers: "The daily digest, and outreach sent on a user's behalf",
     envVar: "SMTP_HOST / SMTP_USERNAME / SMTP_PASSWORD",
   },
+  whatsapp: {
+    title: "WhatsApp",
+    powers: "An alternative channel for the daily digest, for users who choose it over email",
+    envVar: "WHATSAPP_PHONE_NUMBER_ID / WHATSAPP_ACCESS_TOKEN / WHATSAPP_TEMPLATE_NAME",
+  },
   paystack: {
     title: "Paystack",
     powers: "Subscriptions. Without it nobody can move off the free tier.",

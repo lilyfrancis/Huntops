@@ -43,6 +43,7 @@ class UserOut(BaseModel):
     company_name: str | None
     home_market: str | None
     positioning_statement: str | None
+    whatsapp_number: str | None
     subscription_tier: SubscriptionTier
     ai_credits: int
     is_approved: bool
@@ -51,6 +52,7 @@ class UserOut(BaseModel):
 
 class UserProfileUpdate(BaseModel):
     full_name: str | None = None
+    whatsapp_number: str | None = None
     company_name: str | None = None
     home_market: str | None = None
     positioning_statement: str | None = None

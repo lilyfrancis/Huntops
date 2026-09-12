@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
@@ -241,6 +242,38 @@ export function AutopilotPage() {
                 onChange={(v) => set({ job_types: v as JobType[] })}
               />
             </div>
+            <div className="space-y-2">
+              <Label>Where to send your daily digest</Label>
+              <ChipGroup
+                aria-label="Digest channel"
+                options={[
+                  { value: "email", label: "Email" },
+                  { value: "whatsapp", label: "WhatsApp" },
+                  { value: "both", label: "Both" },
+                  { value: "none", label: "Don't send it" },
+                ]}
+                /* Single-select dressed as chips: ChipGroup toggles, so the
+                   last click wins and an empty click keeps the current value —
+                   a channel of "nothing" is spelled "Don't send it", not
+                   reached by deselecting. */
+                value={[draft.digest_channel ?? "email"]}
+                onChange={(next) => {
+                  const picked = next.find((v) => v !== (draft.digest_channel ?? "email"));
+                  if (picked) set({ digest_channel: picked as typeof draft.digest_channel });
+                }}
+              />
+              {(draft.digest_channel === "whatsapp" || draft.digest_channel === "both") &&
+                !user?.whatsapp_number && (
+                  <p className="rounded-lg border border-warning/30 bg-warning-soft px-3 py-2 text-sm text-warning">
+                    Add a WhatsApp number on your{" "}
+                    <Link to="/app/profile" className="underline">
+                      profile
+                    </Link>{" "}
+                    or nothing will be sent.
+                  </p>
+                )}
+            </div>
+
             <Switch
               checked={draft.remote_only ?? false}
               onChange={(v) => set({ remote_only: v })}

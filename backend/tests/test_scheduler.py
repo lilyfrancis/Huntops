@@ -111,3 +111,86 @@ def test_daily_digest_skips_user_on_ai_failure_without_crashing(db_session):
 
     mock_send.assert_not_called()
     mock_alert.assert_not_called()  # a single user's AI failure isn't a crash worth paging on
+
+
+# ---------- the digest goes to whichever channel the user chose ----------
+
+def _seeker_with_a_match(session, email, *, channel, number=None):
+    from app.models.job_match import JobMatch
+    from app.models.user_preference import UserPreference
+
+    user = User(email=email, password_hash="x", full_name="Amara Obi",
+                role=UserRole.job_seeker, whatsapp_number=number)
+    session.add(user)
+    session.flush()
+    session.add(Resume(user_id=user.id, raw_text="dummy", parsed_skills=["Python"]))
+    session.add(UserPreference(user_id=user.id, digest_channel=channel))
+
+    job = Job(title="Growth Lead", description="d", requirements=[], location="Remote",
+              job_type=JobType.full_time, experience_level=ExperienceLevel.mid,
+              source="internal", source_url=f"https://example.com/{email}", status=JobStatus.active,
+              company_name="Shopify")
+    session.add(job)
+    session.flush()
+    session.add(JobMatch(user_id=user.id, job_id=job.id, fit_score=91))
+    session.commit()
+    return user
+
+
+def _run_digest_with_stubbed_scoring():
+    """Scoring is an AI call; this exercises delivery, not matching."""
+    with patch("app.services.scheduler.matching.score_jobs", return_value=[]), \
+         patch("app.services.scheduler.matching.persist_matches", return_value=[]):
+        scheduler._run_daily_digest()
+
+
+@patch("app.services.scheduler.whatsapp.send_template", return_value=True)
+@patch("app.services.scheduler.notifications.send_email", return_value=True)
+def test_an_email_user_gets_no_whatsapp(mock_email, mock_whatsapp, db_session):
+    _seeker_with_a_match(db_session, "email-only@example.com", channel="email", number="+2348031234567")
+    _run_digest_with_stubbed_scoring()
+
+    mock_email.assert_called_once()
+    mock_whatsapp.assert_not_called()
+
+
+@patch("app.services.scheduler.whatsapp.send_template", return_value=True)
+@patch("app.services.scheduler.notifications.send_email", return_value=True)
+def test_a_whatsapp_user_gets_no_email(mock_email, mock_whatsapp, db_session):
+    _seeker_with_a_match(db_session, "wa-only@example.com", channel="whatsapp", number="+2348031234567")
+    _run_digest_with_stubbed_scoring()
+
+    mock_whatsapp.assert_called_once()
+    mock_email.assert_not_called()
+
+
+@patch("app.services.scheduler.whatsapp.send_template", return_value=True)
+@patch("app.services.scheduler.notifications.send_email", return_value=True)
+def test_choosing_whatsapp_without_giving_a_number_falls_back_to_nothing(mock_email, mock_whatsapp, db_session):
+    """No number means no message — silently emailing them instead would
+    ignore a preference they explicitly set."""
+    _seeker_with_a_match(db_session, "wa-nonumber@example.com", channel="whatsapp", number=None)
+    _run_digest_with_stubbed_scoring()
+
+    mock_whatsapp.assert_not_called()
+    mock_email.assert_not_called()
+
+
+@patch("app.services.scheduler.whatsapp.send_template", return_value=True)
+@patch("app.services.scheduler.notifications.send_email", return_value=True)
+def test_both_means_both(mock_email, mock_whatsapp, db_session):
+    _seeker_with_a_match(db_session, "wa-both@example.com", channel="both", number="+2348031234567")
+    _run_digest_with_stubbed_scoring()
+
+    mock_email.assert_called_once()
+    mock_whatsapp.assert_called_once()
+
+
+@patch("app.services.scheduler.whatsapp.send_template", return_value=True)
+@patch("app.services.scheduler.notifications.send_email", return_value=True)
+def test_opting_out_stops_both(mock_email, mock_whatsapp, db_session):
+    _seeker_with_a_match(db_session, "wa-none@example.com", channel="none", number="+2348031234567")
+    _run_digest_with_stubbed_scoring()
+
+    mock_email.assert_not_called()
+    mock_whatsapp.assert_not_called()

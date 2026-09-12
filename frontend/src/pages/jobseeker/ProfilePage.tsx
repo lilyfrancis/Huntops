@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -19,6 +19,7 @@ interface ProfileFormValues {
   full_name: string;
   home_market: string;
   positioning_statement: string;
+  whatsapp_number: string;
 }
 
 /* Names and blurbs only. The price is served with the plan, because the real
@@ -76,6 +77,7 @@ export function ProfilePage() {
       full_name: user?.full_name ?? "",
       home_market: user?.home_market ?? "",
       positioning_statement: user?.positioning_statement ?? "",
+      whatsapp_number: user?.whatsapp_number ?? "",
     },
   });
 
@@ -134,6 +136,18 @@ export function ProfilePage() {
             <div className="space-y-1.5">
               <Label htmlFor="home_market">Home market</Label>
               <Input id="home_market" placeholder="e.g. Nigeria, Philippines" {...register("home_market")} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="whatsapp_number">WhatsApp number (optional)</Label>
+              <Input id="whatsapp_number" placeholder="e.g. +234 803 123 4567" {...register("whatsapp_number")} />
+              <p className="text-xs text-ink-faint">
+                Include the country code. Only used for your daily digest, if you choose WhatsApp
+                for it in{" "}
+                <Link to="/app/autopilot" className="text-accent-strong hover:underline">
+                  preferences
+                </Link>
+                .
+              </p>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="positioning_statement">Positioning statement (optional)</Label>

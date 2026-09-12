@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.security import get_current_user, require_job_seeker
@@ -9,7 +9,7 @@ from app.models.enums import JobType
 from app.models.user import User
 from app.schemas.preference import PreferenceOptions, PreferenceOut, PreferenceUpdate
 from app.schemas.user import UserOut, UserProfileUpdate
-from app.services import alert_mailboxes, preferences
+from app.services import alert_mailboxes, preferences, whatsapp
 
 router = APIRouter(prefix="/api/users", tags=["users"])
 
@@ -28,6 +28,20 @@ def update_profile(
         current_user.home_market = payload.home_market
     if payload.positioning_statement is not None:
         current_user.positioning_statement = payload.positioning_statement
+    if payload.whatsapp_number is not None:
+        # Refused at entry rather than stored and found broken at 07:30 — the
+        # WhatsApp API fails silently on anything that isn't E.164.
+        raw = payload.whatsapp_number.strip()
+        if not raw:
+            current_user.whatsapp_number = None
+        else:
+            normalised = whatsapp.normalise_number(raw)
+            if normalised is None:
+                raise HTTPException(
+                    status_code=422,
+                    detail="Include the country code, e.g. +234 803 123 4567",
+                )
+            current_user.whatsapp_number = normalised
 
     db.commit()
     db.refresh(current_user)

@@ -5,7 +5,15 @@ from sqlalchemy import desc
 
 from app.core.config import get_settings
 from app.db.base import SessionLocal
-from app.services import autopilot, digest, ghost_detection, matching, notifications, preferences
+from app.services import (
+    autopilot,
+    digest,
+    ghost_detection,
+    matching,
+    notifications,
+    preferences,
+    whatsapp,
+)
 from app.services.aggregation import ingest_all
 from app.services.ai_client import AIResponseError
 from app.services.alert_mailboxes import sync_all_mailboxes
@@ -102,8 +110,22 @@ def _run_daily_digest() -> None:
                 continue
 
             matches = digest.get_top_matches(db, user)
-            subject, body = digest.format_digest_email(matches)
-            if notifications.send_email(user.email, subject, body):
+            channel = prefs.digest_channel
+            delivered = False
+
+            if channel in ("email", "both"):
+                subject, body = digest.format_digest_email(matches)
+                delivered = notifications.send_email(user.email, subject, body) or delivered
+
+            if channel in ("whatsapp", "both") and user.whatsapp_number:
+                params = digest.format_digest_whatsapp(user, matches)
+                # None means no matches. A daily "nothing today" email is
+                # ignorable; the same on WhatsApp gets the number blocked, and
+                # a block is permanent.
+                if params is not None:
+                    delivered = whatsapp.send_template(to=user.whatsapp_number, params=params) or delivered
+
+            if delivered:
                 sent_count += 1
 
         logger.info("Daily digest sent to %d/%d job seekers", sent_count, len(seekers))

@@ -32,6 +32,7 @@ export interface User {
   company_name: string | null;
   home_market: string | null;
   positioning_statement: string | null;
+  whatsapp_number: string | null;
   subscription_tier: SubscriptionTier;
   ai_credits: number;
   is_approved: boolean;
@@ -147,6 +148,7 @@ export interface Preferences {
   lanes: JobLane[];
   job_types: JobType[];
   remote_only: boolean;
+  digest_channel: "email" | "whatsapp" | "both" | "none";
   autopilot_apply_enabled: boolean;
   autopilot_apply_threshold: number;
   autopilot_outreach_enabled: boolean;

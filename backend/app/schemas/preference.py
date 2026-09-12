@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -24,6 +25,7 @@ class PreferenceUpdate(BaseModel):
     lanes: list[str] | None = None
     job_types: list[str] | None = None
     remote_only: bool | None = None
+    digest_channel: Literal["email", "whatsapp", "both", "none"] | None = None
 
     autopilot_apply_enabled: bool | None = None
     autopilot_apply_threshold: int | None = Field(default=None, ge=50, le=100)
@@ -70,6 +72,7 @@ class PreferenceOut(BaseModel):
     lanes: list[str]
     job_types: list[str]
     remote_only: bool
+    digest_channel: str
 
     autopilot_apply_enabled: bool
     autopilot_apply_threshold: int

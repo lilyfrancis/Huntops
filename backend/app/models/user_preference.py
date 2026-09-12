@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, JSON
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, JSON, String
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.types import Uuid
 
@@ -53,6 +53,11 @@ class UserPreference(Base):
     # A ceiling per run, so a bad scoring day can't fire off fifty applications
     # in someone's name before they notice.
     autopilot_daily_cap: Mapped[int] = mapped_column(Integer, nullable=False, default=5)
+
+    # "email" | "whatsapp" | "both" | "none". Default email, because it is the
+    # one channel every user has by definition — WhatsApp needs a number they
+    # may never give us.
+    digest_channel: Mapped[str] = mapped_column(String(20), nullable=False, default="email")
 
     onboarded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
