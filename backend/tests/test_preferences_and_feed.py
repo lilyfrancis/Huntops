@@ -368,3 +368,70 @@ def test_an_absurd_number_of_cities_is_rejected(client):
         headers=auth_headers(data["access_token"]),
     )
     assert resp.status_code == 422
+
+
+# ---------- narrowing the feed for one visit, without saving ----------
+
+def test_the_feed_can_be_narrowed_to_remote_without_saving_anything(client, db_session):
+    """Browsing today's remote roles must not mean editing — and saving — the
+    settings that also drive the digest and autopilot."""
+    data = register_user(client, email="feed-remote@example.com")
+    headers = auth_headers(data["access_token"])
+    _job(db_session, title="Remote Role", remote=True)
+    _job(db_session, title="Onsite Role", remote=False)
+
+    assert len(_feed(client, headers)) == 2
+    assert [i["job"]["title"] for i in _feed(client, headers, remote_only=True)] == ["Remote Role"]
+
+    # Nothing was persisted — the saved preference is untouched.
+    assert client.get("/api/users/preferences", headers=headers).json()["remote_only"] is False
+
+
+def test_the_feed_search_covers_title_company_and_location(client, db_session):
+    """The three things someone scanning a feed actually types."""
+    data = register_user(client, email="feed-search@example.com")
+    headers = auth_headers(data["access_token"])
+
+    db_session.add(Job(
+        title="Growth Lead", description="d", requirements=[], location="Toronto",
+        job_type=JobType.full_time, experience_level=ExperienceLevel.mid, status=JobStatus.active,
+        source="internal", source_url="https://example.com/a", company_name="Shopify",
+    ))
+    db_session.add(Job(
+        title="Ops Manager", description="d", requirements=[], location="Berlin",
+        job_type=JobType.full_time, experience_level=ExperienceLevel.mid, status=JobStatus.active,
+        source="internal", source_url="https://example.com/b", company_name="Acme",
+    ))
+    db_session.commit()
+
+    assert [i["job"]["title"] for i in _feed(client, headers, q="growth")] == ["Growth Lead"]
+    assert [i["job"]["title"] for i in _feed(client, headers, q="shopify")] == ["Growth Lead"]
+    assert [i["job"]["title"] for i in _feed(client, headers, q="toronto")] == ["Growth Lead"]
+    assert _feed(client, headers, q="berlin")[0]["job"]["title"] == "Ops Manager"
+
+
+def test_the_feed_search_does_not_match_on_description(client, db_session):
+    """Matching body text returns jobs whose connection to the search is
+    invisible on the card, which reads as a broken search."""
+    data = register_user(client, email="feed-desc@example.com")
+    db_session.add(Job(
+        title="Ops Manager", description="Reporting to the Head of Kubernetes", requirements=[],
+        location="Remote", job_type=JobType.full_time, experience_level=ExperienceLevel.mid,
+        status=JobStatus.active, source="internal", source_url="https://example.com/c",
+    ))
+    db_session.commit()
+
+    assert _feed(client, auth_headers(data["access_token"]), q="kubernetes") == []
+
+
+def test_feed_narrowing_stacks_on_top_of_saved_preferences(client, db_session):
+    """It narrows, never widens — a visit filter must not surface a market the
+    user asked not to see."""
+    data = register_user(
+        client, email="feed-stack@example.com", preferences={"target_markets": ["Canada"]}
+    )
+    _job(db_session, title="Canada Remote", market="Canada", remote=True)
+    _job(db_session, title="UK Remote", market="UK", remote=True)
+
+    titles = [i["job"]["title"] for i in _feed(client, auth_headers(data["access_token"]), remote_only=True)]
+    assert titles == ["Canada Remote"]

@@ -1,7 +1,7 @@
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import desc, nulls_last
+from sqlalchemy import desc, nulls_last, or_
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
@@ -78,6 +78,11 @@ def list_jobs(
 @router.get("/feed", response_model=list[FeedItemOut])
 def personalized_feed(
     ignore_preferences: bool = False,
+    # Narrowing for this visit only, on top of saved preferences. Browsing
+    # today's remote roles should not mean editing — and saving — the settings
+    # that also drive the digest and autopilot.
+    remote_only: bool = False,
+    q: str | None = Query(default=None, max_length=100),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     current_user: User = Depends(require_job_seeker),
@@ -92,6 +97,17 @@ def personalized_feed(
     """
     prefs = preferences.get_or_create(db, current_user)
     query = preferences.feed_query(db, None if ignore_preferences else prefs)
+
+    if remote_only:
+        query = query.filter(Job.is_remote.is_(True))
+    if q and q.strip():
+        # Title, company and location: the three things someone scanning a
+        # feed actually types. Not the description — matching on body text
+        # returns jobs whose connection to the search is invisible on the card.
+        term = f"%{q.strip()}%"
+        query = query.filter(
+            or_(Job.title.ilike(term), Job.company_name.ilike(term), Job.location.ilike(term))
+        )
 
     # Left join so an unscored job still appears; it just sorts below scored
     # ones instead of vanishing until the next scoring run.

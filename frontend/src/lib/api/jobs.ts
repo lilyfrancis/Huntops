@@ -13,6 +13,11 @@ export interface JobFilters {
 export interface FeedParams {
   /** Show the whole pool rather than this user's preference slice. */
   ignore_preferences?: boolean;
+  /* Narrowing for this visit only, on top of saved preferences — browsing
+     today's remote roles shouldn't mean editing the settings that also drive
+     the digest and autopilot. */
+  remote_only?: boolean;
+  q?: string;
   skip?: number;
   limit?: number;
 }
