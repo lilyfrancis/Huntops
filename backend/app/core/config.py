@@ -157,6 +157,11 @@ class Settings(BaseSettings):
     # advance, so the digest becomes a short nudge with counts plus a link,
     # not the list itself. Create a template with three body parameters:
     #   "Hi {{1}}, you have {{2}} new job matches on HuntOps today. Top one: {{3}}"
+    # Meta's own endpoint by default. Several providers resell the Cloud API
+    # behind their own host with an identical request shape — pointing this at
+    # theirs is enough to use them, no code change. A provider with its own
+    # payload format needs an adapter instead.
+    WHATSAPP_API_BASE: str = "https://graph.facebook.com"
     WHATSAPP_PHONE_NUMBER_ID: str = ""
     WHATSAPP_ACCESS_TOKEN: str = ""
     WHATSAPP_TEMPLATE_NAME: str = "huntops_daily_digest"

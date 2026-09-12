@@ -28,6 +28,12 @@ GRAPH_VERSION = "v21.0"
 HTTP_TIMEOUT = 20.0
 
 
+def _base() -> str:
+    """Meta directly, or a provider reselling the Cloud API behind their own
+    host. Trailing slash trimmed because people paste it either way."""
+    return settings.WHATSAPP_API_BASE.rstrip("/")
+
+
 class WhatsAppError(Exception):
     pass
 
@@ -74,7 +80,7 @@ def send_template(*, to: str, params: list[str]) -> bool:
 
     try:
         resp = httpx.post(
-            f"https://graph.facebook.com/{GRAPH_VERSION}/{settings.WHATSAPP_PHONE_NUMBER_ID}/messages",
+            f"{_base()}/{GRAPH_VERSION}/{settings.WHATSAPP_PHONE_NUMBER_ID}/messages",
             headers={"Authorization": f"Bearer {settings.WHATSAPP_ACCESS_TOKEN}"},
             json={
                 "messaging_product": "whatsapp",

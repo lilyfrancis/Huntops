@@ -131,3 +131,18 @@ def test_a_successful_send_posts_a_template_not_free_text(monkeypatch):
     assert body["template"]["name"] == "huntops_daily_digest"
     assert body["to"] == "2348031234567"  # no leading +
     assert [p["text"] for p in body["template"]["components"][0]["parameters"]] == ["Amara", "3", "Growth Lead"]
+
+
+def test_a_provider_reselling_the_cloud_api_needs_no_code_change(monkeypatch):
+    """Several providers proxy Meta's Cloud API behind their own host with an
+    identical request shape. Pointing the base URL at theirs is enough."""
+    monkeypatch.setattr(whatsapp.settings, "WHATSAPP_API_BASE", "https://api.example-bsp.com/")
+    monkeypatch.setattr(whatsapp.settings, "WHATSAPP_PHONE_NUMBER_ID", "123")
+    monkeypatch.setattr(whatsapp.settings, "WHATSAPP_ACCESS_TOKEN", "t")
+
+    with patch("app.services.whatsapp.httpx.post", return_value=MagicMock(status_code=200)) as mock_post:
+        assert whatsapp.send_template(to="+2348031234567", params=["a"]) is True
+
+    url = mock_post.call_args.args[0]
+    assert url.startswith("https://api.example-bsp.com/v21.0/123/messages")
+    assert "graph.facebook.com" not in url  # and the trailing slash didn't double up

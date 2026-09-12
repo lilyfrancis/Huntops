@@ -169,7 +169,7 @@ def check_whatsapp() -> CheckResult:
 
     try:
         resp = httpx.get(
-            f"https://graph.facebook.com/{whatsapp.GRAPH_VERSION}/{settings.WHATSAPP_PHONE_NUMBER_ID}",
+            f"{whatsapp._base()}/{whatsapp.GRAPH_VERSION}/{settings.WHATSAPP_PHONE_NUMBER_ID}",
             headers={"Authorization": f"Bearer {settings.WHATSAPP_ACCESS_TOKEN}"},
             params={"fields": "display_phone_number,verified_name,quality_rating"},
             timeout=HTTP_TIMEOUT,
