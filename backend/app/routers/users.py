@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.core.security import get_current_user, require_job_seeker
 from app.db.base import get_db
-from app.models.enums import JobLane, JobType
+from app.models.enums import JobType
 from app.models.user import User
 from app.schemas.preference import PreferenceOptions, PreferenceOut, PreferenceUpdate
 from app.schemas.user import UserOut, UserProfileUpdate
@@ -41,7 +41,7 @@ def preference_options(db: Session = Depends(get_db)) -> PreferenceOptions:
     markets we serve, which is the same thing the marketing page advertises."""
     return PreferenceOptions(
         markets=alert_mailboxes.known_markets(db),
-        lanes=[lane.value for lane in JobLane if lane is not JobLane.other],
+        lanes=preferences.lanes_with_supply(db),
         job_types=[job_type.value for job_type in JobType],
     )
 

@@ -6,10 +6,10 @@ the same thing in all three — a user can't see a job on their dashboard that
 autopilot considers out of scope, or vice versa.
 """
 
-from sqlalchemy import or_
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Query, Session
 
-from app.models.enums import JobStatus
+from app.models.enums import JobLane, JobStatus
 from app.models.job import Job
 from app.models.user import User
 from app.models.user_preference import UserPreference
@@ -69,3 +69,34 @@ def feed_query(db: Session, prefs: UserPreference | None, *, hide_ghosts: bool =
     if hide_ghosts:
         query = query.filter(or_(Job.ghost_score.is_(None), Job.ghost_score < GHOST_THRESHOLD))
     return apply_to_query(query, prefs)
+
+
+# A lane needs at least this many live jobs before it is offered at signup.
+# One stray listing is not a job family; picking it would produce a feed of one.
+MIN_JOBS_FOR_LANE = 5
+
+
+def lanes_with_supply(db: Session) -> list[str]:
+    """Job families worth offering, i.e. ones with real listings behind them.
+
+    Symmetric with `known_markets`: offering a lane with nothing in it is a
+    promise of supply that does not exist, and the user finds out by getting an
+    empty feed on the day they signed up.
+
+    Falls back to every lane when nothing clears the bar, so a fresh deployment
+    offers a full choice rather than none — an empty picker reads as broken,
+    and at that point the pool is too thin to say anything either way.
+    """
+    rows = (
+        db.query(Job.lane, func.count(Job.id))
+        .filter(Job.status == JobStatus.active, Job.lane.isnot(None), Job.lane != JobLane.other)
+        .group_by(Job.lane)
+        .having(func.count(Job.id) >= MIN_JOBS_FOR_LANE)
+        .all()
+    )
+    if not rows:
+        return [lane.value for lane in JobLane if lane is not JobLane.other]
+
+    # Busiest first: the lane with the most supply is the likeliest pick, and
+    # the ordering doubles as an honest signal of where the depth is.
+    return [lane.value for lane, _ in sorted(rows, key=lambda r: -r[1])]

@@ -216,3 +216,59 @@ def test_empty_preferences_mean_no_filter_not_an_empty_feed(client, db_session):
     _job(db_session, title="UK Role", market="UK")
 
     assert len(_feed(client, auth_headers(data["access_token"]))) == 2
+
+
+# ---------- only offer job families that have supply ----------
+
+def _jobs(session, lane, count, *, status=JobStatus.active):
+    for i in range(count):
+        session.add(Job(
+            title=f"{lane.value} role {i}", description="d", requirements=[], location="Remote",
+            job_type=JobType.full_time, experience_level=ExperienceLevel.mid, status=status,
+            source="email-linkedin", source_url=f"https://example.com/{lane.value}-{i}-{status.value}",
+            lane=lane,
+        ))
+    session.commit()
+
+
+def test_a_lane_with_almost_no_jobs_is_not_offered(client, db_session):
+    """Offering a job family with one listing behind it is a promise of supply
+    that does not exist — the user picks it and gets a feed of one."""
+    from app.services.preferences import MIN_JOBS_FOR_LANE
+
+    _jobs(db_session, JobLane.marketing, MIN_JOBS_FOR_LANE)
+    _jobs(db_session, JobLane.finance, MIN_JOBS_FOR_LANE - 1)
+
+    lanes = client.get("/api/users/preferences/options").json()["lanes"]
+    assert "marketing" in lanes
+    assert "finance" not in lanes
+
+
+def test_lanes_are_offered_busiest_first(client, db_session):
+    """The ordering is an honest signal of where the depth actually is."""
+    from app.services.preferences import MIN_JOBS_FOR_LANE
+
+    _jobs(db_session, JobLane.marketing, MIN_JOBS_FOR_LANE)
+    _jobs(db_session, JobLane.sales, MIN_JOBS_FOR_LANE + 10)
+
+    lanes = client.get("/api/users/preferences/options").json()["lanes"]
+    assert lanes[0] == "sales"
+
+
+def test_an_empty_pool_still_offers_every_lane(client):
+    """A fresh deployment has no supply anywhere. An empty picker reads as
+    broken, and the pool is too thin to say anything either way."""
+    lanes = client.get("/api/users/preferences/options").json()["lanes"]
+    assert "engineering" in lanes and "marketing" in lanes
+    assert "other" not in lanes  # a fallback bucket, never something to choose
+
+
+def test_closed_jobs_do_not_count_as_supply(client, db_session):
+    from app.services.preferences import MIN_JOBS_FOR_LANE
+
+    _jobs(db_session, JobLane.marketing, MIN_JOBS_FOR_LANE)
+    _jobs(db_session, JobLane.hr, MIN_JOBS_FOR_LANE, status=JobStatus.closed)
+
+    lanes = client.get("/api/users/preferences/options").json()["lanes"]
+    assert "marketing" in lanes
+    assert "hr" not in lanes
