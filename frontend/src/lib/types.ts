@@ -143,6 +143,7 @@ export interface FeedItem {
 
 export interface Preferences {
   target_markets: string[];
+  locations: string[];
   lanes: JobLane[];
   job_types: JobType[];
   remote_only: boolean;

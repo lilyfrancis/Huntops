@@ -20,6 +20,7 @@ class PreferenceUpdate(BaseModel):
     the other's values and risk clobbering them."""
 
     target_markets: list[str] | None = None
+    locations: list[str] | None = None
     lanes: list[str] | None = None
     job_types: list[str] | None = None
     remote_only: bool | None = None
@@ -29,6 +30,26 @@ class PreferenceUpdate(BaseModel):
     autopilot_outreach_enabled: bool | None = None
     autopilot_outreach_threshold: int | None = Field(default=None, ge=50, le=100)
     autopilot_daily_cap: int | None = Field(default=None, ge=1, le=25)
+
+    @field_validator("locations")
+    @classmethod
+    def locations_are_sane(cls, v: list[str] | None) -> list[str] | None:
+        """Trimmed, deduplicated, and bounded. Each entry becomes a LIKE
+        clause, so an unbounded list is an unbounded query."""
+        if v is None:
+            return None
+        cleaned: list[str] = []
+        for name in v:
+            name = name.strip()
+            if not name:
+                continue
+            if len(name) > 100:
+                raise ValueError("Location names must be 100 characters or fewer")
+            if name.lower() not in {c.lower() for c in cleaned}:
+                cleaned.append(name)
+        if len(cleaned) > 20:
+            raise ValueError("At most 20 locations")
+        return cleaned
 
     @field_validator("lanes")
     @classmethod
@@ -45,6 +66,7 @@ class PreferenceOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     target_markets: list[str]
+    locations: list[str]
     lanes: list[str]
     job_types: list[str]
     remote_only: bool

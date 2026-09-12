@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChipGroup, humanize } from "@/components/ui/chip-group";
+import { TagInput } from "@/components/ui/tag-input";
 import { useAuth } from "@/hooks/use-auth";
 import { api } from "@/lib/api-client";
 import { ApiError } from "@/lib/api-client";
@@ -51,6 +52,7 @@ export function RegisterPage() {
   const [step, setStep] = useState<"account" | "hunt">("account");
 
   const [markets, setMarkets] = useState<string[]>([]);
+  const [locations, setLocations] = useState<string[]>([]);
   const [lanes, setLanes] = useState<string[]>([]);
   const [jobTypes, setJobTypes] = useState<string[]>([]);
 
@@ -89,6 +91,7 @@ export function RegisterPage() {
           values.role === "job_seeker"
             ? {
                 target_markets: markets,
+                locations,
                 lanes: lanes as JobLane[],
                 job_types: jobTypes as JobType[],
               }
@@ -134,6 +137,19 @@ export function RegisterPage() {
               onChange={setMarkets}
               emptyHint="No markets are live yet — you'll see every job we have until one is."
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Any particular city? (optional)</Label>
+            <TagInput
+              aria-label="Cities"
+              value={locations}
+              onChange={setLocations}
+              placeholder="Type a city and press Enter"
+            />
+            <p className="text-xs text-ink-faint">
+              Remote roles in your market always show, whatever you put here.
+            </p>
           </div>
 
           <div className="space-y-2">

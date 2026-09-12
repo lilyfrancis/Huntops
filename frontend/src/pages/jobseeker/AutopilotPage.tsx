@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { PageSpinner } from "@/components/ui/spinner";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ChipGroup } from "@/components/ui/chip-group";
+import { TagInput } from "@/components/ui/tag-input";
 import { humanize } from "@/lib/labels";
 import { autopilotApi, preferencesApi } from "@/lib/api";
 import { ApiError } from "@/lib/api-client";
@@ -209,6 +210,19 @@ export function AutopilotPage() {
                 emptyHint="No markets are live yet — you're seeing every job we have."
               />
             </div>
+            <div className="space-y-2">
+              <Label>Cities</Label>
+              <TagInput
+                aria-label="Cities"
+                value={draft.locations ?? []}
+                onChange={(locations) => set({ locations })}
+                placeholder="Type a city and press Enter"
+              />
+              <p className="text-xs text-ink-faint">
+                Narrows within your markets. Remote roles always show regardless.
+              </p>
+            </div>
+
             <div className="space-y-2">
               <Label>Job families</Label>
               <ChipGroup

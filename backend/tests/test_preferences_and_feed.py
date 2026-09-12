@@ -272,3 +272,99 @@ def test_closed_jobs_do_not_count_as_supply(client, db_session):
     lanes = client.get("/api/users/preferences/options").json()["lanes"]
     assert "marketing" in lanes
     assert "hr" not in lanes
+
+
+# ---------- narrowing to a city inside a market ----------
+
+def _located(session, title, location, *, remote=False, market="Canada"):
+    job = Job(
+        title=title, description="d", requirements=[], location=location,
+        job_type=JobType.full_time, experience_level=ExperienceLevel.mid, status=JobStatus.active,
+        source="email-linkedin", source_url=f"https://example.com/{title.replace(' ', '-')}",
+        lane=JobLane.marketing, market=market, is_remote=remote,
+    )
+    session.add(job)
+    session.commit()
+    return job
+
+
+def test_a_city_preference_narrows_within_the_market(client, db_session):
+    """Mailboxes are subscribed country-wide because supply must be broad.
+    Narrowing is the user's job, and this is where they do it."""
+    data = register_user(
+        client, email="toronto@example.com",
+        preferences={"target_markets": ["Canada"], "locations": ["Toronto"]},
+    )
+    _located(db_session, "Toronto Role", "Toronto, ON")
+    _located(db_session, "Vancouver Role", "Vancouver, BC")
+
+    titles = [i["job"]["title"] for i in _feed(client, auth_headers(data["access_token"]))]
+    assert titles == ["Toronto Role"]
+
+
+def test_the_city_match_survives_however_the_board_wrote_it(client, db_session):
+    """Boards write the same city a dozen ways and the location is free text
+    from whoever sent the alert."""
+    data = register_user(client, email="messy@example.com", preferences={"locations": ["toronto"]})
+    _located(db_session, "A", "Toronto")
+    _located(db_session, "B", "Downtown Toronto, ON (Hybrid)")
+    _located(db_session, "C", "Greater Toronto Area")
+    _located(db_session, "D", "Calgary, AB")
+
+    titles = sorted(i["job"]["title"] for i in _feed(client, auth_headers(data["access_token"])))
+    assert titles == ["A", "B", "C"]
+
+
+def test_remote_jobs_survive_a_city_filter(client, db_session):
+    """Someone who asked for Toronto wants the roles they can actually take,
+    and a remote job in their market is one of them. A strict city match would
+    hide exactly the listings most people are hoping for."""
+    data = register_user(client, email="remote-ok@example.com", preferences={"locations": ["Toronto"]})
+    _located(db_session, "Remote Canada Role", "Remote — Canada", remote=True)
+    _located(db_session, "Montreal Role", "Montreal, QC")
+
+    titles = [i["job"]["title"] for i in _feed(client, auth_headers(data["access_token"]))]
+    assert titles == ["Remote Canada Role"]
+
+
+def test_several_cities_are_all_matched(client, db_session):
+    data = register_user(
+        client, email="multi-city@example.com", preferences={"locations": ["Toronto", "Vancouver"]}
+    )
+    _located(db_session, "A", "Toronto, ON")
+    _located(db_session, "B", "Vancouver, BC")
+    _located(db_session, "C", "Halifax, NS")
+
+    titles = sorted(i["job"]["title"] for i in _feed(client, auth_headers(data["access_token"])))
+    assert titles == ["A", "B"]
+
+
+def test_no_city_set_means_the_whole_market(client, db_session):
+    data = register_user(client, email="whole-market@example.com", preferences={"target_markets": ["Canada"]})
+    _located(db_session, "A", "Toronto, ON")
+    _located(db_session, "B", "Calgary, AB")
+
+    assert len(_feed(client, auth_headers(data["access_token"]))) == 2
+
+
+def test_blank_and_duplicate_city_entries_are_cleaned_up(client):
+    data = register_user(client, email="messy-input@example.com")
+    resp = client.put(
+        "/api/users/preferences",
+        json={"locations": ["  Toronto  ", "", "toronto", "Vancouver"]},
+        headers=auth_headers(data["access_token"]),
+    )
+    assert resp.status_code == 200
+    assert resp.json()["locations"] == ["Toronto", "Vancouver"]
+
+
+def test_an_absurd_number_of_cities_is_rejected(client):
+    """Each entry becomes a LIKE clause, so an unbounded list is an unbounded
+    query."""
+    data = register_user(client, email="too-many@example.com")
+    resp = client.put(
+        "/api/users/preferences",
+        json={"locations": [f"City {i}" for i in range(25)]},
+        headers=auth_headers(data["access_token"]),
+    )
+    assert resp.status_code == 422

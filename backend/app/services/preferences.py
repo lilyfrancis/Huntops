@@ -47,6 +47,17 @@ def apply_to_query(query: Query, prefs: UserPreference | None) -> Query:
         # Filtering them out would leave a new market with an empty feed until
         # its mailbox has run.
         query = query.filter(or_(Job.market.in_(prefs.target_markets), Job.market.is_(None)))
+    if prefs.locations:
+        # Substring, case-insensitive, because a board writes the same city a
+        # dozen ways: "Toronto", "Toronto, ON", "Downtown Toronto (Hybrid)".
+        #
+        # Remote jobs always pass. Someone who asked for Toronto wants the
+        # roles they can actually take, and a remote job in their own market is
+        # one of them — a strict city match would hide exactly the listings
+        # most people are hoping for.
+        clauses = [Job.location.ilike(f"%{name.strip()}%") for name in prefs.locations if name.strip()]
+        if clauses:
+            query = query.filter(or_(*clauses, Job.is_remote.is_(True)))
     if prefs.lanes:
         query = query.filter(Job.lane.in_(prefs.lanes))
     if prefs.job_types:

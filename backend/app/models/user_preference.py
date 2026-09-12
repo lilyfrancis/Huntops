@@ -32,6 +32,12 @@ class UserPreference(Base):
     # Empty list means "no filter" in every case below, not "match nothing" —
     # a half-finished onboarding must degrade to the full feed, never a blank one.
     target_markets: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
+
+    # Cities or regions within those markets, free text — "Toronto", "Greater
+    # Manchester", "Abu Dhabi". Free text rather than a fixed list because the
+    # location on a listing is itself free text from whatever board sent it,
+    # and no enum survives contact with "Downtown Toronto, ON (Hybrid)".
+    locations: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
     lanes: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
     job_types: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
     remote_only: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)

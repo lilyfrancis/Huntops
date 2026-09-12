@@ -53,6 +53,7 @@ export function JobFeedPage() {
 
   const filterSummary = [
     ...(prefs?.target_markets ?? []),
+    ...(prefs?.locations ?? []),
     ...(prefs?.lanes ?? []).map(humanize),
   ];
   const hasFilters = filterSummary.length > 0;
