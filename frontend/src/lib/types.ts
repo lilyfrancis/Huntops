@@ -204,6 +204,14 @@ export interface AlertMailbox {
   /* No password field, deliberately — the API has no read path for it. */
 }
 
+export interface IntegrationStatus {
+  name: string;
+  configured: boolean;
+  /** null when nothing is configured — untested, not failing. */
+  ok: boolean | null;
+  detail: string;
+}
+
 export interface AlertSender {
   id: string;
   domain: string;

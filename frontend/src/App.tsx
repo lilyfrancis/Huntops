@@ -43,6 +43,7 @@ const ApplicantsPage = lazy(() => import("@/pages/employer/ApplicantsPage").then
 const AnalyticsPage = lazy(() => import("@/pages/admin/AnalyticsPage").then((m) => ({ default: m.AnalyticsPage })));
 const PendingJobsPage = lazy(() => import("@/pages/admin/PendingJobsPage").then((m) => ({ default: m.PendingJobsPage })));
 const UsersPage = lazy(() => import("@/pages/admin/UsersPage").then((m) => ({ default: m.UsersPage })));
+const AdminIntegrationsPage = lazy(() => import("@/pages/admin/IntegrationsPage").then((m) => ({ default: m.AdminIntegrationsPage })));
 const MailboxesPage = lazy(() => import("@/pages/admin/MailboxesPage").then((m) => ({ default: m.MailboxesPage })));
 const OpsHealthPage = lazy(() => import("@/pages/admin/OpsHealthPage").then((m) => ({ default: m.OpsHealthPage })));
 
@@ -92,6 +93,7 @@ export function App() {
                 <Route path="/admin" element={<AnalyticsPage />} />
                 <Route path="/admin/jobs/pending" element={<PendingJobsPage />} />
                 <Route path="/admin/mailboxes" element={<MailboxesPage />} />
+                <Route path="/admin/integrations" element={<AdminIntegrationsPage />} />
                 <Route path="/admin/users" element={<UsersPage />} />
                 <Route path="/admin/ops" element={<OpsHealthPage />} />
               </Route>

@@ -27,7 +27,7 @@ from app.schemas.mailbox import (
     MailboxUpsert,
 )
 from app.schemas.user import UserOut
-from app.services import alert_mailboxes, ghost_detection
+from app.services import alert_mailboxes, ghost_detection, integration_checks
 from app.services.imap_client import ImapError
 from app.services.aggregation import ingest_all
 
@@ -341,3 +341,28 @@ def delete_alert_sender(sender_id: uuid.UUID, db: Session = Depends(get_db)) -> 
         raise HTTPException(status_code=404, detail="Sender not found")
     db.delete(sender)
     db.commit()
+
+
+# ---------- integrations: does each key actually work ----------
+
+@router.get("/integrations")
+def integration_status() -> list[dict]:
+    """Runs every check for real.
+
+    Slower than reading config, deliberately: "the string is non-empty" was
+    never the question, and a rotated key looks identical to a working one
+    until a user hits the feature.
+    """
+    return [
+        {"name": r.name, "configured": r.configured, "ok": r.ok, "detail": r.detail}
+        for r in integration_checks.run_all()
+    ]
+
+
+@router.post("/integrations/{name}/test")
+def test_integration(name: str) -> dict:
+    check = integration_checks.CHECKS.get(name)
+    if check is None:
+        raise HTTPException(status_code=404, detail=f"No such integration: {name}")
+    result = check()
+    return {"name": result.name, "configured": result.configured, "ok": result.ok, "detail": result.detail}
