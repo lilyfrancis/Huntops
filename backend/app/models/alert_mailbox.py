@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Integer, JSON, String
+from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Integer, JSON, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.types import Uuid
 
@@ -29,12 +29,16 @@ class AlertMailbox(Base):
     """
 
     __tablename__ = "alert_mailboxes"
+    # Unique on (address, folder), not address alone, so one mail account can
+    # serve several markets through separate folders. That is the cheap way to
+    # run four markets without four accounts: route each market's alerts into
+    # its own folder at the mail host, and each folder becomes a mailbox here
+    # with its own market, its own UID cursor and its own failure state.
+    __table_args__ = (UniqueConstraint("email_address", "imap_folder", name="uq_alert_mailbox_address_folder"),)
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
-    # Unique so re-adding an already-configured mailbox updates it rather than
-    # creating a duplicate that would double every job it ingests.
-    email_address: Mapped[str] = mapped_column(String(255), nullable=False, unique=True, index=True)
+    email_address: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     label: Mapped[str] = mapped_column(String(100), nullable=False)
 
     # The market this mailbox's alerts are for, e.g. "Canada". Every job

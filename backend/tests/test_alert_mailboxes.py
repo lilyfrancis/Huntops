@@ -439,3 +439,58 @@ def test_a_quiet_sync_with_no_mail_at_all_is_not_flagged(db_session):
 
     db_session.refresh(mailbox)
     assert mailbox.last_error is None
+
+
+# ---------- one account, several markets, separate folders ----------
+
+def test_one_account_can_serve_several_markets_through_folders(db_session):
+    """Market has to stay a fact inherited from the mailbox — inferring it from
+    a free-text location puts Lagos jobs in a Toronto feed. But that needs a
+    separate *folder*, not a separate account."""
+    canada = alert_mailboxes.upsert_mailbox(
+        db_session, admin_id=None, email_address="alerts@huntops.site", market="Canada",
+        imap_host="imap.huntops.site", imap_username=None, imap_password="pw", imap_folder="Canada",
+    )
+    uk = alert_mailboxes.upsert_mailbox(
+        db_session, admin_id=None, email_address="alerts@huntops.site", market="United Kingdom",
+        imap_host="imap.huntops.site", imap_username=None, imap_password="pw", imap_folder="UK",
+    )
+
+    assert db_session.query(AlertMailbox).count() == 2
+    assert canada.id != uk.id
+    assert {m.market for m in db_session.query(AlertMailbox).all()} == {"Canada", "United Kingdom"}
+
+
+def test_each_folder_keeps_its_own_uid_cursor(db_session):
+    """A shared cursor across folders would have one market's progress skip
+    another market's mail."""
+    canada = alert_mailboxes.upsert_mailbox(
+        db_session, admin_id=None, email_address="alerts@huntops.site", market="Canada",
+        imap_host="h", imap_username=None, imap_password="pw", imap_folder="Canada",
+    )
+    uk = alert_mailboxes.upsert_mailbox(
+        db_session, admin_id=None, email_address="alerts@huntops.site", market="UK",
+        imap_host="h", imap_username=None, imap_password="pw", imap_folder="UK",
+    )
+
+    _sync(db_session, canada, messages=[FetchedMessage(uid=90, sender=LINKEDIN, body="a")], postings=[])
+
+    db_session.refresh(canada)
+    db_session.refresh(uk)
+    assert canada.last_seen_uid == 90
+    assert uk.last_seen_uid is None
+
+
+def test_resubmitting_the_same_address_and_folder_still_updates_in_place(db_session):
+    alert_mailboxes.upsert_mailbox(
+        db_session, admin_id=None, email_address="alerts@huntops.site", market="Canada",
+        imap_host="old.example.com", imap_username=None, imap_password="pw", imap_folder="Canada",
+    )
+    updated = alert_mailboxes.upsert_mailbox(
+        db_session, admin_id=None, email_address="alerts@huntops.site", market="Canada",
+        imap_host="new.example.com", imap_username=None, imap_password=None, imap_folder="Canada",
+    )
+
+    assert db_session.query(AlertMailbox).count() == 1
+    assert updated.imap_host == "new.example.com"
+    assert decrypt(updated.imap_password_encrypted) == "pw"  # unchanged

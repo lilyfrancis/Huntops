@@ -87,19 +87,27 @@ def upsert_mailbox(
     label: str | None = None,
     lanes: list[str] | None = None,
 ) -> AlertMailbox:
-    """Add a mailbox, or update the one already on that address.
+    """Add a mailbox, or update the one already on that address and folder.
 
-    Re-submitting an existing address is how an operator rotates a password or
+    Re-submitting an existing pair is how an operator rotates a password or
     moves a mailbox to a new host, so it updates in place rather than erroring
     or creating a second row that would double every job it reads.
+
+    Keyed on address *and* folder, so one account can serve several markets
+    through separate folders — otherwise adding the second folder would
+    silently overwrite the first.
     """
-    mailbox = db.query(AlertMailbox).filter(AlertMailbox.email_address == email_address).first()
+    mailbox = (
+        db.query(AlertMailbox)
+        .filter(AlertMailbox.email_address == email_address, AlertMailbox.imap_folder == imap_folder)
+        .first()
+    )
     is_new = mailbox is None
 
     if is_new:
         if not imap_password:
             raise ValueError("A password is required to add a mailbox")
-        mailbox = AlertMailbox(email_address=email_address, added_by_id=admin_id)
+        mailbox = AlertMailbox(email_address=email_address, imap_folder=imap_folder, added_by_id=admin_id)
         db.add(mailbox)
 
     mailbox.market = market
