@@ -3,18 +3,35 @@
 Work through this in order. Step 0 is urgent; the rest can be done over a
 few sittings.
 
-Everything lives in `/opt/huntops/backend/.env` on the server. That file is
-owned by root, so edit it with:
+Everything lives in `/opt/huntops/backend/.env` on the server.
+
+### The easy way
+
+```bash
+cd /opt/huntops && sudo bash deploy/set-secrets.sh
+```
+
+Prompts for each value with secrets hidden as you type, leaves anything you
+skip unchanged, backs the file up first, and sets it to `600`. Nothing reaches
+your shell history or the screen. Press Enter to skip a key.
+
+### By hand
 
 ```bash
 sudo nano /opt/huntops/backend/.env
 ```
 
-Without `sudo` nano opens it read-only and silently discards your changes —
-it says `[ File 'backend/.env' is unwritable ]` in the status bar.
+`sudo` matters: without it nano opens the file read-only and silently discards
+your changes — it says `[ File 'backend/.env' is unwritable ]` in the status
+bar, which is easy to miss.
 
 **Never put a space after the `=`.** `KEY= value` is a different string from
 `KEY=value` and some parsers keep the space.
+
+### Never paste a secret into a chat, an issue, or a screenshot
+
+Anything that appears in one has to be treated as public and rotated. That is
+what step 0 below is cleaning up.
 
 ---
 
