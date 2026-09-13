@@ -117,3 +117,41 @@ def test_testing_one_integration(client, monkeypatch):
 def test_an_unknown_integration_is_a_404(client):
     headers = _make_admin(client, email="unknown-integration-admin@example.com")
     assert client.post("/api/admin/integrations/nope/test", headers=headers).status_code == 404
+
+
+def test_paystack_catches_a_currency_that_disagrees_with_the_plans(monkeypatch):
+    """BILLING_CURRENCY only drives display; the card is charged whatever the
+    plan says. Set differently, the site advertises $7,500 and Paystack bills
+    ₦7,500, and nothing else anywhere notices."""
+    monkeypatch.setattr(integration_checks.settings, "PAYSTACK_SECRET_KEY", "sk")
+    monkeypatch.setattr(integration_checks.settings, "PAYSTACK_PLAN_PRO", "PLN_pro")
+    monkeypatch.setattr(integration_checks.settings, "PAYSTACK_PLAN_ELITE", "PLN_elite")
+    monkeypatch.setattr(integration_checks.settings, "BILLING_CURRENCY", "USD")
+
+    with patch("app.services.integration_checks.httpx.get", return_value=MagicMock(
+        status_code=200,
+        json=lambda: {"data": [
+            {"plan_code": "PLN_pro", "currency": "NGN"},
+            {"plan_code": "PLN_elite", "currency": "NGN"},
+        ]},
+    )):
+        result = integration_checks.check_paystack()
+
+    assert result.ok is False
+    assert "NGN" in result.detail and "USD" in result.detail
+
+
+def test_matching_currencies_pass(monkeypatch):
+    monkeypatch.setattr(integration_checks.settings, "PAYSTACK_SECRET_KEY", "sk")
+    monkeypatch.setattr(integration_checks.settings, "PAYSTACK_PLAN_PRO", "PLN_pro")
+    monkeypatch.setattr(integration_checks.settings, "PAYSTACK_PLAN_ELITE", "PLN_elite")
+    monkeypatch.setattr(integration_checks.settings, "BILLING_CURRENCY", "ngn")  # case shouldn't matter
+
+    with patch("app.services.integration_checks.httpx.get", return_value=MagicMock(
+        status_code=200,
+        json=lambda: {"data": [
+            {"plan_code": "PLN_pro", "currency": "NGN"},
+            {"plan_code": "PLN_elite", "currency": "NGN"},
+        ]},
+    )):
+        assert integration_checks.check_paystack().ok is True

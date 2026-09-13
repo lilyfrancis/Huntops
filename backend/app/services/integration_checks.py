@@ -133,7 +133,18 @@ def check_paystack() -> CheckResult:
     if resp.status_code >= 400:
         return CheckResult("paystack", True, False, f"Paystack returned {resp.status_code}: {resp.text[:200]}")
 
-    codes = {p.get("plan_code") for p in resp.json().get("data", [])}
+    plans = resp.json().get("data", [])
+    codes = {p.get("plan_code") for p in plans}
+
+    # BILLING_CURRENCY only drives what the page *displays*; the card is
+    # charged whatever the plan says. Set differently, the site advertises
+    # $7,500 and Paystack bills ₦7,500 — and nothing else anywhere notices.
+    configured = {settings.PAYSTACK_PLAN_PRO, settings.PAYSTACK_PLAN_ELITE}
+    plan_currencies = {
+        p.get("currency") for p in plans if p.get("plan_code") in configured and p.get("currency")
+    }
+    mismatched = plan_currencies - {settings.BILLING_CURRENCY.upper()}
+
     missing = [
         f"{tier} ({code})"
         for tier, code in (("Pro", settings.PAYSTACK_PLAN_PRO), ("Elite", settings.PAYSTACK_PLAN_ELITE))
@@ -146,6 +157,12 @@ def check_paystack() -> CheckResult:
         )
     if not (settings.PAYSTACK_PLAN_PRO and settings.PAYSTACK_PLAN_ELITE):
         return CheckResult("paystack", True, False, "Key valid, but PAYSTACK_PLAN_PRO / _ELITE are not set")
+    if mismatched:
+        return CheckResult(
+            "paystack", True, False,
+            f"Plans are priced in {', '.join(sorted(mismatched))} but BILLING_CURRENCY is "
+            f"{settings.BILLING_CURRENCY}. The site would advertise one currency and charge another.",
+        )
     return CheckResult("paystack", True, True, f"Key valid; both plan codes found among {len(codes)} plan(s)")
 
 
