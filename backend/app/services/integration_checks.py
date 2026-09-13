@@ -229,10 +229,62 @@ def check_whatsapp() -> CheckResult:
         # entirely, with no error on send.
         detail += f" — quality rating is {quality}, deliverability is at risk"
         return CheckResult("whatsapp", True, False, detail)
-    return CheckResult(
-        "whatsapp", True, True,
-        f"{detail}. Template '{settings.WHATSAPP_TEMPLATE_NAME}' must be approved in Meta separately.",
-    )
+    return CheckResult("whatsapp", True, True, f"{detail}. {_check_whatsapp_template()}")
+
+
+def _check_whatsapp_template() -> str:
+    """Whether the configured template exists, is approved, and is in the
+    configured language.
+
+    Worth a second request because all three fail the same way and none of
+    them fails now: the send is rejected at 07:30 with a 132001 nobody is
+    awake to read, and the number simply goes quiet. The language is the
+    likeliest of the three to be wrong — Meta's console offers en_US far more
+    prominently than en, and they are different templates as far as the API
+    is concerned.
+    """
+    from app.services import whatsapp
+
+    name = settings.WHATSAPP_TEMPLATE_NAME
+    want_language = settings.WHATSAPP_TEMPLATE_LANGUAGE
+
+    if not settings.WHATSAPP_WABA_ID:
+        return (
+            f"Template '{name}' unverified — set WHATSAPP_WABA_ID (Meta shows it as "
+            "'WhatsApp Business account ID') to have it checked here."
+        )
+
+    try:
+        resp = httpx.get(
+            f"{whatsapp._base()}/{whatsapp.GRAPH_VERSION}/{settings.WHATSAPP_WABA_ID}/message_templates",
+            headers={"Authorization": f"Bearer {settings.WHATSAPP_ACCESS_TOKEN}"},
+            params={"fields": "name,status,language", "limit": 200},
+            timeout=HTTP_TIMEOUT,
+        )
+    except httpx.HTTPError as e:
+        return f"Template '{name}' unverified — could not list templates: {e}"
+
+    if resp.status_code >= 400:
+        return f"Template '{name}' unverified — listing them returned {resp.status_code}."
+
+    matching = [t for t in resp.json().get("data", []) if t.get("name") == name]
+    if not matching:
+        return f"No template named '{name}' exists on this account — the digest will not send."
+
+    approved = [t for t in matching if (t.get("status") or "").upper() == "APPROVED"]
+    if not approved:
+        states = ", ".join(sorted({(t.get("status") or "?").upper() for t in matching}))
+        return f"Template '{name}' exists but is {states}, not APPROVED — the digest will not send."
+
+    languages = {t.get("language") for t in approved}
+    if want_language not in languages:
+        offered = ", ".join(sorted(lang for lang in languages if lang))
+        return (
+            f"Template '{name}' is approved in {offered}, but WHATSAPP_TEMPLATE_LANGUAGE "
+            f"is '{want_language}' — set it to the exact code or the send is rejected."
+        )
+
+    return f"Template '{name}' is approved in {want_language}."
 
 
 CHECKS = {

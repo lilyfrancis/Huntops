@@ -196,3 +196,73 @@ def test_a_version_left_on_the_base_is_not_sent_twice(monkeypatch):
 
     assert get.call_args.args[0] == "https://graph.facebook.com/v21.0/699182519954320"
     assert "v25.0" not in result.detail
+
+
+def _profile_ok():
+    profile = MagicMock(status_code=200)
+    profile.json.return_value = {
+        "display_phone_number": "+1 226 801 0899",
+        "verified_name": "HuntOps",
+        "quality_rating": "GREEN",
+    }
+    return profile
+
+
+def _templates(*entries):
+    resp = MagicMock(status_code=200)
+    resp.json.return_value = {"data": list(entries)}
+    return resp
+
+
+def _run_whatsapp(monkeypatch, templates_response, *, waba="3636958806611547", language="en"):
+    _configure_whatsapp(monkeypatch, "https://graph.facebook.com")
+    for mod_settings in (integration_checks.settings,):
+        monkeypatch.setattr(mod_settings, "WHATSAPP_WABA_ID", waba)
+        monkeypatch.setattr(mod_settings, "WHATSAPP_TEMPLATE_NAME", "huntops_daily_digest")
+        monkeypatch.setattr(mod_settings, "WHATSAPP_TEMPLATE_LANGUAGE", language)
+
+    with patch("app.services.integration_checks.httpx.get",
+               side_effect=[_profile_ok(), templates_response]):
+        return integration_checks.check_whatsapp()
+
+
+def test_an_approved_template_in_the_right_language_passes(monkeypatch):
+    result = _run_whatsapp(monkeypatch, _templates(
+        {"name": "huntops_daily_digest", "status": "APPROVED", "language": "en"},
+    ))
+    assert result.ok is True
+    assert "approved in en" in result.detail
+
+
+def test_a_template_approved_only_in_another_language_is_caught(monkeypatch):
+    """en and en_US are different templates to the API. Meta's console pushes
+    en_US, so this is the likeliest of the three ways to get it wrong."""
+    result = _run_whatsapp(monkeypatch, _templates(
+        {"name": "huntops_daily_digest", "status": "APPROVED", "language": "en_US"},
+    ), language="en")
+
+    assert result.ok is True  # the number itself is fine
+    assert "approved in en_US" in result.detail
+    assert "WHATSAPP_TEMPLATE_LANGUAGE" in result.detail
+
+
+def test_a_template_still_awaiting_review_is_caught(monkeypatch):
+    result = _run_whatsapp(monkeypatch, _templates(
+        {"name": "huntops_daily_digest", "status": "PENDING", "language": "en"},
+    ))
+    assert "PENDING, not APPROVED" in result.detail
+
+
+def test_a_missing_template_is_caught(monkeypatch):
+    result = _run_whatsapp(monkeypatch, _templates(
+        {"name": "hello_world", "status": "APPROVED", "language": "en_US"},
+    ))
+    assert "No template named 'huntops_daily_digest'" in result.detail
+
+
+def test_without_a_waba_id_the_template_is_reported_as_unverified(monkeypatch):
+    """Never silently claim it is fine — an unchecked template is exactly the
+    thing that fails at 07:30 with nobody watching."""
+    result = _run_whatsapp(monkeypatch, _templates(), waba="")
+    assert "unverified" in result.detail
+    assert "WHATSAPP_WABA_ID" in result.detail

@@ -169,6 +169,10 @@ class Settings(BaseSettings):
     WHATSAPP_API_BASE: str = "https://graph.facebook.com"
     WHATSAPP_PHONE_NUMBER_ID: str = ""
     WHATSAPP_ACCESS_TOKEN: str = ""
+    # The WhatsApp Business Account the number belongs to. Optional, and used
+    # only to verify the template: without it a wrong template name or
+    # language is invisible until the first digest fails at 07:30.
+    WHATSAPP_WABA_ID: str = ""
     WHATSAPP_TEMPLATE_NAME: str = "huntops_daily_digest"
     WHATSAPP_TEMPLATE_LANGUAGE: str = "en"
 
