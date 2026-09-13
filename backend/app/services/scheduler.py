@@ -68,6 +68,24 @@ def _run_email_sync() -> None:
         db.close()
 
 
+def _deliver_email(user, matches) -> bool:
+    subject, body = digest.format_digest_email(matches)
+    return notifications.send_email(user.email, subject, body)
+
+
+def _deliver_whatsapp(user, matches) -> bool:
+    """False whenever the message did not go out, for any reason: no number
+    on file, no provider configured, or Meta rejecting it."""
+    if not user.whatsapp_number:
+        return False
+    params = digest.format_digest_whatsapp(user, matches)
+    # None means no matches. A daily "nothing today" email is ignorable; the
+    # same on WhatsApp gets the number blocked, and a block is permanent.
+    if params is None:
+        return False
+    return whatsapp.send_template(to=user.whatsapp_number, params=params)
+
+
 def _run_daily_digest() -> None:
     from app.models.enums import UserRole
     from app.models.job import Job
@@ -114,16 +132,20 @@ def _run_daily_digest() -> None:
             delivered = False
 
             if channel in ("email", "both"):
-                subject, body = digest.format_digest_email(matches)
-                delivered = notifications.send_email(user.email, subject, body) or delivered
+                delivered = _deliver_email(user, matches)
 
-            if channel in ("whatsapp", "both") and user.whatsapp_number:
-                params = digest.format_digest_whatsapp(user, matches)
-                # None means no matches. A daily "nothing today" email is
-                # ignorable; the same on WhatsApp gets the number blocked, and
-                # a block is permanent.
-                if params is not None:
-                    delivered = whatsapp.send_template(to=user.whatsapp_number, params=params) or delivered
+            if channel in ("whatsapp", "both"):
+                delivered = _deliver_whatsapp(user, matches) or delivered
+
+            if channel == "whatsapp" and not delivered and matches:
+                # Choosing WhatsApp is a preference about where to be reached,
+                # not a request to be told nothing. A missing number, a
+                # provider that was never configured, an expired token — none
+                # of those are visible to the person waiting on their matches,
+                # and all of them would otherwise mean silence. Email carries
+                # the digest instead. Guarded on `matches` so a genuinely empty
+                # day still sends nothing.
+                delivered = _deliver_email(user, matches)
 
             if delivered:
                 sent_count += 1

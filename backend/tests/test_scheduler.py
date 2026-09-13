@@ -115,7 +115,7 @@ def test_daily_digest_skips_user_on_ai_failure_without_crashing(db_session):
 
 # ---------- the digest goes to whichever channel the user chose ----------
 
-def _seeker_with_a_match(session, email, *, channel, number=None):
+def _seeker_with_a_match(session, email, *, channel, number=None, matched=True):
     from app.models.job_match import JobMatch
     from app.models.user_preference import UserPreference
 
@@ -132,7 +132,10 @@ def _seeker_with_a_match(session, email, *, channel, number=None):
               company_name="Shopify")
     session.add(job)
     session.flush()
-    session.add(JobMatch(user_id=user.id, job_id=job.id, fit_score=91))
+    # A job in the feed with nothing scored against it is the "quiet day"
+    # case: there are candidates to score, but nothing worth reporting.
+    if matched:
+        session.add(JobMatch(user_id=user.id, job_id=job.id, fit_score=91))
     session.commit()
     return user
 
@@ -166,10 +169,38 @@ def test_a_whatsapp_user_gets_no_email(mock_email, mock_whatsapp, db_session):
 
 @patch("app.services.scheduler.whatsapp.send_template", return_value=True)
 @patch("app.services.scheduler.notifications.send_email", return_value=True)
-def test_choosing_whatsapp_without_giving_a_number_falls_back_to_nothing(mock_email, mock_whatsapp, db_session):
-    """No number means no message — silently emailing them instead would
-    ignore a preference they explicitly set."""
+def test_choosing_whatsapp_without_giving_a_number_still_gets_the_digest(mock_email, mock_whatsapp, db_session):
+    """Picking WhatsApp says where they would rather be reached. It does not
+    say they would rather hear nothing, and a channel that cannot deliver is
+    invisible to them — so the matches go out by email instead."""
     _seeker_with_a_match(db_session, "wa-nonumber@example.com", channel="whatsapp", number=None)
+    _run_digest_with_stubbed_scoring()
+
+    mock_whatsapp.assert_not_called()
+    mock_email.assert_called_once()
+
+
+@patch("app.services.scheduler.whatsapp.send_template", return_value=False)
+@patch("app.services.scheduler.notifications.send_email", return_value=True)
+def test_whatsapp_failing_to_send_falls_back_to_email(mock_email, mock_whatsapp, db_session):
+    """send_template returns False for an unconfigured provider, an expired
+    token and a rejected number alike. Every one of those is a reason to fall
+    back, and none of them is something the person can see or fix."""
+    _seeker_with_a_match(db_session, "wa-broken@example.com", channel="whatsapp", number="+2348031234567")
+    _run_digest_with_stubbed_scoring()
+
+    mock_whatsapp.assert_called_once()
+    mock_email.assert_called_once()
+
+
+@patch("app.services.scheduler.whatsapp.send_template", return_value=True)
+@patch("app.services.scheduler.notifications.send_email", return_value=True)
+def test_a_quiet_day_on_whatsapp_does_not_become_an_email(mock_email, mock_whatsapp, db_session):
+    """The fallback exists for channels that break, not for days with nothing
+    in them. Turning every empty WhatsApp day into an email would hand someone
+    a daily "no matches" message they never asked for."""
+    _seeker_with_a_match(db_session, "wa-quiet@example.com", channel="whatsapp",
+                         number="+2348031234567", matched=False)
     _run_digest_with_stubbed_scoring()
 
     mock_whatsapp.assert_not_called()
