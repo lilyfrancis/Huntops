@@ -249,6 +249,21 @@ def _whatsapp_auth_reason(resp: httpx.Response) -> str:
     message = error.get("message") or resp.text[:200] or "no reason given"
     code = error.get("code")
 
+    # Within 190, the subcode is the difference between "get a fresh token"
+    # and "you have the wrong kind of token entirely". 460 means the session
+    # behind it is gone, and only a *user* token has a session to lose — a
+    # System User token cannot fail this way, so seeing it at all says the
+    # token came from the API Setup page rather than Business Settings.
+    subcode_advice = {
+        460: "That is a user access token — only those have a login session to lose. "
+             "A System User token (Business Settings -> Users -> System users) has none "
+             "and cannot fail this way.",
+        463: "The token expired. One copied from the API Setup page lasts 24 hours.",
+        467: "The token was invalidated, usually by being revoked or regenerated.",
+    }.get(error.get("error_subcode"))
+    if subcode_advice:
+        return f"Meta says: {message} — {subcode_advice}"
+
     advice = {
         104: "No token reached Meta at all — WHATSAPP_ACCESS_TOKEN is empty in the running container.",
         190: "The token is expired or invalid. One copied from the API Setup page lasts 24 hours; a System User token with no expiry does not.",

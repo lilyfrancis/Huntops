@@ -318,3 +318,35 @@ def test_a_401_that_is_not_json_does_not_crash_the_check(monkeypatch):
     result = _whatsapp_401(monkeypatch, resp)
     assert result.ok is False
     assert "401 Unauthorized" in result.detail
+
+
+def _auth_error_sub(subcode, message):
+    body = {"error": {"message": message, "type": "OAuthException",
+                      "code": 190, "error_subcode": subcode}}
+    resp = MagicMock(status_code=401)
+    resp.text = str(body)
+    resp.json.return_value = body
+    return resp
+
+
+def test_an_invalidated_session_says_it_is_the_wrong_kind_of_token(monkeypatch):
+    """Subcode 460 means the login session behind the token is gone. Only a
+    user token has one, so this is not "get a fresh token" — it is "you are
+    using a user token where a System User token belongs"."""
+    result = _whatsapp_401(monkeypatch, _auth_error_sub(
+        460, "The session has been invalidated because the user changed their password"))
+
+    assert "user access token" in result.detail
+    assert "System User token" in result.detail
+    assert "24 hours" not in result.detail  # not an expiry, and saying so misleads
+
+
+def test_a_plain_expiry_keeps_the_expiry_advice(monkeypatch):
+    result = _whatsapp_401(monkeypatch, _auth_error_sub(463, "Session has expired"))
+    assert "expired" in result.detail
+    assert "24 hours" in result.detail
+
+
+def test_a_190_without_a_subcode_still_gets_the_general_advice(monkeypatch):
+    result = _whatsapp_401(monkeypatch, _auth_error(190, "Invalid OAuth access token"))
+    assert "expired or invalid" in result.detail
