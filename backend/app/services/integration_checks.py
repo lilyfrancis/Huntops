@@ -201,7 +201,18 @@ def check_whatsapp() -> CheckResult:
     if resp.status_code == 401:
         return CheckResult("whatsapp", True, False, "Token rejected. A temporary token expires after 24 hours — use a permanent System User token.")
     if resp.status_code >= 400:
-        return CheckResult("whatsapp", True, False, f"Meta returned {resp.status_code}: {resp.text[:200]}")
+        detail = f"Meta returned {resp.status_code}: {resp.text[:200]}"
+        if "Unknown path components" in resp.text:
+            # This one is badly misleading: it names the phone number ID, so
+            # it reads as though the ID is wrong, when the actual cause is
+            # almost always the host — a version left on WHATSAPP_API_BASE,
+            # or an ID issued by a reseller being sent to Meta directly.
+            detail += (
+                ". That usually means WHATSAPP_API_BASE is wrong rather than the ID: "
+                "set the host only, with no /vNN.N, and point it at whoever issued "
+                "the phone number ID."
+            )
+        return CheckResult("whatsapp", True, False, detail)
 
     data = resp.json()
     number = data.get("display_phone_number", "?")

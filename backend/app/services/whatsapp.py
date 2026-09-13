@@ -28,10 +28,29 @@ GRAPH_VERSION = "v21.0"
 HTTP_TIMEOUT = 20.0
 
 
+_TRAILING_VERSION = re.compile(r"/v\d+\.\d+/?$")
+
+
 def _base() -> str:
     """Meta directly, or a provider reselling the Cloud API behind their own
-    host. Trailing slash trimmed because people paste it either way."""
-    return settings.WHATSAPP_API_BASE.rstrip("/")
+    host. Host only — the version is appended below.
+
+    A pasted version is stripped rather than honoured. Every example in
+    Meta's documentation shows a full versioned URL, so pasting one here is
+    the natural mistake, and the resulting request doubles the version:
+    /v25.0/v21.0/<id>/messages. Meta answers that with "Unknown path
+    components", naming the second version, which reads as though the ID is
+    wrong and sends you looking at the wrong setting entirely.
+    """
+    base = settings.WHATSAPP_API_BASE.strip().rstrip("/")
+    trimmed = _TRAILING_VERSION.sub("", base)
+    if trimmed != base:
+        logger.warning(
+            "WHATSAPP_API_BASE ends in an API version; using %s. "
+            "The version is added automatically — set the host only.",
+            trimmed,
+        )
+    return trimmed
 
 
 class WhatsAppError(Exception):

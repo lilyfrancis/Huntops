@@ -1,5 +1,6 @@
 """WhatsApp digest delivery."""
 
+import pytest
 from unittest.mock import MagicMock, patch
 
 from app.models.job import Job
@@ -146,3 +147,43 @@ def test_a_provider_reselling_the_cloud_api_needs_no_code_change(monkeypatch):
     url = mock_post.call_args.args[0]
     assert url.startswith("https://api.example-bsp.com/v21.0/123/messages")
     assert "graph.facebook.com" not in url  # and the trailing slash didn't double up
+
+
+@pytest.mark.parametrize(
+    "configured,expected",
+    [
+        ("https://graph.facebook.com", "https://graph.facebook.com/v21.0/123/messages"),
+        ("https://graph.facebook.com/", "https://graph.facebook.com/v21.0/123/messages"),
+        # Every example in Meta's docs shows a versioned URL, so this is the
+        # paste people actually make.
+        ("https://graph.facebook.com/v25.0", "https://graph.facebook.com/v21.0/123/messages"),
+        ("https://graph.facebook.com/v25.0/", "https://graph.facebook.com/v21.0/123/messages"),
+        ("https://wapi.bexos.cloud/v22.0", "https://wapi.bexos.cloud/v21.0/123/messages"),
+        ("  https://wapi.bexos.cloud  ", "https://wapi.bexos.cloud/v21.0/123/messages"),
+    ],
+)
+def test_a_pasted_api_version_does_not_double_up(monkeypatch, configured, expected):
+    """A doubled version produces /v25.0/v21.0/<id>/messages, which Meta
+    rejects as "Unknown path components" naming the *second* version — an
+    error that reads like a bad phone number ID and hides the real cause."""
+    monkeypatch.setattr(whatsapp.settings, "WHATSAPP_API_BASE", configured)
+    monkeypatch.setattr(whatsapp.settings, "WHATSAPP_PHONE_NUMBER_ID", "123")
+    monkeypatch.setattr(whatsapp.settings, "WHATSAPP_ACCESS_TOKEN", "t")
+
+    with patch("app.services.whatsapp.httpx.post", return_value=MagicMock(status_code=200)) as mock_post:
+        assert whatsapp.send_template(to="+2348031234567", params=["a"]) is True
+
+    assert mock_post.call_args.args[0] == expected
+
+
+def test_a_path_that_merely_looks_like_a_version_is_left_alone(monkeypatch):
+    """Only a trailing /vN.N is a version. A provider whose API genuinely
+    lives under a path must keep it."""
+    monkeypatch.setattr(whatsapp.settings, "WHATSAPP_API_BASE", "https://bsp.example.com/whatsapp")
+    monkeypatch.setattr(whatsapp.settings, "WHATSAPP_PHONE_NUMBER_ID", "123")
+    monkeypatch.setattr(whatsapp.settings, "WHATSAPP_ACCESS_TOKEN", "t")
+
+    with patch("app.services.whatsapp.httpx.post", return_value=MagicMock(status_code=200)) as mock_post:
+        whatsapp.send_template(to="+2348031234567", params=["a"])
+
+    assert mock_post.call_args.args[0] == "https://bsp.example.com/whatsapp/v21.0/123/messages"
