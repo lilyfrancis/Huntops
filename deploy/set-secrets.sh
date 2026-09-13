@@ -7,6 +7,10 @@
 #
 # Prompts for each value with the input hidden. Press Enter to leave one
 # unchanged. Existing keys not listed here are preserved untouched.
+#
+# Safe to stop half way through with Ctrl-C: each answer is written as soon
+# as you give it, so a second run picks up where you left off rather than
+# starting from nothing.
 
 set -euo pipefail
 
@@ -26,8 +30,26 @@ fi
 BACKUP="${ENV_FILE}.bak.$(date +%Y%m%d-%H%M%S)"
 cp "$ENV_FILE" "$BACKUP"
 chmod 600 "$BACKUP"
-echo "Backed up to $BACKUP"
-echo
+
+SAVED=0
+DONE=0
+
+# Whether the run finished or was cut short, say what actually landed on
+# disk. Walking away unsure which half of your keys are set is worse than
+# either outcome on its own.
+on_exit() {
+  rm -f "$TMP"
+  if [ "$SAVED" -eq 0 ]; then
+    # Nothing changed, so the backup is a byte-for-byte copy. Leaving those
+    # to pile up means a directory of files full of secrets.
+    rm -f "$BACKUP"
+    [ "$DONE" -eq 1 ] || { echo; echo "Stopped. Nothing was changed."; }
+  elif [ "$DONE" -eq 0 ]; then
+    echo
+    echo "Stopped after $SAVED value(s). Those are saved in $ENV_FILE already;"
+    echo "the prompts you did not reach are unchanged. Re-run to carry on."
+  fi
+}
 
 KEYS=(
   ANTHROPIC_API_KEY
@@ -47,8 +69,22 @@ is_secret() {
 }
 
 TMP="$(mktemp)"
-trap 'rm -f "$TMP"' EXIT
+trap on_exit EXIT
 cp "$ENV_FILE" "$TMP"
+
+echo "Backed up to $BACKUP"
+echo "Where things stand (names and lengths only, never values):"
+for key in "${KEYS[@]}"; do
+  existing="$(grep -E "^${key}=" "$ENV_FILE" | head -1 | cut -d= -f2- || true)"
+  if [ -n "$existing" ]; then
+    printf '  %-26s set\n' "$key"
+  else
+    printf '  %-26s -- empty\n' "$key"
+  fi
+done
+echo
+echo "Enter leaves a value alone. Ctrl-C is safe; answers are saved as you go."
+echo
 
 for key in "${KEYS[@]}"; do
   current="$(grep -E "^${key}=" "$TMP" | head -1 | cut -d= -f2- || true)"
@@ -98,10 +134,15 @@ PY
   else
     printf '%s=%s\n' "$key" "$value" >> "$TMP"
   fi
+
+  # Written now, not at the end. Sixteen prompts is long enough that people
+  # stop half way, and losing everything they typed is a poor reward.
+  cat "$TMP" > "$ENV_FILE"
+  chmod 600 "$ENV_FILE"
+  SAVED=$((SAVED + 1))
 done
 
-cat "$TMP" > "$ENV_FILE"
-chmod 600 "$ENV_FILE"
+DONE=1
 
 echo
 echo "Written. Which secrets are now set (names only, no values):"
