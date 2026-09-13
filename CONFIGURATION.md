@@ -99,6 +99,25 @@ ADMIN_ALERT_EMAIL=<your own address>
 
 Use `smtp.titan.email` instead if Configuration settings says Titan.
 
+**Match the port to the right kind of TLS.** Hostinger's Configuration
+settings page usually gives 465, not 587, and the two are not
+interchangeable:
+
+| Port | TLS | Note |
+|---|---|---|
+| 465 | Implicit — encrypted from the first byte | What Hostinger normally lists |
+| 587 | STARTTLS — plain greeting, then upgrade | The other common submission port |
+
+Whichever the page shows, put it in `SMTP_PORT` and leave `SMTP_USE_SSL`
+unset; the port decides. Only set `SMTP_USE_SSL=true` if your provider uses
+implicit TLS on some other port.
+
+Getting this pair wrong does not produce a clear error — the two sides each
+wait for the other to speak first, and it surfaces as
+`Connection unexpectedly closed: timed out`, which looks exactly like a
+firewall or a wrong hostname. If you see that, check the port before
+anything else.
+
 `ADMIN_ALERT_EMAIL` is where you are told a mailbox stopped syncing or a
 scheduled job crashed. Without it those failures are only in the logs.
 

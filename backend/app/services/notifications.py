@@ -13,6 +13,36 @@ logger = logging.getLogger(__name__)
 settings = get_settings()
 
 
+def open_smtp(timeout: float = 15.0) -> smtplib.SMTP:
+    """Connected and authenticated, with the right kind of TLS for the port.
+
+    Port 465 is implicit TLS: the server expects a TLS handshake as the very
+    first thing on the socket. Opening it with plain smtplib.SMTP deadlocks —
+    we wait for a 220 greeting that will never arrive in the clear, the server
+    waits for a ClientHello — until the timeout fires. It surfaces as a
+    connection timeout, which reads like a firewall or a wrong hostname and
+    sends you looking in the wrong place entirely.
+
+    Port 587 is the opposite order: greet in plain text, then STARTTLS.
+    Which of the two is chosen follows the port unless SMTP_USE_SSL says
+    otherwise.
+
+    Shared with the integrations health check on purpose. A check that opens
+    its connection differently from the code that sends the mail can go green
+    against a server the digest cannot actually use.
+    """
+    if settings.smtp_implicit_tls:
+        server: smtplib.SMTP = smtplib.SMTP_SSL(settings.SMTP_HOST, settings.SMTP_PORT, timeout=timeout)
+    else:
+        server = smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=timeout)
+        if settings.SMTP_USE_TLS:
+            server.starttls()
+
+    if settings.SMTP_USERNAME:
+        server.login(settings.SMTP_USERNAME, settings.SMTP_PASSWORD)
+    return server
+
+
 def send_email(to: str, subject: str, body_text: str, reply_to: str | None = None) -> bool:
     if not settings.SMTP_HOST:
         logger.info("SMTP not configured — skipping email to %s (%s)", to, subject)
@@ -28,11 +58,7 @@ def send_email(to: str, subject: str, body_text: str, reply_to: str | None = Non
         message["Reply-To"] = reply_to
 
     try:
-        with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=15) as server:
-            if settings.SMTP_USE_TLS:
-                server.starttls()
-            if settings.SMTP_USERNAME:
-                server.login(settings.SMTP_USERNAME, settings.SMTP_PASSWORD)
+        with open_smtp() as server:
             server.sendmail(settings.SMTP_FROM_EMAIL, [to], message.as_string())
         return True
     except (smtplib.SMTPException, OSError) as e:

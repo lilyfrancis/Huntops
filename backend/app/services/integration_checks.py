@@ -99,16 +99,20 @@ def check_smtp() -> CheckResult:
     if not settings.SMTP_HOST:
         return _unconfigured("smtp", "the daily digest and outreach fall back to nothing and fail silently")
 
+    from app.services.notifications import open_smtp
+
     try:
-        with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=15) as server:
-            if settings.SMTP_USE_TLS:
-                server.starttls()
-            if settings.SMTP_USERNAME:
-                server.login(settings.SMTP_USERNAME, settings.SMTP_PASSWORD)
+        with open_smtp():
+            pass
     except smtplib.SMTPAuthenticationError:
         return CheckResult("smtp", True, False, "Server reachable but the username or password was rejected")
     except (smtplib.SMTPException, OSError) as e:
-        return CheckResult("smtp", True, False, f"Could not connect to {settings.SMTP_HOST}:{settings.SMTP_PORT} — {e}")
+        detail = f"Could not connect to {settings.SMTP_HOST}:{settings.SMTP_PORT} — {e}"
+        if settings.SMTP_PORT not in (465, 587, 25) and settings.SMTP_USE_SSL is None:
+            # The two standard submission ports behave differently and a third
+            # number is usually a typo or a port meant for something else.
+            detail += ". Submission is normally 587 (STARTTLS) or 465 (TLS)."
+        return CheckResult("smtp", True, False, detail)
     return CheckResult("smtp", True, True, f"Connected and authenticated to {settings.SMTP_HOST}")
 
 

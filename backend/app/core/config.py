@@ -143,7 +143,12 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: str = ""
     SMTP_FROM_EMAIL: str = "noreply@huntops.app"
     SMTP_USE_TLS: bool = True
+    # Implicit TLS (the whole session encrypted from the first byte) rather
+    # than STARTTLS. Left unset it follows the port, which is right for every
+    # mainstream provider; set it only for implicit TLS on a nonstandard port.
+    SMTP_USE_SSL: bool | None = None
     ADMIN_ALERT_EMAIL: str = ""
+
 
     # Whether THIS process owns the cron jobs. Must be true in exactly one
     # process: with multiple uvicorn workers, every worker that has this on
@@ -181,6 +186,16 @@ class Settings(BaseSettings):
     BILLING_CURRENCY: str = "USD"
     PRO_PRICE: float = 24.0
     ELITE_PRICE: float = 89.0
+
+    @property
+    def smtp_implicit_tls(self) -> bool:
+        """465 is the submissions port and speaks TLS immediately; 587 greets
+        in plain text and upgrades with STARTTLS. Getting this backwards does
+        not fail cleanly — it hangs until the timeout, which reads like a
+        firewall problem and sends you hunting in the wrong place."""
+        if self.SMTP_USE_SSL is not None:
+            return self.SMTP_USE_SSL
+        return self.SMTP_PORT == 465
 
     @property
     def allowed_resume_extensions_list(self) -> List[str]:
