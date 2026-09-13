@@ -266,3 +266,55 @@ def test_without_a_waba_id_the_template_is_reported_as_unverified(monkeypatch):
     result = _run_whatsapp(monkeypatch, _templates(), waba="")
     assert "unverified" in result.detail
     assert "WHATSAPP_WABA_ID" in result.detail
+
+
+def _auth_error(code, message):
+    resp = MagicMock(status_code=401)
+    resp.text = f'{{"error":{{"message":"{message}","type":"OAuthException","code":{code}}}}}'
+    resp.json.return_value = {"error": {"message": message, "type": "OAuthException", "code": code}}
+    return resp
+
+
+def _whatsapp_401(monkeypatch, response):
+    _configure_whatsapp(monkeypatch, "https://graph.facebook.com")
+    with patch("app.services.integration_checks.httpx.get", return_value=response):
+        return integration_checks.check_whatsapp()
+
+
+def test_an_expired_token_says_so_in_metas_own_words(monkeypatch):
+    result = _whatsapp_401(monkeypatch, _auth_error(190, "Session has expired"))
+    assert "Session has expired" in result.detail
+    assert "24 hours" in result.detail
+
+
+def test_a_missing_permission_is_not_reported_as_an_expired_token(monkeypatch):
+    """The old message asserted "temporary token" for every 401, which sends
+    someone to regenerate a token that was never the problem."""
+    result = _whatsapp_401(monkeypatch, _auth_error(200, "Permissions error"))
+    assert "whatsapp_business_messaging" in result.detail
+    assert "24 hours" not in result.detail
+
+
+def test_a_token_for_another_app_is_named_as_such(monkeypatch):
+    result = _whatsapp_401(monkeypatch, _auth_error(803, "Some of the aliases you requested do not exist"))
+    assert "different app" in result.detail
+
+
+def test_no_token_at_all_points_at_the_running_container(monkeypatch):
+    result = _whatsapp_401(monkeypatch, _auth_error(104, "An access token is required"))
+    assert "empty in the running container" in result.detail
+
+
+def test_an_unrecognised_code_still_quotes_meta_rather_than_guessing(monkeypatch):
+    result = _whatsapp_401(monkeypatch, _auth_error(9999, "Something new"))
+    assert "Something new" in result.detail
+    assert "code 9999" in result.detail
+
+
+def test_a_401_that_is_not_json_does_not_crash_the_check(monkeypatch):
+    resp = MagicMock(status_code=401)
+    resp.text = "<html>401 Unauthorized</html>"
+    resp.json.side_effect = ValueError("not json")
+    result = _whatsapp_401(monkeypatch, resp)
+    assert result.ok is False
+    assert "401 Unauthorized" in result.detail

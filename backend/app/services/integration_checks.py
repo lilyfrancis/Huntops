@@ -205,7 +205,7 @@ def check_whatsapp() -> CheckResult:
         return CheckResult("whatsapp", True, False, f"Could not reach {url}: {e}")
 
     if resp.status_code == 401:
-        return CheckResult("whatsapp", True, False, f"Token rejected by {url}. A temporary token expires after 24 hours — use a permanent System User token.")
+        return CheckResult("whatsapp", True, False, f"Token rejected by {url}. {_whatsapp_auth_reason(resp)}")
     if resp.status_code >= 400:
         detail = f"Called {url} — got {resp.status_code}: {resp.text[:200]}"
         if "Unknown path components" in resp.text:
@@ -230,6 +230,38 @@ def check_whatsapp() -> CheckResult:
         detail += f" — quality rating is {quality}, deliverability is at risk"
         return CheckResult("whatsapp", True, False, detail)
     return CheckResult("whatsapp", True, True, f"{detail}. {_check_whatsapp_template()}")
+
+
+def _whatsapp_auth_reason(resp: httpx.Response) -> str:
+    """Meta's own words for why, plus what to do about that specific code.
+
+    A 401 has several quite different causes whose fixes have nothing in
+    common: an expired token, a token belonging to another app, and a token
+    missing a permission are indistinguishable from the status alone. Naming
+    one of them as though it had been diagnosed sends people off to redo work
+    that was already correct, so the response body does the talking.
+    """
+    try:
+        error = resp.json().get("error", {})
+    except ValueError:
+        error = {}
+
+    message = error.get("message") or resp.text[:200] or "no reason given"
+    code = error.get("code")
+
+    advice = {
+        104: "No token reached Meta at all — WHATSAPP_ACCESS_TOKEN is empty in the running container.",
+        190: "The token is expired or invalid. One copied from the API Setup page lasts 24 hours; a System User token with no expiry does not.",
+        200: "The token is valid but lacks a permission — it needs whatsapp_business_messaging and whatsapp_business_management.",
+        803: "That ID is not visible to this token, which usually means the token belongs to a different app.",
+    }.get(code)
+
+    detail = f"Meta says: {message}"
+    if advice:
+        detail += f" — {advice}"
+    elif code is not None:
+        detail += f" (code {code})"
+    return detail
 
 
 def _check_whatsapp_template() -> str:
