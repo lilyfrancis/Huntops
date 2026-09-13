@@ -188,29 +188,35 @@ def check_whatsapp() -> CheckResult:
     if not whatsapp.is_configured():
         return _unconfigured("whatsapp", "the digest goes by email only")
 
+    # Reported on failure. Every WhatsApp misconfiguration so far has been the
+    # URL rather than the credentials, and the provider's own errors describe
+    # the path they received without saying what was sent — which is how a
+    # wrong host reads as a wrong phone number ID.
+    url = f"{whatsapp._base()}/{whatsapp.GRAPH_VERSION}/{settings.WHATSAPP_PHONE_NUMBER_ID}"
+
     try:
         resp = httpx.get(
-            f"{whatsapp._base()}/{whatsapp.GRAPH_VERSION}/{settings.WHATSAPP_PHONE_NUMBER_ID}",
+            url,
             headers={"Authorization": f"Bearer {settings.WHATSAPP_ACCESS_TOKEN}"},
             params={"fields": "display_phone_number,verified_name,quality_rating"},
             timeout=HTTP_TIMEOUT,
         )
     except httpx.HTTPError as e:
-        return CheckResult("whatsapp", True, False, f"Could not reach Meta: {e}")
+        return CheckResult("whatsapp", True, False, f"Could not reach {url}: {e}")
 
     if resp.status_code == 401:
-        return CheckResult("whatsapp", True, False, "Token rejected. A temporary token expires after 24 hours — use a permanent System User token.")
+        return CheckResult("whatsapp", True, False, f"Token rejected by {url}. A temporary token expires after 24 hours — use a permanent System User token.")
     if resp.status_code >= 400:
-        detail = f"Meta returned {resp.status_code}: {resp.text[:200]}"
+        detail = f"Called {url} — got {resp.status_code}: {resp.text[:200]}"
         if "Unknown path components" in resp.text:
             # This one is badly misleading: it names the phone number ID, so
             # it reads as though the ID is wrong, when the actual cause is
             # almost always the host — a version left on WHATSAPP_API_BASE,
             # or an ID issued by a reseller being sent to Meta directly.
             detail += (
-                ". That usually means WHATSAPP_API_BASE is wrong rather than the ID: "
-                "set the host only, with no /vNN.N, and point it at whoever issued "
-                "the phone number ID."
+                ". The path in that error is the one we sent, so compare it with the URL "
+                "above: WHATSAPP_API_BASE must be the host alone, with no /vNN.N and no "
+                "path, pointing at whoever issued the phone number ID."
             )
         return CheckResult("whatsapp", True, False, detail)
 

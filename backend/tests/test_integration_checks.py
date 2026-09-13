@@ -155,3 +155,44 @@ def test_matching_currencies_pass(monkeypatch):
         ]},
     )):
         assert integration_checks.check_paystack().ok is True
+
+
+def _configure_whatsapp(monkeypatch, base, number_id="699182519954320"):
+    from app.services import whatsapp
+
+    for mod in (integration_checks, whatsapp):
+        monkeypatch.setattr(mod.settings, "WHATSAPP_API_BASE", base)
+        monkeypatch.setattr(mod.settings, "WHATSAPP_PHONE_NUMBER_ID", number_id)
+        monkeypatch.setattr(mod.settings, "WHATSAPP_ACCESS_TOKEN", "tok")
+
+
+def test_a_failing_whatsapp_check_says_which_url_it_called(monkeypatch):
+    """Meta's "Unknown path components" quotes the path it received but not
+    the host, so the same message appears whether the base URL is wrong, the
+    version is doubled, or the ID belongs to another provider. Printing the
+    URL we actually sent is what separates them."""
+    _configure_whatsapp(monkeypatch, "https://wapi.bexos.cloud")
+
+    response = MagicMock(status_code=400)
+    response.text = (
+        '{"error":{"message":"Unknown path components: \\/v21.0\\/699182519954320",'
+        '"type":"OAuthException","code":2500}}'
+    )
+    with patch("app.services.integration_checks.httpx.get", return_value=response):
+        result = integration_checks.check_whatsapp()
+
+    assert result.ok is False
+    assert "https://wapi.bexos.cloud/v21.0/699182519954320" in result.detail
+    assert "host alone" in result.detail
+
+
+def test_a_version_left_on_the_base_is_not_sent_twice(monkeypatch):
+    """The URL reported back must be the one actually requested, including
+    the stripping — otherwise the diagnostic lies about what was sent."""
+    _configure_whatsapp(monkeypatch, "https://graph.facebook.com/v25.0")
+
+    with patch("app.services.integration_checks.httpx.get", return_value=MagicMock(status_code=401)) as get:
+        result = integration_checks.check_whatsapp()
+
+    assert get.call_args.args[0] == "https://graph.facebook.com/v21.0/699182519954320"
+    assert "v25.0" not in result.detail
