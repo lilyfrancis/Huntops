@@ -103,7 +103,8 @@ class Settings(BaseSettings):
         "employers-noreply@indeed.com,no-reply@indeed.com,"
         "employer@indeed.com,noreply-employer@glassdoor.com,"
         "invitationsr@linkedin.com,messages-noreply@linkedin.com,"
-        "notifications-noreply@linkedin.com,updates-noreply@linkedin.com"
+        "notifications-noreply@linkedin.com,updates-noreply@linkedin.com,"
+        "noreply@monster.com,employer@monster.com,noreply@dice.com"
     )
     ENABLE_SCHEDULED_EMAIL_SYNC: bool = True
     # How far back a mailbox reads on its very first sync, or after a server

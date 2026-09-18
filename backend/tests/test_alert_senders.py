@@ -129,3 +129,34 @@ def test_alert_senders_require_admin(client):
 
     data = register_user(client, email="not-admin-senders@example.com")
     assert client.get("/api/admin/alert-senders", headers=auth_headers(data["access_token"])).status_code == 403
+
+
+def test_the_new_us_boards_are_recognised():
+    """A US mailbox previously caught only the five global aggregators."""
+    from app.services.alert_senders import detect_provider
+
+    domains = ["monster.com", "dice.com", "builtin.com", "wellfound.com", "usajobs.gov"]
+    for domain in domains:
+        assert detect_provider(f"alerts@{domain}", domains) is not None, domain
+
+
+def test_employer_side_mail_on_the_new_boards_is_still_skipped():
+    """Boards notify an employer that someone applied to their posting using
+    the same domain. That mail matches the allowlist, costs an AI call, and
+    reads as a vacancy that does not exist."""
+    from app.services.alert_senders import detect_provider
+
+    domains = ["monster.com", "dice.com"]
+    assert detect_provider("noreply@monster.com", domains) is None
+    assert detect_provider("employer@monster.com", domains) is None
+    assert detect_provider("noreply@dice.com", domains) is None
+    # The seeker-facing sender on the same domain must still get through.
+    assert detect_provider("jobalerts@monster.com", domains) == "monster"
+
+
+def test_a_lookalike_domain_is_not_matched():
+    """endswith on a bare domain would match notmonster.com."""
+    from app.services.alert_senders import detect_provider
+
+    assert detect_provider("alerts@notmonster.com", ["monster.com"]) is None
+    assert detect_provider("alerts@jobs.monster.com", ["monster.com"]) == "monster"
