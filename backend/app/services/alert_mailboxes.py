@@ -29,6 +29,7 @@ from app.services import aggregation, imap_client
 from app.services.ai_client import AIResponseError
 from app.services.email_extraction import extract_jobs_from_email
 from app.services.alert_senders import detect_provider_anywhere, load_domains
+from app.services.markets import resolve_market
 from app.services.imap_client import Credentials, ImapError
 
 logger = logging.getLogger(__name__)
@@ -178,6 +179,9 @@ def sync_mailbox(db: Session, mailbox: AlertMailbox) -> dict:
     # Loaded once per run rather than per message: a batch is hundreds of
     # messages and this list changes about once a month.
     domains = load_domains(db)
+    # Loaded once for the same reason: this changes when a mailbox is added,
+    # not during a run.
+    markets = known_markets(db)
 
     try:
         messages, current_validity = imap_client.fetch_messages(
@@ -232,7 +236,13 @@ def sync_mailbox(db: Session, mailbox: AlertMailbox) -> dict:
                 if db.query(Job.id).filter(Job.source_url == normalized["source_url"]).first():
                     continue
 
-                normalized["market"] = mailbox.market
+                # The listing's own location wins where it says anything
+                # definite. LinkedIn sends every saved search to the one
+                # address on the account, so a single forwarded stream carries
+                # several countries and the mailbox label alone would tag a
+                # Lagos role as Canadian. Falls back to the label, which is
+                # still right for a listing that names no location at all.
+                normalized["market"] = resolve_market(normalized["location"], markets) or mailbox.market
                 normalized["lane"] = _lane_for(mailbox, posting.title, normalized["description"])
                 db.add(Job(**normalized))
                 inserted_total += 1
