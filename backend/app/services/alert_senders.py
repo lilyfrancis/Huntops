@@ -59,3 +59,57 @@ def detect_provider(sender: str, domains: list[str] | None = None) -> str | None
         if domain == known_domain or domain.endswith(f".{known_domain}"):
             return known_domain.split(".")[0]
     return None
+
+
+# A manual forward puts the original headers in the body as a quoted block.
+# Bounded and anchored to the start of a line so it matches a header block
+# rather than the word "from" in a sentence.
+_FORWARDED_FROM_RE = re.compile(r"(?im)^[>|\s]*from\s*:\s*(.{3,200})$")
+
+# Only the top of the message is scanned: a forwarded header block sits above
+# the quoted content, and reading the whole of a long digest would match every
+# "From:" in a chain of replies.
+_FORWARD_SCAN_CHARS = 4000
+
+
+def detect_provider_anywhere(
+    sender: str,
+    domains: list[str] | None = None,
+    *,
+    hints: list[str] | None = None,
+    body: str = "",
+) -> str | None:
+    """detect_provider, but able to see through a forward.
+
+    Forwarding comes in two shapes and only one of them keeps working:
+
+    Automatic forwarding — a rule at the source mailbox — resends the message
+    with From untouched, so LinkedIn still looks like LinkedIn and the plain
+    check matches. (It is why SPF famously breaks on forwarded mail.)
+
+    A manual forward is a *new* message. From becomes the person who pressed
+    the button, and the original is quoted in the body. Nothing about it is
+    recognisable from From alone, so those alerts were silently skipped — the
+    mailbox would report "read 12, recognised 0" and name the operator's own
+    address as the unknown sender.
+
+    So: From first, then the headers a forwarder may record the original in,
+    then the quoted block. The domain still has to be on the allowlist and the
+    exclude list still applies, so this widens *where* the sender is looked
+    for, never which senders are accepted.
+    """
+    provider = detect_provider(sender, domains)
+    if provider:
+        return provider
+
+    for hint in hints or []:
+        provider = detect_provider(hint, domains)
+        if provider:
+            return provider
+
+    for match in _FORWARDED_FROM_RE.finditer(body[:_FORWARD_SCAN_CHARS]):
+        provider = detect_provider(match.group(1), domains)
+        if provider:
+            return provider
+
+    return None

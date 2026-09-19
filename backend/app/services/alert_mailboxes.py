@@ -28,7 +28,7 @@ from app.models.job import Job
 from app.services import aggregation, imap_client
 from app.services.ai_client import AIResponseError
 from app.services.email_extraction import extract_jobs_from_email
-from app.services.alert_senders import detect_provider, load_domains
+from app.services.alert_senders import detect_provider_anywhere, load_domains
 from app.services.imap_client import Credentials, ImapError
 
 logger = logging.getLogger(__name__)
@@ -189,7 +189,15 @@ def sync_mailbox(db: Session, mailbox: AlertMailbox) -> dict:
         fetched = len(messages)
 
         for message in messages:
-            provider = detect_provider(message.sender, domains)
+            # Stripped before the sender check, not after: a manually forwarded
+            # alert hides the original From inside the body, and in an HTML
+            # mail that line is buried in markup until this runs. Costs nothing
+            # — it is local text processing, not an AI call.
+            clean_text = aggregation.strip_html(message.body)
+
+            provider = detect_provider_anywhere(
+                message.sender, domains, hints=message.forward_hints, body=clean_text,
+            )
             if provider is None:
                 # Not from a configured job-alert sender. The mailbox is the
                 # operator's, so it carries ordinary mail too — spending an AI
@@ -199,7 +207,6 @@ def sync_mailbox(db: Session, mailbox: AlertMailbox) -> dict:
                 continue
             recognised += 1
 
-            clean_text = aggregation.strip_html(message.body)
             try:
                 postings = extract_jobs_from_email(clean_text)
             except AIResponseError as e:

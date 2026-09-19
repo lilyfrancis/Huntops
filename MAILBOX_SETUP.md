@@ -220,3 +220,33 @@ On the last one: you named the mailbox "dubai", but the **market** is what
 users choose. `United Arab Emirates` covers the supply your alerts will
 actually carry — a Dubai-only label reads as a city and would make someone skip
 Abu Dhabi roles. The mailbox name does not have to match the market.
+
+
+## Forwarding from an existing inbox
+
+Pointing a mailbox you already own at an alert address is the fastest way to
+get supply, and both kinds of forwarding now work — but they work for
+different reasons, and one of them is worth preferring.
+
+**Automatic forwarding (recommended).** A rule at the source mailbox —
+Gmail's Settings → Forwarding, or a filter that forwards matching mail —
+resends the message with its `From` header untouched. LinkedIn still looks
+like LinkedIn, so it is recognised the same as mail delivered directly.
+
+**Manual forwarding.** Pressing Forward creates a *new* message: `From`
+becomes you, and the original is quoted in the body. The sync reads the
+quoted header block, so these are recognised too, but only the top of the
+message is scanned and an alert buried under a long reply chain can be
+missed.
+
+Prefer automatic forwarding where you can. It is the more reliable of the
+two, and it keeps working without anyone remembering to press anything.
+
+Either way the allowlist still decides: forwarding changes where the original
+sender is looked for, never which senders count. Forwarding a newsletter, or
+an employer-side "someone applied to your posting" notice, is still ignored.
+
+If you forward from Gmail, set the filter to forward only job alerts rather
+than everything. Anything else that arrives costs nothing in AI calls — it is
+skipped on the sender check — but it fills the mailbox and makes the sync
+report harder to read.

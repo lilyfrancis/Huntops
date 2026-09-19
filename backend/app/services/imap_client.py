@@ -14,7 +14,7 @@ import email
 import imaplib
 import logging
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from email.header import decode_header, make_header
 from email.message import Message
@@ -34,11 +34,24 @@ class ImapError(Exception):
     pass
 
 
+# Headers that can still name the original sender when From does not. Gmail's
+# automatic forwarding leaves From intact, but a manual forward replaces it
+# with the forwarder, and some hosts rewrite it while recording the original
+# in one of these.
+FORWARD_HEADERS = (
+    "Resent-From", "X-Forwarded-For", "X-Original-Sender",
+    "X-Original-From", "Reply-To", "Return-Path",
+)
+
+
 @dataclass
 class FetchedMessage:
     uid: int
     sender: str
     body: str
+    # Alternative senders, in descending trustworthiness. Empty for ordinary
+    # mail; populated when the message looks forwarded.
+    forward_hints: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -73,6 +86,16 @@ def _part_text(part: Message) -> str:
         # are usually still mostly ASCII, so this recovers the useful part
         # rather than discarding the message.
         return payload.decode("utf-8", errors="ignore")
+
+
+def forward_hints(msg: Message) -> list[str]:
+    """Other headers that might name the original sender, in header order."""
+    hints = []
+    for header in FORWARD_HEADERS:
+        value = _decode(msg.get(header))
+        if value:
+            hints.append(value)
+    return hints
 
 
 def extract_sender_and_body(msg: Message) -> tuple[str, str]:
@@ -208,7 +231,9 @@ def fetch_messages(
                 continue
             msg = email.message_from_bytes(payload[0][1])
             sender, body = extract_sender_and_body(msg)
-            messages.append(FetchedMessage(uid=uid, sender=sender, body=body))
+            messages.append(FetchedMessage(
+                uid=uid, sender=sender, body=body, forward_hints=forward_hints(msg),
+            ))
 
         return messages, current_validity
     finally:
