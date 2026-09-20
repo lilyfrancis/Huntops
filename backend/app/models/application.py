@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, Enum, Float, ForeignKey, String, Text, UniqueConstraint
+from sqlalchemy import DateTime, Enum, Float, ForeignKey, JSON, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.types import Uuid
 
@@ -24,6 +24,10 @@ class Application(Base):
     candidate_email: Mapped[str] = mapped_column(String(255), nullable=False)
 
     cover_letter: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # What went with this submission, not what the draft says now: a draft
+    # can be edited afterwards, and the record of what was sent must not
+    # change retroactively.
+    tailored_bullets: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
     status: Mapped[ApplicationStatus] = mapped_column(
         Enum(ApplicationStatus, name="application_status"), nullable=False, default=ApplicationStatus.pending
     )

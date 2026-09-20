@@ -83,6 +83,7 @@ export interface Application {
   candidate_name: string;
   candidate_email: string;
   cover_letter: string | null;
+  tailored_bullets: string[];
   status: ApplicationStatus;
   ai_match_score: number | null;
   created_at: string;
@@ -317,6 +318,18 @@ export interface SubscriptionStatus {
  *  an array of per-field objects for request validation (422). Typing it as
  *  only the string meant the array reached `new Error(...)` and every
  *  validation failure in the app read "[object Object]". */
+export interface ApplicationDraft {
+  id: string;
+  job_id: string;
+  cover_letter: string;
+  bullets: string[];
+  /** Whether the user has changed it. Regenerating over their own writing
+   *  is refused, so the UI has to know. */
+  edited: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface MatchRun {
   matches: JobMatch[];
   /** Jobs that passed the user's filters and were sent for scoring. */

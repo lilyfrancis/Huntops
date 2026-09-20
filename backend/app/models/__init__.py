@@ -1,6 +1,7 @@
 from app.models.alert_mailbox import AlertMailbox
 from app.models.alert_sender import AlertSender
 from app.models.application import Application
+from app.models.application_draft import ApplicationDraft
 from app.models.autopilot_action import AutopilotAction
 from app.models.credit_ledger import CreditLedgerEntry
 from app.models.email_sync_run import EmailSyncRun
@@ -21,6 +22,7 @@ __all__ = [
     "UserPreference",
     "Job",
     "Application",
+    "ApplicationDraft",
     "CreditLedgerEntry",
     "Resume",
     "JobMatch",

@@ -131,6 +131,12 @@ class Settings(BaseSettings):
     # Negotiation coach: one grounded review per offer.
     NEGOTIATION_CREDIT_COST: int = 20
 
+    # Tailoring an application: a cover letter plus résumé bullets for one
+    # job. Cheaper than outreach because there is no Apollo lookup — the
+    # cost is a single drafting call — and it is charged once per job, then
+    # cached, so revising and re-reading are free.
+    TAILOR_CREDIT_COST: int = 10
+
     @property
     def recruiter_titles_list(self) -> List[str]:
         return [t.strip() for t in self.RECRUITER_TITLES.split(",") if t.strip()]

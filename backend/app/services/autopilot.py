@@ -22,6 +22,7 @@ from sqlalchemy import desc
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
 from app.models.application import Application
 from app.models.autopilot_action import AutopilotAction
 from app.models.enums import UserRole
@@ -30,10 +31,12 @@ from app.models.job_match import JobMatch
 from app.models.user import User
 from app.models.user_preference import UserPreference
 from app.services import outreach as outreach_service
+from app.services import tailoring
 from app.services import preferences
 from app.services.ai_client import AIResponseError
 
 logger = logging.getLogger(__name__)
+settings = get_settings()
 
 APPLY = "apply"
 OUTREACH = "outreach"
@@ -76,13 +79,38 @@ def _used_today(db: Session, user: User) -> int:
     )
 
 
+def _tailor(db: Session, user: User, job: Job) -> tuple[str | None, list[str], str]:
+    """A letter and bullets for this application, or nothing plus a reason.
+
+    Deliberately not fatal. Deciding a role is worth applying to is the hard
+    part and it has already been done; refusing to apply because the letter
+    could not be written would throw that away over the easier half. An
+    untailored application still beats no application — but the action
+    record says which one the user got, so "why is this one generic" has an
+    answer.
+    """
+    if user.ai_credits < settings.TAILOR_CREDIT_COST:
+        return None, [], "no letter (out of credits for tailoring)"
+    try:
+        draft = tailoring.generate(db, user, job)
+    except tailoring.NoResumeError:
+        return None, [], "no letter (no résumé on file)"
+    except AIResponseError as e:
+        logger.warning("Autopilot tailoring failed for user=%s job=%s: %s", user.id, job.id, e)
+        return None, [], f"no letter (drafting failed: {e})"
+    return draft.cover_letter or None, list(draft.bullets), "with a tailored letter"
+
+
 def _apply(db: Session, user: User, job: Job, score: float) -> bool:
+    cover_letter, bullets, how = _tailor(db, user, job)
+
     application = Application(
         job_id=job.id,
         candidate_id=user.id,
         candidate_name=user.full_name,
         candidate_email=user.email,
-        cover_letter=None,
+        cover_letter=cover_letter,
+        tailored_bullets=bullets,
     )
     db.add(application)
     try:
@@ -95,7 +123,7 @@ def _apply(db: Session, user: User, job: Job, score: float) -> bool:
         return False
 
     job.application_count += 1
-    _record(db, user, job, APPLY, DONE, f"Applied automatically at fit {score:.0f}", score)
+    _record(db, user, job, APPLY, DONE, f"Applied automatically at fit {score:.0f}, {how}", score)
     return True
 
 

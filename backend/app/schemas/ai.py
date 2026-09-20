@@ -27,6 +27,13 @@ class OutreachDraft(BaseModel):
     cv_bullets: list[str] = Field(default_factory=list)
 
 
+class TailoredApplication(BaseModel):
+    """A cover letter and résumé bullets written for one specific job."""
+
+    cover_letter: str
+    bullets: list[str] = Field(default_factory=list)
+
+
 class JobFitScore(BaseModel):
     job_index: int
     overall_score: float = Field(ge=0, le=100)
