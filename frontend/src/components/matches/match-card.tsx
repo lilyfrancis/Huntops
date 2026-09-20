@@ -49,7 +49,7 @@ export function MatchCard({ match, onViewJob, onRequestOutreach, outreachPending
         <ScoreBar label="Location" value={match.geo_score} tone="cyan" />
       </div>
 
-      <div className="mt-4 flex items-center gap-2 border-t border-border pt-4">
+      <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border pt-4">
         <Button variant="outline" size="sm" onClick={onViewJob}>
           View job
         </Button>
@@ -57,11 +57,16 @@ export function MatchCard({ match, onViewJob, onRequestOutreach, outreachPending
           size="sm"
           onClick={onRequestOutreach}
           disabled={outreachDisabled || outreachPending}
-          title={outreachDisabled ? "Elite tier required" : undefined}
         >
           <Send className="h-3.5 w-3.5" />
           {outreachPending ? "Reaching out…" : "Autopilot outreach"}
         </Button>
+        {/* Said out loud rather than left in a title attribute, which never
+            appears on a phone and is easy to miss anywhere else. A button
+            that refuses without saying why reads as broken. */}
+        {outreachDisabled && (
+          <span className="text-xs text-ink-muted">On the Elite plan</span>
+        )}
       </div>
     </Card>
   );

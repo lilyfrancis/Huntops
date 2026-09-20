@@ -32,7 +32,15 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       <Comp
         ref={ref}
         className={cn(
-          "inline-flex items-center justify-center whitespace-nowrap rounded-xl font-semibold text-sm transition-all disabled:pointer-events-none disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
+          // A real disabled palette rather than opacity. Fading a button
+          // fades its label with it, so the ratio between them barely moves:
+          // white on violet at 50% is 1.46:1, and even 80% only reaches
+          // 2.69:1. Both are unreadable, and a disabled button nobody can
+          // read looks broken rather than unavailable. A solid muted
+          // background with dark text gives 5.17:1 and still reads as off.
+          "inline-flex items-center justify-center whitespace-nowrap rounded-xl font-semibold text-sm transition-all",
+          "disabled:pointer-events-none disabled:border disabled:border-border-strong disabled:bg-surface-3 disabled:text-ink-muted disabled:shadow-none",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
           variantClasses[variant],
           sizeClasses[size],
           className
