@@ -14,6 +14,9 @@ const STEPS = [
     body: "Every morning, the openings worth your time — rated against your CV, ghost listings already flagged, salary shown up front.",
     image: "/brand/hero-product.webp",
     alt: "The HuntOps dashboard ranking matched roles by score",
+    // A screenshot, not a photograph: cropping it to the panel's shape cuts
+    // words off both edges, so this one is shown whole.
+    contain: true,
   },
   {
     n: "03",
@@ -56,12 +59,18 @@ export function HowItWorks() {
                 <h3 className="mt-5 text-2xl">{step.title}</h3>
                 <p className="mt-3 text-lg leading-relaxed text-ink-muted">{step.body}</p>
               </div>
-              <div className="ring-gradient overflow-hidden rounded-2xl border border-border bg-white transition-transform duration-500 hover:scale-[1.015] lift-lg">
+              <div
+                className={`ring-gradient overflow-hidden rounded-2xl border border-border transition-transform duration-500 hover:scale-[1.015] lift-lg ${
+                  step.contain ? "bg-surface-2 p-3" : "bg-white"
+                }`}
+              >
                 <img
                   src={step.image}
                   alt={step.alt}
                   loading="lazy"
-                  className="aspect-[4/3] w-full object-cover"
+                  className={`aspect-[4/3] w-full ${
+                    step.contain ? "rounded-xl object-contain" : "object-cover"
+                  }`}
                 />
               </div>
             </div>
