@@ -1,13 +1,19 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, CheckCircle2 } from "lucide-react";
+import { ArrowRight, CheckCircle2, FileText, MessageSquare, Mic, Send, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Reveal } from "@/components/landing/reveal";
 import { Counter } from "@/components/landing/counter";
 
-const PROOF = [
-  { to: 0, suffix: "", label: "application forms you fill in", literal: "0" },
-  { to: 5, suffix: "", label: "markets, from Lagos to Toronto" },
-  { to: 15, suffix: "s", label: "to say yes to a job" },
+// The whole product, in the order it happens. Five short beats rather than
+// a features section, because the reason to believe the headline is seeing
+// that there is a mechanism behind it — and mock interviews and negotiation
+// have nowhere else to appear this high up without crowding it.
+const ARC = [
+  { icon: Target, label: "Matched", body: "Every role scored against your CV, ghosts flagged." },
+  { icon: FileText, label: "CV tailored", body: "Rewritten for the job, with a cover letter to match." },
+  { icon: Send, label: "Applied for you", body: "We fill in the form on the board. You never open it." },
+  { icon: MessageSquare, label: "Manager messaged", body: "We find whoever is hiring and write to them." },
+  { icon: Mic, label: "Interview ready", body: "Mock screens and offer coaching when it lands." },
 ];
 
 export function Hero() {
@@ -38,7 +44,7 @@ export function Hero() {
                 stakes that a reader will assume anyway. */}
             {/* Sized to land in two lines in this column. At 4rem it broke
                 into four, which turns a claim into a paragraph. */}
-            <h1 className="mt-5 text-[2.6rem] leading-[1.05] tracking-tight sm:text-5xl lg:text-[3.4rem] xl:text-[3.9rem]">
+            <h1 className="mt-5 text-[2.6rem] leading-[1.05] tracking-tight sm:text-5xl lg:text-[3.4rem]">
               You pick the jobs.
               <br />
               <span className="brand-gradient-text">We do the applying.</span>
@@ -47,10 +53,10 @@ export function Hero() {
 
           <Reveal delay={2}>
             <p className="mt-5 max-w-xl text-lg leading-relaxed text-ink-muted sm:text-xl">
-              HuntOps watches every job board in your market, scores each role against
-              your CV, then <strong className="font-semibold text-ink">files the
-              application for you</strong> — form, cover letter and all. You tap yes.
-              We do the rest.
+              Every role scored against your CV. Your CV rewritten for the ones you
+              want. The application <strong className="font-semibold text-ink">filed
+              for you</strong>, and the hiring manager messaged directly — while you
+              watch it happen from one dashboard.
             </p>
           </Reveal>
 
@@ -81,18 +87,22 @@ export function Hero() {
 
         <Reveal delay={2} className="relative">
           <div className="animate-float-slow overflow-hidden rounded-2xl border border-border bg-white lift-lg">
+            {/* The actual product, not a stock desk. It carries the whole
+                proposition without a caption: fit scores, salaries in the
+                reader's own currency, "Apply for me", one already filed,
+                and a locked row showing what unlocking is for. */}
             <img
-              src="/brand/hero-dashboard.webp"
-              alt="The HuntOps dashboard showing scored job matches"
+              src="/brand/hero-product.webp"
+              alt="The HuntOps job feed: roles scored against your CV, salaries shown, one already applied for"
               width={1400}
-              height={1400}
+              height={837}
               className="w-full"
               fetchPriority="high"
             />
           </div>
 
           {/* Floating proof chip — the product's promise, stated as a number. */}
-          <div className="absolute -bottom-5 -left-4 hidden rounded-xl border border-border bg-white px-4 py-3 lift-lg sm:block">
+          <div className="absolute -bottom-6 -left-5 hidden rounded-xl border border-border bg-white px-4 py-3 lift-lg sm:block">
             <p className="text-2xl font-bold text-ink">
               <Counter to={92} suffix="%" />
             </p>
@@ -102,17 +112,22 @@ export function Hero() {
       </div>
 
       <Reveal delay={4}>
-        <dl className="mx-auto mt-20 grid max-w-3xl grid-cols-3 gap-6 border-t border-border px-5 pt-10 text-center">
-          {PROOF.map((s) => (
-            <div key={s.label}>
-              <dt className="sr-only">{s.label}</dt>
-              <dd className="text-3xl font-bold text-ink sm:text-4xl">
-                {s.literal ?? <Counter to={s.to} suffix={s.suffix} />}
-              </dd>
-              <p className="mt-1 text-sm text-ink-muted">{s.label}</p>
-            </div>
+        <ol className="mx-auto mt-20 grid max-w-5xl gap-y-8 border-t border-border px-5 pt-10 sm:grid-cols-2 lg:grid-cols-5 lg:gap-x-4">
+          {ARC.map((step, i) => (
+            <li key={step.label} className="flex gap-3 lg:block">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-soft text-violet lg:mb-3">
+                <step.icon className="h-4.5 w-4.5" strokeWidth={2} />
+              </span>
+              <div>
+                <p className="text-sm font-semibold text-ink">
+                  <span className="font-mono text-xs text-ink-faint">{i + 1}. </span>
+                  {step.label}
+                </p>
+                <p className="mt-0.5 text-sm text-ink-muted">{step.body}</p>
+              </div>
+            </li>
           ))}
-        </dl>
+        </ol>
       </Reveal>
     </section>
   );

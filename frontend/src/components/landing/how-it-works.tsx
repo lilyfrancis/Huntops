@@ -12,7 +12,7 @@ const STEPS = [
     n: "02",
     title: "Wake up to scored matches",
     body: "Every morning, the openings worth your time — rated against your CV, ghost listings already flagged, salary shown up front.",
-    image: "/brand/hero-dashboard.webp",
+    image: "/brand/hero-product.webp",
     alt: "The HuntOps dashboard ranking matched roles by score",
   },
   {

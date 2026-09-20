@@ -46,7 +46,7 @@ export function AuthLayout({ children }: { children: ReactNode }) {
 
         <div className="relative overflow-hidden rounded-xl border border-white/10">
           <img
-            src="/brand/hero-dashboard.webp"
+            src="/brand/hero-product.webp"
             alt=""
             aria-hidden
             loading="lazy"
