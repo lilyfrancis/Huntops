@@ -307,7 +307,12 @@ function MailboxRow({ mailbox, onEdit }: { mailbox: AlertMailbox; onEdit: () => 
       if (result.status === "success") {
         toast.success(`${result.mailbox}: ${result.inserted} new job${result.inserted === 1 ? "" : "s"}`);
       } else {
-        toast.error(`${result.mailbox}: ${result.error}`, { duration: 12000 });
+        // Belt and braces. Some exceptions stringify to "", and a toast
+        // reading "alerts-canada@huntops.site:" with nothing after it tells
+        // the reader only that they should be worried.
+        toast.error(`${result.mailbox}: ${result.error || "failed with no reported reason — check the API logs"}`, {
+          duration: 12000,
+        });
       }
       invalidate();
     },

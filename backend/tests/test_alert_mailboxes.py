@@ -1,6 +1,7 @@
 """The supply side: admin-owned IMAP mailboxes feeding one shared job pool."""
 
 from datetime import datetime, timezone
+import pytest
 from unittest.mock import patch
 
 from app.core.crypto import decrypt, encrypt
@@ -494,3 +495,45 @@ def test_resubmitting_the_same_address_and_folder_still_updates_in_place(db_sess
     assert db_session.query(AlertMailbox).count() == 1
     assert updated.imap_host == "new.example.com"
     assert decrypt(updated.imap_password_encrypted) == "pw"  # unchanged
+
+
+# ---------- a failure must always say something ----------
+
+def test_a_timeout_produces_a_message_rather_than_an_empty_string(db_session):
+    """A bare socket timeout raises TimeoutError() with no arguments, so
+    str(e) is "". The toast read "alerts-canada@huntops.site:" and stopped."""
+    mailbox = _seed_mailbox(db_session)
+
+    with patch("app.services.alert_mailboxes.imap_client.fetch_messages",
+               side_effect=TimeoutError()):
+        summary = alert_mailboxes.sync_mailbox(db_session, mailbox)
+
+    assert summary["status"] == "error"
+    assert summary["error"]
+    assert "Timed out" in summary["error"]
+    assert "imap.huntops.site:993" in summary["error"]   # where it was pointed
+
+
+@pytest.mark.parametrize("failure", [OSError(), ConnectionResetError(), Exception()])
+def test_no_failure_can_produce_an_empty_error(db_session, failure):
+    """Several connection errors stringify to nothing. None of them may reach
+    the UI as a blank message."""
+    mailbox = _seed_mailbox(db_session)
+
+    with patch("app.services.alert_mailboxes.imap_client.fetch_messages", side_effect=failure):
+        summary = alert_mailboxes.sync_mailbox(db_session, mailbox)
+
+    assert summary["status"] == "error"
+    assert summary["error"] and summary["error"].strip()
+    assert type(failure).__name__ in summary["error"] or "Timed out" in summary["error"]
+
+
+def test_a_failure_that_does_say_something_keeps_its_own_words_plus_the_host(db_session):
+    mailbox = _seed_mailbox(db_session)
+
+    with patch("app.services.alert_mailboxes.imap_client.fetch_messages",
+               side_effect=ImapError("Login failed for alerts-canada@huntops.site")):
+        summary = alert_mailboxes.sync_mailbox(db_session, mailbox)
+
+    assert "Login failed" in summary["error"]
+    assert "imap.huntops.site:993" in summary["error"]

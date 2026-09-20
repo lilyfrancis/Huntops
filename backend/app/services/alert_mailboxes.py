@@ -166,6 +166,33 @@ def _lane_for(mailbox: AlertMailbox, title: str, description: str) -> JobLane:
     return inferred
 
 
+def _describe_failure(mailbox: AlertMailbox, e: Exception) -> str:
+    """Something legible, always, and never the empty string.
+
+    A bare socket timeout raises TimeoutError() with no arguments, so str(e)
+    is "" — and several other connection errors do the same. The UI rendered
+    the mailbox address, a colon, and nothing after it, which says only that
+    something went wrong and nothing whatever about what.
+
+    The host and port are always included. A mailbox failing is nearly always
+    about where it was pointed, and that is the one fact the message was
+    missing even when there was text.
+    """
+    where = f"{mailbox.imap_host}:{mailbox.imap_port}"
+
+    if isinstance(e, TimeoutError):
+        return (
+            f"Timed out after {imap_client.IMAP_TIMEOUT:.0f}s connecting to {where}. "
+            f"Check the host and port — 993 is IMAP over SSL — and that the server "
+            f"is reachable from this machine."
+        )
+
+    text = str(e).strip()
+    if not text:
+        return f"{type(e).__name__} from {where}, with no detail given."
+    return f"{text} ({where})"[:2000]
+
+
 def sync_mailbox(db: Session, mailbox: AlertMailbox) -> dict:
     started_at = datetime.now(timezone.utc)
     status, error = "success", None
@@ -269,13 +296,13 @@ def sync_mailbox(db: Session, mailbox: AlertMailbox) -> dict:
         else:
             mailbox.last_error = None
     except ImapError as e:
-        status, error = "error", str(e)[:2000]
+        status, error = "error", _describe_failure(mailbox, e)
         mailbox.last_error = error
         logger.error("IMAP sync failed for %s: %s", mailbox.email_address, e)
     except Exception as e:
         # Scheduled runs have no caller to raise to, and one broken mailbox must
         # not stop the others, so the failure is recorded rather than propagated.
-        status, error = "error", str(e)[:2000]
+        status, error = "error", _describe_failure(mailbox, e)
         mailbox.last_error = error
         logger.exception("Sync failed for %s", mailbox.email_address)
 
@@ -294,7 +321,11 @@ def sync_mailbox(db: Session, mailbox: AlertMailbox) -> dict:
         "extracted": extracted_total,
         "inserted": inserted_total,
         "skipped_senders": skipped_senders,
-        "error": error or mailbox.last_error,
+        # Never an empty string: a status of "error" with nothing to read is
+        # worse than no toast at all.
+        "error": error or mailbox.last_error or (
+            "Failed with no reported reason — check the API logs." if status != "success" else None
+        ),
     }
 
 
