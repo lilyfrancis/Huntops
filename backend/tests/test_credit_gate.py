@@ -165,8 +165,11 @@ def test_buying_sends_the_credit_count_with_the_payment(client, db_session):
                            headers=auth_headers(token["access_token"]))
 
     assert resp.status_code == 200
-    assert init.call_args.kwargs["metadata"]["credits"] == 100
-    assert init.call_args.kwargs["amount"] == 11500.0
+    # Read from the configured pack rather than restated, so repricing is
+    # one line and not a test edit.
+    starter = next(p for p in settings.credit_packs if p["code"] == "starter")
+    assert init.call_args.kwargs["metadata"]["credits"] == starter["credits"]
+    assert init.call_args.kwargs["amount"] == starter["price"]
 
 
 def test_an_unknown_pack_is_a_404_not_a_charge(client):

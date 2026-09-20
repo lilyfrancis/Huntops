@@ -30,9 +30,15 @@ class Settings(BaseSettings):
     AUTO_APPROVE_JOBS: bool = False
 
     # Credits per tier (granted on signup / renewal)
-    FREE_TIER_CREDITS: int = 15
-    PRO_TIER_CREDITS: int = 100
-    ELITE_TIER_CREDITS: int = 500
+    # Sized against what the plan is for, not against token cost. A
+    # concierge application is 15 credits and costs about a hundred naira of
+    # someone's time, so a plan's grant is really "how many applications a
+    # month is this". 100 credits was six, which an active job seeker
+    # exhausts in a week — and a plan you run out of in week one is a plan
+    # people leave.
+    FREE_TIER_CREDITS: int = 15        # one application, to see it land
+    PRO_TIER_CREDITS: int = 300        # about twenty
+    ELITE_TIER_CREDITS: int = 1000     # about sixty-five
 
     # Paystack. Plan codes come from the Paystack dashboard; the *price* lives
     # on the plan there, never here, so the two can't drift apart.
@@ -163,7 +169,7 @@ class Settings(BaseSettings):
     # Amounts here are charged directly rather than read from a Paystack
     # plan, because these are one-off transactions and Paystack plans are
     # for recurring ones. Keep them in step with whatever you advertise.
-    CREDIT_PACKS: str = "starter:100:11500,plus:250:26000,pro:600:57000,bulk:1500:127500"
+    CREDIT_PACKS: str = "starter:100:5000,plus:250:11000,pro:600:24000,bulk:1500:52500"
     # Tell an admin the moment work arrives. The queue only updates when
     # somebody opens it, and a request nobody knows about is a user watching
     # "queued" for a day.

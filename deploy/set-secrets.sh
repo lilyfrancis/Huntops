@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
 #
-# Set the secrets in backend/.env without them touching shell history,
-# the screen, or anyone's chat log.
+# Set the secrets and the pricing in backend/.env without the secrets
+# touching shell history, the screen, or anyone's chat log.
+#
+# Pricing lives here too because it is the other thing that changes without
+# a code change, and hand-editing a live .env under sudo is how a stray
+# character takes the site down. Non-secret values are echoed as you type
+# them — hiding a credit count helps nobody and makes typos likelier.
 #
 #   sudo bash deploy/set-secrets.sh
 #
@@ -55,6 +60,8 @@ KEYS=(
   ANTHROPIC_API_KEY
   SMTP_HOST SMTP_PORT SMTP_USERNAME SMTP_PASSWORD SMTP_FROM_EMAIL ADMIN_ALERT_EMAIL
   PAYSTACK_SECRET_KEY PAYSTACK_PLAN_PRO PAYSTACK_PLAN_ELITE BILLING_CURRENCY PRO_PRICE ELITE_PRICE
+  FREE_TIER_CREDITS PRO_TIER_CREDITS ELITE_TIER_CREDITS
+  CONCIERGE_CREDIT_COST UNLOCK_CREDIT_COST CREDIT_PACKS
   APOLLO_API_KEY
   WHATSAPP_API_BASE WHATSAPP_PHONE_NUMBER_ID WHATSAPP_ACCESS_TOKEN
   WHATSAPP_WABA_ID WHATSAPP_TEMPLATE_NAME WHATSAPP_TEMPLATE_LANGUAGE
