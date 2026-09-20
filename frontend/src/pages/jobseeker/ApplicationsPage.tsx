@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { PageSpinner } from "@/components/ui/spinner";
 import { EmptyState } from "@/components/ui/empty-state";
 import { applicationsApi, jobsApi } from "@/lib/api";
-import type { ApplicationStatus } from "@/lib/types";
+import type { Application, ApplicationStatus, ConciergeStatus } from "@/lib/types";
 
 const STATUS_TONE: Record<ApplicationStatus, "neutral" | "good" | "accent" | "danger" | "warning"> = {
   pending: "neutral",
@@ -17,6 +17,32 @@ const STATUS_TONE: Record<ApplicationStatus, "neutral" | "good" | "accent" | "da
   rejected: "danger",
   withdrawn: "neutral",
 };
+
+const CONCIERGE_TONE: Record<ConciergeStatus, "neutral" | "good" | "danger"> = {
+  queued: "neutral",
+  submitted: "good",
+  blocked: "danger",
+};
+
+/** What is true right now, in the user's terms.
+ *
+ * "Applied" is not said until somebody has actually filed it. The whole
+ * feature rests on the user trusting that word, and a queue that claims to
+ * be a submission is the one thing that would break it.
+ */
+function conciergeLine(app: Application): string | null {
+  if (!app.is_concierge) return null;
+  switch (app.concierge_status) {
+    case "submitted":
+      return app.submitted_at
+        ? `Filed for you ${formatDistanceToNow(new Date(app.submitted_at), { addSuffix: true })}`
+        : "Filed for you";
+    case "blocked":
+      return "We could not file this one";
+    default:
+      return "Queued — we file this one for you";
+  }
+}
 
 export function ApplicationsPage() {
   const { data: applications, isLoading } = useQuery({
@@ -33,7 +59,7 @@ export function ApplicationsPage() {
 
   return (
     <div>
-      <PageHeader eyebrow="Pipeline" title="Applications" description="Every job you've applied to, in one place." />
+      <PageHeader eyebrow="Pipeline" title="Applications" description="Every job you've applied to, and how far each one has got." />
 
       {isLoading ? (
         <PageSpinner />
@@ -48,6 +74,12 @@ export function ApplicationsPage() {
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium text-ink">{job?.title ?? "Loading…"}</p>
                   <p className="text-xs text-ink-muted">{job?.company_name ?? " "}</p>
+                  {conciergeLine(app) && (
+                    <p className="mt-0.5 text-xs text-ink-faint">{conciergeLine(app)}</p>
+                  )}
+                  {app.concierge_note && (
+                    <p className="mt-0.5 text-xs text-ink-muted">{app.concierge_note}</p>
+                  )}
                 </div>
                 <div className="flex shrink-0 items-center gap-3">
                   {app.ai_match_score != null && (
@@ -56,6 +88,9 @@ export function ApplicationsPage() {
                   <span className="font-mono text-xs text-ink-faint">
                     {formatDistanceToNow(new Date(app.created_at), { addSuffix: true })}
                   </span>
+                  {app.is_concierge && app.concierge_status && (
+                    <Badge tone={CONCIERGE_TONE[app.concierge_status]}>{app.concierge_status}</Badge>
+                  )}
                   <Badge tone={STATUS_TONE[app.status]}>{app.status}</Badge>
                 </div>
               </Card>

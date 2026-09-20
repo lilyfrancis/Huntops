@@ -15,12 +15,13 @@ from app.models.job import Job
 from app.models.user import User
 from app.schemas.application import (
     ApplicationCreate,
+    ConciergeAllowanceOut,
     ApplicationDraftEdit,
     ApplicationDraftOut,
     ApplicationOut,
     ApplicationStatusUpdate,
 )
-from app.services import tailoring
+from app.services import concierge, tailoring
 from app.services.ai_client import AIResponseError
 
 router = APIRouter(prefix="/api/applications", tags=["applications"])
@@ -36,6 +37,19 @@ def apply_to_job(
     job = db.get(Job, payload.job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
+
+    # An external listing cannot be submitted from here — it lives behind
+    # someone else's form. Rather than handing the work back to the user,
+    # it goes into the queue for a person to file.
+    if job.source != "internal":
+        try:
+            return concierge.request(db, current_user, job)
+        except concierge.AllowanceExhausted as e:
+            raise HTTPException(status_code=403, detail=str(e))
+        except concierge.InsufficientCredits as e:
+            raise HTTPException(status_code=402, detail=str(e))
+        except concierge.ConciergeError as e:
+            raise HTTPException(status_code=400, detail=str(e))
 
     cover_letter = payload.cover_letter
     bullets = payload.tailored_bullets
@@ -195,4 +209,19 @@ def edit_draft(
         raise HTTPException(status_code=404, detail="No draft for this job yet")
     return tailoring.save_edits(
         db, draft, cover_letter=payload.cover_letter, bullets=payload.bullets
+    )
+
+
+@router.get("/concierge/allowance", response_model=ConciergeAllowanceOut)
+def concierge_allowance(
+    current_user: User = Depends(require_job_seeker),
+    db: Session = Depends(get_db),
+) -> ConciergeAllowanceOut:
+    """Said before the click, not after. A button that takes credits and
+    then refuses is worse than one that says what it will cost."""
+    return ConciergeAllowanceOut(
+        remaining=concierge.allowance_remaining(db, current_user),
+        allowance=settings.CONCIERGE_FREE_ALLOWANCE,
+        credit_cost=settings.CONCIERGE_CREDIT_COST,
+        credits=current_user.ai_credits,
     )

@@ -70,6 +70,20 @@ class ApplicationStatus(str, enum.Enum):
     withdrawn = "withdrawn"
 
 
+class ConciergeStatus(str, enum.Enum):
+    """How far HuntOps has got with submitting this one on the user's behalf.
+
+    Deliberately separate from ApplicationStatus, which is what the *employer*
+    has done. The two move independently: an application can be submitted by
+    us and still be pending with them, and collapsing both into one field
+    would make "pending" mean two different things to two different readers.
+    """
+
+    queued = "queued"        # the user asked; nobody has submitted it yet
+    submitted = "submitted"  # filed on the external site
+    blocked = "blocked"      # could not be filed — listing gone, account wall, etc.
+
+
 class InterviewStatus(str, enum.Enum):
     in_progress = "in_progress"
     completed = "completed"

@@ -1,5 +1,5 @@
 import { api } from "../api-client";
-import type { Application, ApplicationDraft, ApplicationStatus } from "../types";
+import type { Application, ApplicationDraft, ApplicationStatus, ConciergeAllowance } from "../types";
 
 export const applicationsApi = {
   apply: (jobId: string, coverLetter?: string, bullets?: string[]) =>
@@ -18,6 +18,8 @@ export const applicationsApi = {
       bullets,
     }),
   mine: () => api.get<Application[]>("/api/applications/mine"),
+  conciergeAllowance: () =>
+    api.get<ConciergeAllowance>("/api/applications/concierge/allowance"),
   forJob: (jobId: string) => api.get<Application[]>(`/api/applications/job/${jobId}`),
   updateStatus: (applicationId: string, status: ApplicationStatus) =>
     api.put<Application>(`/api/applications/${applicationId}/status`, { status }),

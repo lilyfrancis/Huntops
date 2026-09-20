@@ -137,6 +137,15 @@ class Settings(BaseSettings):
     # cached, so revising and re-reading are free.
     TAILOR_CREDIT_COST: int = 10
 
+    # Asking HuntOps to file an application on an external site. A person
+    # does this by hand, so it is priced above the AI features rather than
+    # against their token cost.
+    CONCIERGE_CREDIT_COST: int = 25
+    # What a non-Elite account gets, ever. Enough to feel what it does and
+    # see it land, not enough to run a job hunt on. Credits are charged on
+    # top, so this is a ceiling rather than a currency.
+    CONCIERGE_FREE_ALLOWANCE: int = 3
+
     @property
     def recruiter_titles_list(self) -> List[str]:
         return [t.strip() for t in self.RECRUITER_TITLES.split(",") if t.strip()]

@@ -19,6 +19,12 @@ class User(Base):
     role: Mapped[UserRole] = mapped_column(Enum(UserRole, name="user_role"), nullable=False)
     company_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
+    # The address an admin uses to apply on this person's behalf, e.g.
+    # jennifer@huntops.site. Recorded rather than derived: the mailbox has to
+    # be created by hand, two users can share a first name, and the account
+    # registered on a job board must match whatever was actually used.
+    concierge_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
     # Free-text home market for geo-eligibility boosting (e.g. "Nigeria",
     # "Philippines"). Null means no boost is applied — scoring degrades
     # gracefully to skills/experience fit only.

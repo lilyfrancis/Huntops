@@ -1,5 +1,9 @@
 import { api } from "../api-client";
 import type {
+  Application,
+  ApplicationStatus,
+  ConciergeQueueItem,
+  ConciergeStatus,
   AdminAnalytics,
   AlertMailbox,
   AlertSender,
@@ -36,6 +40,17 @@ export interface MailboxUpdatePayload {
 }
 
 export const adminApi = {
+  conciergeQueue: (status: ConciergeStatus | "all" = "queued") =>
+    api.get<ConciergeQueueItem[]>(
+      `/api/admin/concierge${status === "all" ? "?status=" : `?status=${status}`}`
+    ),
+  markConcierge: (
+    id: string,
+    payload: { concierge_status: ConciergeStatus; note?: string; concierge_email?: string }
+  ) => api.patch<Application>(`/api/admin/concierge/${id}`, payload),
+  setConciergeEmployerStatus: (id: string, payload: { status: ApplicationStatus; note?: string }) =>
+    api.patch<Application>(`/api/admin/concierge/${id}/status`, payload),
+
   users: (skip = 0, limit = 50) => api.get<User[]>(`/api/admin/users?skip=${skip}&limit=${limit}`),
   approveUser: (userId: string) => api.put<User>(`/api/admin/users/${userId}/approve`),
   suspendUser: (userId: string) => api.put<User>(`/api/admin/users/${userId}/suspend`),

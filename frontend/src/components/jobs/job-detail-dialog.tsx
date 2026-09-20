@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Building2, MapPin, ExternalLink, Wand2 } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -31,6 +31,15 @@ export function JobDetailDialog({ job, open, onOpenChange }: { job: Job | null; 
     setDraft(null);
   }, [job?.id]);
 
+  // Read before the click so the cost and what is left can be stated up
+  // front. A button that charges and then refuses is worse than one that
+  // says what it will do.
+  const { data: allowance } = useQuery({
+    queryKey: ["concierge", "allowance"],
+    queryFn: applicationsApi.conciergeAllowance,
+    enabled: user?.role === "job_seeker",
+  });
+
   const draftMutation = useMutation({
     mutationFn: (regenerate: boolean) => applicationsApi.draft(job!.id, regenerate),
     onSuccess: (result) => {
@@ -54,6 +63,7 @@ export function JobDetailDialog({ job, open, onOpenChange }: { job: Job | null; 
     onSuccess: () => {
       toast.success("Application sent");
       queryClient.invalidateQueries({ queryKey: ["applications", "mine"] });
+      queryClient.invalidateQueries({ queryKey: ["concierge", "allowance"] });
       onOpenChange(false);
       setCoverLetter("");
       setBullets([]);
@@ -104,7 +114,11 @@ export function JobDetailDialog({ job, open, onOpenChange }: { job: Job | null; 
           </div>
         )}
 
-        {job.source_url && (
+        {/* No link to the original listing for a job seeker. Sending them
+            there hands back the work this product exists to remove, and an
+            admin files it for them instead. Admins keep the link — they are
+            the ones who have to go and use it. */}
+        {job.source_url && user?.role !== "job_seeker" && (
           <a
             href={job.source_url}
             target="_blank"
@@ -115,8 +129,9 @@ export function JobDetailDialog({ job, open, onOpenChange }: { job: Job | null; 
           </a>
         )}
 
-        {user?.role === "job_seeker" && job.source === "internal" && (
+        {user?.role === "job_seeker" && (
           <div className="mt-5 space-y-3 border-t border-border pt-4">
+            {job.source === "internal" && (
             <div className="flex items-center justify-between gap-3">
               <p className="text-xs text-ink-muted">
                 {bullets.length > 0
@@ -139,15 +154,18 @@ export function JobDetailDialog({ job, open, onOpenChange }: { job: Job | null; 
                     : "Tailor for this job"}
               </Button>
             </div>
+            )}
 
+            {job.source === "internal" && (
             <Textarea
               placeholder="Cover letter (optional)"
               value={coverLetter}
               onChange={(e) => setCoverLetter(e.target.value)}
               rows={bullets.length > 0 ? 8 : 3}
             />
+            )}
 
-            {bullets.length > 0 && (
+            {job.source === "internal" && bullets.length > 0 && (
               <div>
                 <p className="mb-1.5 font-mono text-[0.7rem] uppercase tracking-wide text-ink-faint">
                   Résumé bullets for this role
@@ -176,9 +194,13 @@ export function JobDetailDialog({ job, open, onOpenChange }: { job: Job | null; 
             </Button>
           </div>
         )}
-        {job.source !== "internal" && (
-          <p className="mt-4 border-t border-border pt-4 text-xs text-ink-faint">
-            This listing came from an external source — apply via the original listing link above.
+        {user?.role === "job_seeker" && job.source !== "internal" && (
+          <p className="mt-2 text-xs text-ink-faint">
+            {allowance?.remaining === null
+              ? `We file this one for you. ${allowance.credit_cost} credits.`
+              : allowance
+                ? `We file this one for you — ${allowance.remaining} of ${allowance.allowance} left on your plan, ${allowance.credit_cost} credits each.`
+                : "We file this one for you."}
           </p>
         )}
       </DialogContent>

@@ -2,7 +2,6 @@ import { formatDistanceToNow } from "date-fns";
 import {
   Building2,
   Check,
-  ExternalLink,
   Globe2,
   MapPin,
   Radio,
@@ -14,7 +13,6 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { GhostBadge } from "@/components/jobs/ghost-badge";
 import { cn } from "@/lib/utils";
-import { sourceLabel } from "@/lib/labels";
 
 const JOB_TYPE_LABEL: Record<FeedItem["job"]["job_type"], string> = {
   full_time: "Full-time",
@@ -108,14 +106,18 @@ export function FeedCard({ item, onOpen, onApply, onOutreach, isApplying, isDraf
           </Button>
         ) : (
           /*
-            An aggregated listing lives behind someone else's form on someone
-            else's site — we can't submit it. The honest pair of affordances is
-            a link out and outreach to a human, never a button that pretends.
+            An aggregated listing lives behind someone else's form, so nothing
+            here submits it — a person at HuntOps files it under an address
+            created for this user. The button says "Apply" because that is
+            what the user is asking for; the status that follows says "queued"
+            rather than pretending it is already done.
+
+            The board's name and the outbound link are deliberately absent.
+            Sending someone to the original listing hands back exactly the
+            work this removes.
           */
-          <Button size="sm" variant="outline" asChild>
-            <a href={job.source_url ?? "#"} target="_blank" rel="noreferrer noopener">
-              Apply on {sourceLabel(job.source)} <ExternalLink className="h-3.5 w-3.5" />
-            </a>
+          <Button size="sm" onClick={onApply} disabled={isApplying}>
+            {isApplying ? "Applying…" : "Apply"}
           </Button>
         )}
 

@@ -11,12 +11,18 @@ from app.models.alert_mailbox import AlertMailbox
 from app.models.alert_sender import AlertSender
 from app.models.application import Application
 from app.models.email_sync_run import EmailSyncRun
-from app.models.enums import JobStatus, OutreachStatus, SubscriptionTier, UserRole
+from app.models.enums import ConciergeStatus, JobStatus, OutreachStatus, SubscriptionTier, UserRole
 from app.models.ingestion_run import IngestionRun
 from app.models.job import Job
 from app.models.outreach import Outreach
 from app.models.user import User
 from app.schemas.job import JobOut, JobRejectRequest
+from app.schemas.application import (
+    ApplicationOut,
+    ApplicationStatusAdminUpdate,
+    ConciergeQueueItem,
+    ConciergeUpdate,
+)
 from app.schemas.mailbox import (
     AlertSenderCreate,
     AlertSenderOut,
@@ -27,7 +33,7 @@ from app.schemas.mailbox import (
     MailboxUpsert,
 )
 from app.schemas.user import UserOut
-from app.services import alert_mailboxes, ghost_detection, integration_checks
+from app.services import alert_mailboxes, concierge, ghost_detection, integration_checks
 from app.services.imap_client import ImapError
 from app.services.aggregation import ingest_all
 
@@ -368,3 +374,95 @@ def test_integration(name: str) -> dict:
         raise HTTPException(status_code=404, detail=f"No such integration: {name}")
     result = check()
     return {"name": result.name, "configured": result.configured, "ok": result.ok, "detail": result.detail}
+
+
+# ---------- concierge: applications a person files on a user's behalf ----------
+
+@router.get("/concierge", response_model=list[ConciergeQueueItem])
+def concierge_queue(
+    status: ConciergeStatus | None = ConciergeStatus.queued,
+    db: Session = Depends(get_db),
+) -> list[ConciergeQueueItem]:
+    """The work queue, oldest first. Pass status=null for everything.
+
+    Each row carries the job, the link, the address to apply under and the
+    letter already written for it — chasing those across three pages is how
+    a queue stops getting worked.
+    """
+    rows = (
+        db.query(Application, User, Job)
+        .join(User, Application.candidate_id == User.id)
+        .join(Job, Application.job_id == Job.id)
+        .filter(Application.is_concierge.is_(True))
+    )
+    if status is not None:
+        rows = rows.filter(Application.concierge_status == status)
+
+    return [
+        ConciergeQueueItem(
+            id=application.id,
+            created_at=application.created_at,
+            concierge_status=application.concierge_status,
+            concierge_note=application.concierge_note,
+            submitted_at=application.submitted_at,
+            candidate_id=user.id,
+            candidate_name=user.full_name,
+            candidate_email=user.email,
+            concierge_email=user.concierge_email,
+            suggested_concierge_email=concierge.suggest_concierge_email(user),
+            job_id=job.id,
+            job_title=job.title,
+            company_name=job.company_name,
+            job_location=job.location,
+            source=job.source,
+            source_url=job.source_url,
+            cover_letter=application.cover_letter,
+            tailored_bullets=list(application.tailored_bullets),
+        )
+        for application, user, job in rows.order_by(Application.created_at).all()
+    ]
+
+
+@router.patch("/concierge/{application_id}", response_model=ApplicationOut)
+def update_concierge(
+    application_id: uuid.UUID,
+    payload: ConciergeUpdate,
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> Application:
+    application = db.get(Application, application_id)
+    if not application or not application.is_concierge:
+        raise HTTPException(status_code=404, detail="Concierge application not found")
+
+    if payload.concierge_email is not None:
+        # Set here because creating the mailbox is part of filing the first
+        # one, and making the admin go to another page to record it is how
+        # it ends up never recorded.
+        candidate = db.get(User, application.candidate_id)
+        candidate.concierge_email = payload.concierge_email.strip() or None
+
+    return concierge.mark(
+        db, application, current_user,
+        concierge_status=payload.concierge_status, note=payload.note,
+    )
+
+
+@router.patch("/concierge/{application_id}/status", response_model=ApplicationOut)
+def update_concierge_employer_status(
+    application_id: uuid.UUID,
+    payload: ApplicationStatusAdminUpdate,
+    db: Session = Depends(get_db),
+) -> Application:
+    """Employer-side progress. For a concierge application the replies reach
+    the address we applied under, not the user's own inbox, so this is the
+    only way that news gets back to them."""
+    application = db.get(Application, application_id)
+    if not application or not application.is_concierge:
+        raise HTTPException(status_code=404, detail="Concierge application not found")
+
+    application.status = payload.status
+    if payload.note is not None:
+        application.concierge_note = payload.note.strip() or None
+    db.commit()
+    db.refresh(application)
+    return application

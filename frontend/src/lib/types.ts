@@ -7,6 +7,9 @@ export type JobStatus = "pending" | "active" | "rejected" | "closed";
 export type JobType = "full_time" | "part_time" | "contract" | "internship";
 export type ExperienceLevel = "entry" | "mid" | "senior" | "lead" | "executive";
 export type ApplicationStatus = "pending" | "reviewed" | "interviewing" | "offered" | "rejected" | "withdrawn";
+/** How far HuntOps has got filing it. Separate from ApplicationStatus,
+ *  which is what the employer has done. */
+export type ConciergeStatus = "queued" | "submitted" | "blocked";
 export type OutreachStatus = "sent" | "draft_no_contact" | "failed";
 export type JobLane =
   | "engineering"
@@ -85,6 +88,10 @@ export interface Application {
   cover_letter: string | null;
   tailored_bullets: string[];
   status: ApplicationStatus;
+  is_concierge: boolean;
+  concierge_status: ConciergeStatus | null;
+  concierge_note: string | null;
+  submitted_at: string | null;
   ai_match_score: number | null;
   created_at: string;
 }
@@ -318,6 +325,35 @@ export interface SubscriptionStatus {
  *  an array of per-field objects for request validation (422). Typing it as
  *  only the string meant the array reached `new Error(...)` and every
  *  validation failure in the app read "[object Object]". */
+export interface ConciergeAllowance {
+  /** null = unlimited (Elite). */
+  remaining: number | null;
+  allowance: number;
+  credit_cost: number;
+  credits: number;
+}
+
+export interface ConciergeQueueItem {
+  id: string;
+  created_at: string;
+  concierge_status: ConciergeStatus | null;
+  concierge_note: string | null;
+  submitted_at: string | null;
+  candidate_id: string;
+  candidate_name: string;
+  candidate_email: string;
+  concierge_email: string | null;
+  suggested_concierge_email: string;
+  job_id: string;
+  job_title: string;
+  company_name: string | null;
+  job_location: string;
+  source: string;
+  source_url: string | null;
+  cover_letter: string | null;
+  tailored_bullets: string[];
+}
+
 export interface ApplicationDraft {
   id: string;
   job_id: string;

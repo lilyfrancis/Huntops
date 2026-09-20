@@ -53,6 +53,7 @@ const NAV_BY_ROLE: Record<string, NavItem[]> = {
   admin: [
     { to: "/admin", label: "Analytics", icon: LayoutDashboard, end: true },
     { to: "/admin/mailboxes", label: "Alert mailboxes", icon: Inbox },
+    { to: "/admin/concierge", label: "Applications to file", icon: Send },
     { to: "/admin/jobs/pending", label: "Pending jobs", icon: Briefcase },
     { to: "/admin/integrations", label: "Integrations", icon: Plug },
     { to: "/admin/users", label: "Users", icon: Users },
