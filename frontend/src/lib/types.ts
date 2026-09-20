@@ -317,6 +317,14 @@ export interface SubscriptionStatus {
  *  an array of per-field objects for request validation (422). Typing it as
  *  only the string meant the array reached `new Error(...)` and every
  *  validation failure in the app read "[object Object]". */
+export interface MatchRun {
+  matches: JobMatch[];
+  /** Jobs that passed the user's filters and were sent for scoring. */
+  candidates_scored: number;
+  /** The score they had to clear. */
+  threshold: number;
+}
+
 export interface ApiValidationItem {
   loc?: (string | number)[];
   msg?: string;

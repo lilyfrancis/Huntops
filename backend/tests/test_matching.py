@@ -169,7 +169,12 @@ def test_match_jobs_endpoint_filters_below_threshold_and_persists(mock_score_job
 
     resp = client.get("/api/ai/match-jobs", headers=headers)
     assert resp.status_code == 200
-    results = resp.json()
+    body = resp.json()
+    # The endpoint now reports the run, not only its survivors, so the page
+    # can tell "scored two, neither cleared the bar" from "nothing to score".
+    assert body["candidates_scored"] == 2
+    assert body["threshold"] == 50
+    results = body["matches"]
     assert len(results) == 1
     assert results[0]["job"]["title"] == "High Fit Role"
     assert results[0]["fit_score"] == 80

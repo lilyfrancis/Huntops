@@ -6,20 +6,19 @@ from app.core.config import get_settings
 from app.core.limiter import limiter
 from app.core.security import require_job_seeker
 from app.db.base import get_db
-from app.models.enums import JobStatus
 from app.models.job import Job
 from app.models.resume import Resume
 from app.models.user import User
 from app.schemas.job import JobOut
-from app.schemas.job_match import JobMatchOut
-from app.services import matching
+from app.schemas.job_match import JobMatchOut, MatchRunOut
+from app.services import matching, preferences
 from app.services.ai_client import AIResponseError
 
 router = APIRouter(prefix="/api/ai", tags=["matching"])
 settings = get_settings()
 
 
-@router.get("/match-jobs", response_model=list[JobMatchOut])
+@router.get("/match-jobs", response_model=MatchRunOut)
 @limiter.limit("20/hour")
 def match_jobs(
     request: Request,
@@ -31,15 +30,20 @@ def match_jobs(
     if not resume:
         raise HTTPException(status_code=404, detail="Please upload your résumé first")
 
+    # Through the user's own filters, like the feed, the digest and autopilot.
+    # This endpoint queried every active job instead, which meant scoring —
+    # and charging for — roles the user had explicitly excluded, while a
+    # market or lane they did want could be crowded out of the candidate cap
+    # by jobs they would never see.
+    prefs = preferences.get_or_create(db, current_user)
     jobs = (
-        db.query(Job)
-        .filter(Job.status == JobStatus.active)
+        preferences.feed_query(db, prefs)
         .order_by(desc(Job.created_at))
         .limit(settings.MAX_MATCH_CANDIDATES)
         .all()
     )
     if not jobs:
-        return []
+        return MatchRunOut(matches=[], candidates_scored=0, threshold=matching.MIN_SCORE_THRESHOLD)
 
     try:
         scored = matching.score_jobs(resume, jobs, current_user.home_market)
@@ -62,4 +66,8 @@ def match_jobs(
         for match, job in persisted
     ]
     results.sort(key=lambda r: r.fit_score, reverse=True)
-    return results[:limit]
+    return MatchRunOut(
+        matches=results[:limit],
+        candidates_scored=len(jobs),
+        threshold=matching.MIN_SCORE_THRESHOLD,
+    )
