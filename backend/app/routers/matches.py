@@ -7,9 +7,10 @@ from app.core.limiter import limiter
 from app.core.security import require_job_seeker
 from app.db.base import get_db
 from app.models.job import Job
+from app.models.application import Application
 from app.models.resume import Resume
 from app.models.user import User
-from app.schemas.job import JobOut
+from app.schemas.job import JobOut, job_out_for
 from app.schemas.job_match import JobMatchOut, MatchRunOut
 from app.services import matching, preferences
 from app.services.ai_client import AIResponseError
@@ -53,9 +54,17 @@ def match_jobs(
     persisted = matching.persist_matches(db, current_user, scored)
     db.commit()
 
+    # Applied-to jobs are unlocked: the user committed, so it is theirs to see.
+    applied_job_ids = {
+        job_id
+        for (job_id,) in db.query(Application.job_id).filter(
+            Application.candidate_id == current_user.id
+        )
+    }
+
     results = [
         JobMatchOut(
-            job=JobOut.model_validate(job),
+            job=job_out_for(job, current_user, applied_job_ids),
             fit_score=match.fit_score,
             skills_score=match.skills_score,
             experience_score=match.experience_score,

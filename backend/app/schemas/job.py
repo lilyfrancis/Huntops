@@ -54,6 +54,10 @@ class JobOut(BaseModel):
     ghost_score: int | None
     ghost_flags: list[str]
     created_at: datetime
+    # Whether what follows has been redacted for this viewer. The client
+    # needs to know so it can offer the way out, not so it can do the
+    # hiding — that already happened.
+    locked: bool = False
 
     @computed_field  # type: ignore[prop-decorator]
     @property
@@ -91,3 +95,19 @@ class FeedItemOut(BaseModel):
         a human plus a link out — never a button that pretends to apply.
         """
         return self.job.source == "internal"
+
+
+def job_out_for(job, viewer=None, unlocked_job_ids=None) -> JobOut:
+    """The one place a job becomes a payload for a user.
+
+    Every route that returns a job to a person goes through here. A second
+    path that forgot to redact would not fail any test — it would just
+    quietly serve the company name — so there is deliberately only one.
+    """
+    from app.services import visibility
+
+    locked = visibility.is_locked(job, viewer, unlocked_job_ids)
+    out = JobOut.model_validate(job)
+    if not locked:
+        return out
+    return out.model_copy(update={**visibility.redact(job), "locked": True})

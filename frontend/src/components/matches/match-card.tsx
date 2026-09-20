@@ -1,4 +1,4 @@
-import { Building2, MapPin, Send } from "lucide-react";
+import { Building2, Lock, MapPin, Send } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -28,11 +28,25 @@ export function MatchCard({ match, onViewJob, onRequestOutreach, outreachPending
           </button>
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-muted">
             <span className="flex items-center gap-1">
-              <Building2 className="h-3.5 w-3.5" /> {job.company_name ?? "Company withheld"}
+              {job.locked ? (
+                <>
+                  <Lock className="h-3.5 w-3.5" /> Company hidden
+                </>
+              ) : (
+                <>
+                  <Building2 className="h-3.5 w-3.5" /> {job.company_name ?? "Company withheld"}
+                </>
+              )}
             </span>
             <span className="flex items-center gap-1">
               <MapPin className="h-3.5 w-3.5" /> {job.location}
             </span>
+            {/* Shown even when locked, and given weight: it is the single
+                strongest reason to unlock, and without it every hidden row
+                looks the same. */}
+            {job.salary_range && (
+              <span className="font-semibold text-good">{job.salary_range}</span>
+            )}
           </div>
         </div>
         <div className="flex shrink-0 flex-col items-center rounded-lg border border-border bg-surface-2 px-3 py-2">

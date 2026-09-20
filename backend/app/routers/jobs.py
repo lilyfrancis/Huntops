@@ -5,7 +5,7 @@ from sqlalchemy import desc, nulls_last, or_
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
-from app.core.security import get_current_user, require_employer, require_job_seeker
+from app.core.security import get_current_user_optional, get_current_user, require_employer, require_job_seeker
 from app.db.base import get_db
 from app.models.application import Application
 from app.models.enums import JobStatus, OutreachStatus, UserRole
@@ -13,7 +13,7 @@ from app.models.job import Job
 from app.models.job_match import JobMatch
 from app.models.outreach import Outreach
 from app.models.user import User
-from app.schemas.job import FeedItemOut, JobCreate, JobOut, JobUpdate
+from app.schemas.job import FeedItemOut, JobCreate, JobOut, JobUpdate, job_out_for
 from app.services import preferences
 from app.services.ghost_detection import GHOST_THRESHOLD
 from app.services.salary_parsing import parse_salary
@@ -149,7 +149,7 @@ def personalized_feed(
 
     return [
         FeedItemOut(
-            job=JobOut.model_validate(job),
+            job=job_out_for(job, current_user, applied),
             fit_score=matches[job.id].fit_score if job.id in matches else None,
             fit_reason=matches[job.id].reason if job.id in matches else None,
             applied=job.id in applied,
@@ -173,11 +173,30 @@ def list_my_jobs(
 
 
 @router.get("/{job_id}", response_model=JobOut)
-def get_job(job_id: uuid.UUID, db: Session = Depends(get_db)) -> Job:
+def get_job(
+    job_id: uuid.UUID,
+    current_user: User | None = Depends(get_current_user_optional),
+    db: Session = Depends(get_db),
+) -> JobOut:
+    """Redacted for the same viewers as the feed.
+
+    This route took no user at all, so everything the feed withheld could be
+    read straight back out of it by id — which made the feed's redaction
+    decorative.
+    """
     job = db.get(Job, job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
-    return job
+
+    unlocked = set()
+    if current_user is not None:
+        unlocked = {
+            job_id_
+            for (job_id_,) in db.query(Application.job_id).filter(
+                Application.candidate_id == current_user.id, Application.job_id == job_id
+            )
+        }
+    return job_out_for(job, current_user, unlocked)
 
 
 def _get_owned_job(job_id: uuid.UUID, current_user: User, db: Session) -> Job:

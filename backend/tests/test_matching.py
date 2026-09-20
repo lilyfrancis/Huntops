@@ -1,7 +1,8 @@
 from unittest.mock import patch
 
-from app.models.enums import ExperienceLevel, JobStatus, JobType
+from app.models.enums import SubscriptionTier, ExperienceLevel, JobStatus, JobType
 from app.models.job import Job
+from app.models.user import User
 from app.models.resume import Resume
 from app.services import matching
 from tests.conftest import auth_headers, register_user
@@ -166,6 +167,15 @@ def test_match_jobs_endpoint_filters_below_threshold_and_persists(mock_score_job
         ]
 
     mock_score_jobs.side_effect = fake_score_jobs
+
+    # Elite, so the titles come back whole: this test is about the score
+    # threshold, and a non-Elite viewer gets external titles partly masked
+    # (covered on its own in test_visibility.py).
+    session = SessionLocal()
+    seeker = session.query(User).filter(User.email == "matcher@example.com").one()
+    seeker.subscription_tier = SubscriptionTier.elite
+    session.commit()
+    session.close()
 
     resp = client.get("/api/ai/match-jobs", headers=headers)
     assert resp.status_code == 200

@@ -15,6 +15,12 @@ from app.services import billing as billing_service
 from app.services.paystack import PaystackError
 from tests.conftest import auth_headers, register_user
 
+from app.core.config import get_settings
+
+# Read rather than restated, so repricing is one line and not a test sweep.
+FREE = get_settings().FREE_TIER_CREDITS
+PRO = get_settings().PRO_TIER_CREDITS
+
 settings = get_settings()
 
 
@@ -104,14 +110,14 @@ def test_a_correctly_signed_webhook_is_accepted(client):
 def test_subscription_create_upgrades_and_grants_credits(client):
     data = register_user(client, email="billing@example.com")
     user_id = uuid.UUID(data["user"]["id"])
-    assert _reload(user_id).ai_credits == 10  # signup bonus only
+    assert _reload(user_id).ai_credits == FREE  # signup bonus only
 
     _signed(client, _subscription_event(user_id))
 
     user = _reload(user_id)
     assert user.subscription_tier == SubscriptionTier.pro
     assert user.paystack_subscription_code == "SUB_abc"
-    assert user.ai_credits == 10 + 100
+    assert user.ai_credits == FREE + PRO
 
 
 def test_subscription_create_stores_the_email_token(client):
@@ -135,7 +141,7 @@ def test_an_unrecognised_plan_code_changes_nothing(client):
 
     user = _reload(user_id)
     assert user.subscription_tier == SubscriptionTier.free
-    assert user.ai_credits == 10
+    assert user.ai_credits == FREE
 
 
 def test_subscription_disable_downgrades_to_free(client):
@@ -189,7 +195,7 @@ def test_a_renewal_charge_tops_credits_back_up(client):
         },
     })
 
-    assert _reload(user_id).ai_credits == 10 + 100 + 100
+    assert _reload(user_id).ai_credits == FREE + PRO + PRO
 
 
 def test_a_charge_for_a_tier_the_user_is_not_on_grants_nothing(client):
@@ -206,7 +212,7 @@ def test_a_charge_for_a_tier_the_user_is_not_on_grants_nothing(client):
         },
     })
 
-    assert _reload(user_id).ai_credits == 10
+    assert _reload(user_id).ai_credits == FREE
 
 
 def test_a_one_off_charge_is_not_treated_as_a_renewal(client):
@@ -222,7 +228,7 @@ def test_a_one_off_charge_is_not_treated_as_a_renewal(client):
     })
 
     assert resp.status_code == 200
-    assert _reload(user_id).ai_credits == 10 + 100
+    assert _reload(user_id).ai_credits == FREE + PRO
 
 
 def test_a_failed_renewal_does_not_downgrade_immediately(client):

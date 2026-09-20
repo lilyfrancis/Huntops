@@ -1,9 +1,10 @@
+from app.core.config import get_settings
 from tests.conftest import auth_headers, register_user
 
 
 def test_register_grants_signup_credits(client):
     data = register_user(client)
-    assert data["user"]["ai_credits"] == 10
+    assert data["user"]["ai_credits"] == get_settings().FREE_TIER_CREDITS
     assert data["user"]["subscription_tier"] == "free"
     assert "access_token" in data and "refresh_token" in data
 

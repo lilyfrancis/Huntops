@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     AUTO_APPROVE_JOBS: bool = False
 
     # Credits per tier (granted on signup / renewal)
-    FREE_TIER_CREDITS: int = 10
+    FREE_TIER_CREDITS: int = 15
     PRO_TIER_CREDITS: int = 100
     ELITE_TIER_CREDITS: int = 500
 
@@ -139,8 +139,10 @@ class Settings(BaseSettings):
 
     # Asking HuntOps to file an application on an external site. A person
     # does this by hand, so it is priced above the AI features rather than
-    # against their token cost.
-    CONCIERGE_CREDIT_COST: int = 25
+    # against their token cost. Matched to FREE_TIER_CREDITS on purpose: a
+    # new account can do exactly one and see it land, which is the argument
+    # for the plan.
+    CONCIERGE_CREDIT_COST: int = 15
     # What a non-Elite account gets, ever. Enough to feel what it does and
     # see it land, not enough to run a job hunt on. Credits are charged on
     # top, so this is a ceiling rather than a currency.

@@ -1,5 +1,6 @@
 import { formatDistanceToNow } from "date-fns";
 import {
+  Lock,
   Building2,
   Check,
   Globe2,
@@ -63,13 +64,23 @@ export function FeedCard({ item, onOpen, onApply, onOutreach, isApplying, isDraf
 
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-muted">
             <span className="flex items-center gap-1">
-              <Building2 className="h-3.5 w-3.5" /> {job.company_name ?? "Company withheld"}
+              {job.locked ? (
+                <>
+                  <Lock className="h-3.5 w-3.5" /> Company hidden
+                </>
+              ) : (
+                <>
+                  <Building2 className="h-3.5 w-3.5" /> {job.company_name ?? "Company withheld"}
+                </>
+              )}
             </span>
             <span className="flex items-center gap-1">
               <MapPin className="h-3.5 w-3.5" /> {job.location}
             </span>
             <span>{JOB_TYPE_LABEL[job.job_type]}</span>
-            {job.salary_range && <span>{job.salary_range}</span>}
+            {job.salary_range && (
+              <span className="font-semibold text-good">{job.salary_range}</span>
+            )}
           </div>
 
           {item.fit_reason && <p className="mt-2 line-clamp-2 text-sm text-ink-muted">{item.fit_reason}</p>}
@@ -117,7 +128,8 @@ export function FeedCard({ item, onOpen, onApply, onOutreach, isApplying, isDraf
             work this removes.
           */
           <Button size="sm" onClick={onApply} disabled={isApplying}>
-            {isApplying ? "Applying…" : "Apply"}
+            {job.locked && <Lock className="h-3.5 w-3.5" />}
+            {isApplying ? "Applying…" : job.locked ? "Unlock — we apply for you" : "Apply"}
           </Button>
         )}
 

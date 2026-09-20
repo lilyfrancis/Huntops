@@ -73,6 +73,9 @@ export interface Job {
   market: string | null;
   ghost_score: number | null;
   ghost_flags: string[];
+  /** Redacted for this viewer. The hiding already happened server-side —
+   *  this only tells the UI to offer the way out. */
+  locked: boolean;
   ghost_band: GhostBand;
   created_at: string;
 }

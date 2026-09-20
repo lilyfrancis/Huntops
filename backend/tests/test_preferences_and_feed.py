@@ -23,6 +23,26 @@ def _job(session, *, title="Role", market=None, lane=JobLane.marketing, remote=F
 
 
 def _feed(client, headers, **params):
+    """Read the feed as a user who sees jobs in full.
+
+    Everything in this file is about which jobs the query returns, and it
+    identifies them by title. Non-Elite viewers now get external titles
+    partly masked, which would make every assertion here a test of the
+    redaction rather than of the filter. Redaction has its own file
+    (test_visibility.py); this one promotes the viewer so the filter is
+    what is being measured.
+    """
+    from app.db.base import SessionLocal
+    from app.models.enums import SubscriptionTier, UserRole
+    from app.models.user import User
+
+    session = SessionLocal()
+    session.query(User).filter(User.role == UserRole.job_seeker).update(
+        {User.subscription_tier: SubscriptionTier.elite}, synchronize_session=False
+    )
+    session.commit()
+    session.close()
+
     resp = client.get("/api/jobs/feed", headers=headers, params=params)
     assert resp.status_code == 200, resp.text
     return resp.json()

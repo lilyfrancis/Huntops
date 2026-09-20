@@ -16,6 +16,8 @@ from app.models.user import User
 
 settings = get_settings()
 security = HTTPBearer()
+# auto_error off: this one answers None instead of raising for anonymous.
+optional_security = HTTPBearer(auto_error=False)
 
 
 class TokenType(str, Enum):
@@ -124,6 +126,26 @@ def get_current_user(
     if user.is_suspended:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account suspended")
     return user
+
+
+def get_current_user_optional(
+    credentials: HTTPAuthorizationCredentials | None = Depends(optional_security),
+    db: Session = Depends(get_db),
+) -> User | None:
+    """The viewer if there is one, None if not — never a 401.
+
+    For routes that are public but show more to a signed-in user. A bad or
+    expired token is treated as anonymous rather than rejected: the page
+    still works, it just shows the anonymous version.
+    """
+    if credentials is None:
+        return None
+    try:
+        payload = decode_token(credentials.credentials, TokenType.access)
+        user = db.get(User, uuid.UUID(payload.get("sub")))
+    except (HTTPException, ValueError, TypeError):
+        return None
+    return None if user is None or user.is_suspended else user
 
 
 def require_role(*roles: UserRole):
