@@ -280,9 +280,22 @@ function AddDialog({
   );
 }
 
+/** A mailbox whose last run failed is failing, whether or not it left a
+ *  message behind.
+ *
+ *  Keying only on last_error trusted a field that could be empty — an
+ *  exception that stringifies to "" wrote "" there, so a mailbox that had
+ *  not connected in eight days still showed a green "Active". The run's own
+ *  status cannot be blank, so it is the more reliable of the two, and rows
+ *  written before the empty-message fix are covered by it too.
+ */
+function isFailing(mailbox: AlertMailbox): boolean {
+  return Boolean(mailbox.last_error) || mailbox.last_run_status === "error";
+}
+
 function statusLabel(mailbox: AlertMailbox): string {
   if (!mailbox.is_active) return "Paused";
-  return mailbox.last_error ? "Failing" : "Active";
+  return isFailing(mailbox) ? "Failing" : "Active";
 }
 
 /** What this mailbox has actually produced.
@@ -318,7 +331,7 @@ function yieldSummary(mailbox: AlertMailbox): string {
 
 function statusTone(mailbox: AlertMailbox): "good" | "danger" | "neutral" {
   if (!mailbox.is_active) return "neutral";
-  return mailbox.last_error ? "danger" : "good";
+  return isFailing(mailbox) ? "danger" : "good";
 }
 
 function MailboxRow({ mailbox, onEdit }: { mailbox: AlertMailbox; onEdit: () => void }) {
@@ -381,7 +394,11 @@ function MailboxRow({ mailbox, onEdit }: { mailbox: AlertMailbox; onEdit: () => 
             ))}
           </div>
           <h3 className="truncate text-base font-semibold text-ink">{mailbox.label}</h3>
-          <p className="truncate text-sm text-ink-muted">{mailbox.email_address}</p>
+          {/* The label defaults to the address, so printing both spends a
+              line of the card saying the same thing twice. */}
+          {mailbox.label !== mailbox.email_address && (
+            <p className="truncate text-sm text-ink-muted">{mailbox.email_address}</p>
+          )}
           <p className="mt-1 truncate font-mono text-xs text-ink-faint">
             {mailbox.imap_host}:{mailbox.imap_port} · {mailbox.imap_folder} ·{" "}
             {mailbox.last_synced_at
