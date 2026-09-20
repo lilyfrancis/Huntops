@@ -1,5 +1,5 @@
 import { tokenStorage } from "./token-storage";
-import type { ApiErrorBody } from "./types";
+import type { ApiErrorBody, ApiValidationItem } from "./types";
 
 const API_BASE = ""; // same-origin in dev via the Vite proxy, and in prod behind one domain
 
@@ -10,6 +10,38 @@ export class ApiError extends Error {
     this.status = status;
     this.name = "ApiError";
   }
+}
+
+/** A sentence a person can act on, whichever shape the server used.
+ *
+ * Validation failures arrive as an array of {loc, msg} rather than a string,
+ * and an array passed to Error() stringifies to "[object Object]" — so every
+ * 422 in the app said nothing at all. The field name is worth keeping: with
+ * several inputs on screen, "is not a valid email address" does not say
+ * which one.
+ */
+function readDetail(detail: ApiErrorBody["detail"], fallback: string): string {
+  if (typeof detail === "string" && detail.trim()) return detail;
+
+  if (Array.isArray(detail)) {
+    const parts = detail
+      .map((item: ApiValidationItem) => {
+        // "body" and "query" name where the value came from, not which field
+        // it was, and mean nothing to the person reading.
+        const field = (item.loc ?? [])
+          .filter((p) => p !== "body" && p !== "query" && typeof p === "string")
+          .join(" ");
+        // Pydantic prefixes messages raised by a validator with "Value error, ".
+        const msg = (item.msg ?? "").replace(/^Value error,\s*/i, "");
+        if (!msg) return "";
+        return field ? `${field}: ${msg}` : msg;
+      })
+      .filter(Boolean);
+
+    if (parts.length) return parts.join("; ");
+  }
+
+  return fallback;
 }
 
 // Concurrent 401s share one refresh call instead of each firing their own.
@@ -85,7 +117,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 
   if (!res.ok) {
     const detail = (json as ApiErrorBody | null)?.detail;
-    throw new ApiError(res.status, detail || res.statusText || "Request failed");
+    throw new ApiError(res.status, readDetail(detail, res.statusText || "Request failed"));
   }
 
   return json as T;

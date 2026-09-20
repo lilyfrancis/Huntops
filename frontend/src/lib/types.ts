@@ -118,6 +118,10 @@ export interface Outreach {
   linkedin_msg: string | null;
   cv_bullets: string[];
   status: OutreachStatus;
+  /** Where it will go. null when Apollo found nobody — the user supplies one. */
+  recipient_email: string | null;
+  /** The address it actually went to, once sent. */
+  sent_to_email: string | null;
   sent_at: string | null;
   created_at: string;
 }
@@ -309,8 +313,17 @@ export interface SubscriptionStatus {
   plans: Plan[];
 }
 
+/** FastAPI answers with a plain string for errors we raise ourselves, and
+ *  an array of per-field objects for request validation (422). Typing it as
+ *  only the string meant the array reached `new Error(...)` and every
+ *  validation failure in the app read "[object Object]". */
+export interface ApiValidationItem {
+  loc?: (string | number)[];
+  msg?: string;
+}
+
 export interface ApiErrorBody {
-  detail?: string;
+  detail?: string | ApiValidationItem[];
 }
 
 export type InterviewStatus = "in_progress" | "completed";
