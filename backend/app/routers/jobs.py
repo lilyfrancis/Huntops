@@ -1,10 +1,11 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import desc, nulls_last, or_
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
+from app.core.limiter import limiter
 from app.core.security import get_current_user_optional, get_current_user, require_employer, require_job_seeker
 from app.db.base import get_db
 from app.models.application import Application
@@ -14,7 +15,7 @@ from app.models.job_match import JobMatch
 from app.models.outreach import Outreach
 from app.models.user import User
 from app.schemas.job import FeedItemOut, JobCreate, JobOut, JobUpdate, job_out_for
-from app.services import preferences
+from app.services import preferences, unlocking
 from app.services.ghost_detection import GHOST_THRESHOLD
 from app.services.salary_parsing import parse_salary
 
@@ -136,6 +137,9 @@ def personalized_feed(
         .filter(Application.candidate_id == current_user.id, Application.job_id.in_(job_ids))
         .all()
     }
+    # Paid-for unlocks as well as applications: both are commitments that
+    # earn the full listing.
+    unlocked = unlocking.unlocked_ids(db, current_user, job_ids)
     outreached = {
         job_id
         for (job_id,) in db.query(Outreach.job_id)
@@ -149,7 +153,7 @@ def personalized_feed(
 
     return [
         FeedItemOut(
-            job=job_out_for(job, current_user, applied),
+            job=job_out_for(job, current_user, unlocked),
             fit_score=matches[job.id].fit_score if job.id in matches else None,
             fit_reason=matches[job.id].reason if job.id in matches else None,
             applied=job.id in applied,
@@ -188,15 +192,7 @@ def get_job(
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
 
-    unlocked = set()
-    if current_user is not None:
-        unlocked = {
-            job_id_
-            for (job_id_,) in db.query(Application.job_id).filter(
-                Application.candidate_id == current_user.id, Application.job_id == job_id
-            )
-        }
-    return job_out_for(job, current_user, unlocked)
+    return job_out_for(job, current_user, unlocking.unlocked_ids(db, current_user, [job_id]))
 
 
 def _get_owned_job(job_id: uuid.UUID, current_user: User, db: Session) -> Job:
@@ -239,3 +235,28 @@ def delete_job(
     job = _get_owned_job(job_id, current_user, db)
     db.delete(job)
     db.commit()
+
+
+@router.post("/{job_id}/unlock", response_model=JobOut)
+@limiter.limit("60/hour")
+def unlock_job(
+    request: Request,
+    job_id: uuid.UUID,
+    current_user: User = Depends(require_job_seeker),
+    db: Session = Depends(get_db),
+) -> JobOut:
+    """Spend credits to see one listing in full.
+
+    Returns the job either way, so the client renders the unlocked version
+    from the response rather than guessing and refetching.
+    """
+    job = db.get(Job, job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    try:
+        unlocking.unlock(db, current_user, job)
+    except unlocking.InsufficientCredits as e:
+        raise HTTPException(status_code=402, detail=str(e))
+
+    return job_out_for(job, current_user, unlocking.unlocked_ids(db, current_user, [job_id]))

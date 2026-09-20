@@ -147,6 +147,23 @@ class Settings(BaseSettings):
     # see it land, not enough to run a job hunt on. Credits are charged on
     # top, so this is a ceiling rather than a currency.
     CONCIERGE_FREE_ALLOWANCE: int = 3
+
+    # Seeing one external listing in full: the company, the description, the
+    # whole title. Priced well under a concierge apply — this is a look, not
+    # a piece of work — but not free, because the company name is the thing
+    # that lets someone go around us.
+    UNLOCK_CREDIT_COST: int = 5
+
+    # Pay-as-you-go top-ups: "code:credits:price" per pack, in
+    # BILLING_CURRENCY. Priced above the per-credit rate a subscription
+    # gives, on purpose — the plan should always be the better deal, or
+    # there is no reason to be on one. Bigger packs get a discount so the
+    # step up is worth taking.
+    #
+    # Amounts here are charged directly rather than read from a Paystack
+    # plan, because these are one-off transactions and Paystack plans are
+    # for recurring ones. Keep them in step with whatever you advertise.
+    CREDIT_PACKS: str = "starter:100:11500,plus:250:26000,pro:600:57000,bulk:1500:127500"
     # Tell an admin the moment work arrives. The queue only updates when
     # somebody opens it, and a request nobody knows about is a user watching
     # "queued" for a day.
@@ -155,6 +172,26 @@ class Settings(BaseSettings):
     # per-request email can be missed; this one cannot be, because it keeps
     # arriving.
     CONCIERGE_SLA_HOURS: int = 24
+
+    @property
+    def credit_packs(self) -> list[dict]:
+        """Parsed top-up packs, cheapest first.
+
+        A malformed entry is skipped rather than crashing the app: a typo in
+        an env var should cost you one pack on a pricing page, not the whole
+        deployment.
+        """
+        packs = []
+        for raw in self.CREDIT_PACKS.split(","):
+            parts = [p.strip() for p in raw.split(":")]
+            if len(parts) != 3:
+                continue
+            code, credits, price = parts
+            try:
+                packs.append({"code": code, "credits": int(credits), "price": float(price)})
+            except ValueError:
+                continue
+        return sorted(packs, key=lambda p: p["credits"])
 
     @property
     def recruiter_titles_list(self) -> List[str]:

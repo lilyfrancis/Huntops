@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { PageSpinner } from "@/components/ui/spinner";
 import { EmptyState } from "@/components/ui/empty-state";
 import { applicationsApi, jobsApi, outreachApi, preferencesApi } from "@/lib/api";
+import { useAuth } from "@/hooks/use-auth";
 import { ApiError } from "@/lib/api-client";
 import { humanize } from "@/lib/labels";
 import type { Job } from "@/lib/types";
@@ -34,6 +35,7 @@ export function JobFeedPage() {
   const debouncedSearch = useDebounced(search, 300);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
 
+  const { refreshUser } = useAuth();
   const { data: prefs } = useQuery({ queryKey: ["preferences"], queryFn: preferencesApi.get });
   const { data: feed, isLoading } = useQuery({
     queryKey: ["jobs", "feed", { ignorePreferences, remoteOnly, debouncedSearch }],
@@ -50,6 +52,27 @@ export function JobFeedPage() {
   });
 
   const refreshFeed = () => queryClient.invalidateQueries({ queryKey: ["jobs", "feed"] });
+
+  // From the server, not hardcoded: the price of a look is a pricing
+  // decision, and a stale number in the client is a promise broken at the
+  // moment somebody clicks.
+  const { data: allowance } = useQuery({
+    queryKey: ["concierge", "allowance"],
+    queryFn: applicationsApi.conciergeAllowance,
+  });
+  const unlockCost = allowance?.unlock_credit_cost ?? 5;
+
+  const unlockMutation = useMutation({
+    mutationFn: (jobId: string) => jobsApi.unlock(jobId),
+    onSuccess: () => {
+      refreshFeed();
+      // Credits live on the auth user, not in a query — spending them
+      // without this leaves a stale balance in the sidebar.
+      void refreshUser();
+      queryClient.invalidateQueries({ queryKey: ["concierge", "allowance"] });
+    },
+    onError: (e) => toast.error(e instanceof ApiError ? e.message : "Couldn't unlock"),
+  });
 
   const applyMutation = useMutation({
     mutationFn: (jobId: string) => applicationsApi.apply(jobId),
@@ -199,6 +222,9 @@ export function JobFeedPage() {
               item={item}
               onOpen={() => setSelectedJob(item.job)}
               onApply={() => applyMutation.mutate(item.job.id)}
+              onUnlock={() => unlockMutation.mutate(item.job.id)}
+              isUnlocking={unlockMutation.isPending && unlockMutation.variables === item.job.id}
+              unlockCost={unlockCost}
               onOutreach={() => outreachMutation.mutate(item.job.id)}
               isApplying={applyMutation.isPending && applyMutation.variables === item.job.id}
               isDrafting={outreachMutation.isPending && outreachMutation.variables === item.job.id}

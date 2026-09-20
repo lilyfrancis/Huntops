@@ -33,3 +33,14 @@ class SubscriptionStatusOut(BaseModel):
     # Paystack plan, and a figure duplicated in the React tree is a figure
     # that will eventually disagree with what the card is actually charged.
     plans: list[PlanOut]
+
+
+class CreditPackOut(BaseModel):
+    code: str
+    credits: int
+    price: float
+    currency: str
+
+
+class CreditPackRequest(BaseModel):
+    pack: str

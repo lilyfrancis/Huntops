@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
+from app.core.limiter import limiter
 from app.core.security import get_current_user
 from app.db.base import get_db
 from app.models.user import User
@@ -15,6 +16,8 @@ from app.schemas.billing import (
     BillingPortalOut,
     CheckoutSessionOut,
     CheckoutSessionRequest,
+    CreditPackOut,
+    CreditPackRequest,
     PlanOut,
     SubscriptionStatusOut,
 )
@@ -141,3 +144,28 @@ async def paystack_webhook(request: Request, db: Session = Depends(get_db)) -> d
 
     billing_service.process_webhook_event(db, event)
     return {"received": True}
+
+
+@router.get("/credit-packs", response_model=list[CreditPackOut])
+def list_credit_packs() -> list[CreditPackOut]:
+    """Public, like /plans: the price of more credits is part of deciding
+    whether to subscribe, so it cannot sit behind a login."""
+    return [CreditPackOut(**pack, currency=settings.BILLING_CURRENCY) for pack in settings.credit_packs]
+
+
+@router.post("/buy-credits", response_model=CheckoutSessionOut)
+@limiter.limit("20/hour")
+def buy_credits(
+    request: Request,
+    payload: CreditPackRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> CheckoutSessionOut:
+    try:
+        url = billing_service.buy_credits(db, current_user, payload.pack)
+    except billing_service.PackNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except PaystackError as e:
+        logger.error("Credit pack checkout failed for user=%s: %s", current_user.id, e)
+        raise HTTPException(status_code=502, detail="Payment provider is unavailable — please try again shortly")
+    return CheckoutSessionOut(checkout_url=url)

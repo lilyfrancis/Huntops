@@ -70,10 +70,12 @@ def test_the_title_keeps_its_shape_but_not_its_words(db_session, external):
 
 # ---------- who is not locked ----------
 
-def test_elite_sees_everything(db_session, external):
+def test_even_elite_is_locked_until_they_unlock(db_session, external):
+    """Credits are the gate for everyone now. A plan is how many credits you
+    get, not a different set of walls — otherwise a paying customer meets
+    one they cannot pay past, which is where churn comes from."""
     out = job_out_for(external, _seeker(db_session, SubscriptionTier.elite), set())
-    assert out.locked is False
-    assert out.company_name == "Temporal Technologies"
+    assert out.locked is True
 
 
 def test_a_job_already_applied_for_is_unlocked(db_session, external):

@@ -63,6 +63,10 @@ class ConciergeAllowanceOut(BaseModel):
     remaining: int | None          # None = unlimited (Elite)
     allowance: int
     credit_cost: int
+    # What a look costs, as opposed to an application. Sent from here so the
+    # UI never hardcodes a price — a stale number in the client is a promise
+    # broken at the moment somebody clicks.
+    unlock_credit_cost: int
     credits: int
 
 

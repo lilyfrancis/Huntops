@@ -10,6 +10,7 @@ from app.models.ingestion_run import IngestionRun
 from app.models.interview import InterviewSession, InterviewTurn
 from app.models.job import Job
 from app.models.job_match import JobMatch
+from app.models.job_unlock import JobUnlock
 from app.models.negotiation import NegotiationReview
 from app.models.outreach import Outreach
 from app.models.recruiter_contact import RecruiterContact
@@ -26,6 +27,7 @@ __all__ = [
     "CreditLedgerEntry",
     "Resume",
     "JobMatch",
+    "JobUnlock",
     "IngestionRun",
     "GmailConnection",
     "AlertMailbox",

@@ -223,5 +223,6 @@ def concierge_allowance(
         remaining=concierge.allowance_remaining(db, current_user),
         allowance=settings.CONCIERGE_FREE_ALLOWANCE,
         credit_cost=settings.CONCIERGE_CREDIT_COST,
+        unlock_credit_cost=settings.UNLOCK_CREDIT_COST,
         credits=current_user.ai_credits,
     )

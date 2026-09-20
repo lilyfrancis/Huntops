@@ -42,6 +42,7 @@ function toQuery(params: object): string {
 }
 
 export const jobsApi = {
+  unlock: (jobId: string) => api.post<Job>(`/api/jobs/${jobId}/unlock`),
   list: (filters: JobFilters = {}) => api.get<Job[]>(`/api/jobs${toQuery(filters)}`, { skipAuth: true }),
   get: (jobId: string) => api.get<Job>(`/api/jobs/${jobId}`, { skipAuth: true }),
   create: (payload: JobCreatePayload) => api.post<Job>("/api/jobs", payload),

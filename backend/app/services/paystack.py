@@ -80,6 +80,28 @@ def initialize_transaction(*, email: str, plan_code: str, callback_url: str, met
     return data["authorization_url"]
 
 
+def initialize_charge(*, email: str, amount: float, callback_url: str, metadata: dict) -> str:
+    """A one-off payment. Returns the hosted payment page URL.
+
+    Unlike a subscription, there is no Paystack plan to read the price from,
+    so the amount is sent — in the currency's smallest unit, which is what
+    Paystack expects and the most common way to be out by a factor of a
+    hundred.
+    """
+    data = _request(
+        "POST",
+        "/transaction/initialize",
+        json={
+            "email": email,
+            "amount": int(round(amount * 100)),
+            "currency": settings.BILLING_CURRENCY.upper(),
+            "callback_url": callback_url,
+            "metadata": metadata,
+        },
+    )
+    return data["authorization_url"]
+
+
 def verify_transaction(reference: str) -> dict:
     return _request("GET", f"/transaction/verify/{reference}")
 

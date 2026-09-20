@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.models.enums import SubscriptionTier
+from app.models.credit_ledger import CreditLedgerEntry
 from app.models.user import User
 from app.services import paystack
 from app.services.credits import adjust_credits
@@ -172,8 +173,10 @@ def handle_charge_success(db: Session, data: dict) -> None:
         return
 
     plan = data.get("plan")
-    # A one-off charge (no plan) is not a subscription renewal.
+    # A one-off charge (no plan) is not a renewal — but it may be a credit
+    # top-up, which is the other thing a card gets charged for here.
     if not isinstance(plan, dict):
+        _grant_credit_pack(db, user, data)
         return
 
     tier = _tier_for_plan_code(plan.get("plan_code"))
@@ -181,6 +184,74 @@ def handle_charge_success(db: Session, data: dict) -> None:
         return
 
     _set_tier(db, user, tier, credit_action=f"paystack_renewal:{tier.value}")
+
+
+class PackNotFoundError(Exception):
+    pass
+
+
+def buy_credits(db: Session, user: User, pack_code: str) -> str:
+    """Checkout URL for a credit top-up.
+
+    The credit count rides in the metadata rather than being looked up from
+    the pack code at webhook time: if the packs are repriced or renamed
+    between someone opening checkout and paying, they get what they were
+    shown, not what the config now says.
+    """
+    pack = next((p for p in settings.credit_packs if p["code"] == pack_code), None)
+    if pack is None:
+        raise PackNotFoundError(f"No credit pack called '{pack_code}'")
+
+    return paystack.initialize_charge(
+        email=user.email,
+        amount=pack["price"],
+        callback_url=f"{settings.FRONTEND_URL}/app/profile?credits=processing",
+        metadata={"user_id": str(user.id), "credits": pack["credits"], "pack": pack["code"]},
+    )
+
+
+def _grant_credit_pack(db: Session, user: User, data: dict) -> None:
+    """Credit a top-up, once.
+
+    Paystack retries a webhook it did not get a 200 for, and can deliver the
+    same event twice on its own. Granting twice for one payment is real
+    money given away, so the transaction reference is written into the
+    ledger action and checked before anything is added — the ledger is
+    already an immutable record of every grant, so it is the natural place
+    for this rather than a second table that could disagree with it.
+    """
+    metadata = data.get("metadata") or {}
+    if not isinstance(metadata, dict):
+        return
+
+    try:
+        credits = int(metadata.get("credits") or 0)
+    except (TypeError, ValueError):
+        return
+    if credits <= 0:
+        return
+
+    reference = str(data.get("reference") or "").strip()
+    if not reference:
+        # Without a reference there is no way to tell a retry from a second
+        # purchase, and guessing wrong in either direction is worse than
+        # asking a human to look.
+        logger.error("Credit pack charge for user=%s had no reference; not granting", user.id)
+        return
+
+    action = f"paystack_credits:{reference}"
+    already = (
+        db.query(CreditLedgerEntry.id)
+        .filter(CreditLedgerEntry.user_id == user.id, CreditLedgerEntry.action == action)
+        .first()
+    )
+    if already:
+        logger.info("Credit pack %s already granted to user=%s; ignoring replay", reference, user.id)
+        return
+
+    adjust_credits(db, user, action=action, amount=credits)
+    db.commit()
+    logger.info("Granted %d credits to user=%s for %s", credits, user.id, reference)
 
 
 def handle_subscription_disable(db: Session, data: dict) -> None:

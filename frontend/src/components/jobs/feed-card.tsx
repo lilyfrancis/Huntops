@@ -35,10 +35,16 @@ interface FeedCardProps {
   onApply: () => void;
   onOutreach: () => void;
   isApplying?: boolean;
+  onUnlock?: () => void;
+  isUnlocking?: boolean;
+  unlockCost?: number;
   isDrafting?: boolean;
 }
 
-export function FeedCard({ item, onOpen, onApply, onOutreach, isApplying, isDrafting }: FeedCardProps) {
+export function FeedCard({
+  item, onOpen, onApply, onOutreach, isApplying, isDrafting,
+  onUnlock, isUnlocking, unlockCost = 5,
+}: FeedCardProps) {
   const { job } = item;
 
   return (
@@ -127,10 +133,17 @@ export function FeedCard({ item, onOpen, onApply, onOutreach, isApplying, isDraf
             Sending someone to the original listing hands back exactly the
             work this removes.
           */
-          <Button size="sm" onClick={onApply} disabled={isApplying}>
-            {job.locked && <Lock className="h-3.5 w-3.5" />}
-            {isApplying ? "Applying…" : job.locked ? "Unlock — we apply for you" : "Apply"}
-          </Button>
+          <>
+            {job.locked && onUnlock && (
+              <Button size="sm" variant="outline" onClick={onUnlock} disabled={isUnlocking}>
+                <Lock className="h-3.5 w-3.5" />
+                {isUnlocking ? "Unlocking…" : `Reveal (${unlockCost})`}
+              </Button>
+            )}
+            <Button size="sm" onClick={onApply} disabled={isApplying}>
+              {isApplying ? "Applying…" : "Apply for me"}
+            </Button>
+          </>
         )}
 
         {item.outreach_sent ? (

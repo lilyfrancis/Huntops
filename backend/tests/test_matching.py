@@ -168,12 +168,15 @@ def test_match_jobs_endpoint_filters_below_threshold_and_persists(mock_score_job
 
     mock_score_jobs.side_effect = fake_score_jobs
 
-    # Elite, so the titles come back whole: this test is about the score
-    # threshold, and a non-Elite viewer gets external titles partly masked
-    # (covered on its own in test_visibility.py).
+    # Unlocked, so the titles come back whole: this test is about the score
+    # threshold, and a locked listing has its title partly masked (covered
+    # on its own in test_visibility.py).
+    from app.models.job_unlock import JobUnlock
+
     session = SessionLocal()
     seeker = session.query(User).filter(User.email == "matcher@example.com").one()
-    seeker.subscription_tier = SubscriptionTier.elite
+    for job_id in job_ids:
+        session.add(JobUnlock(user_id=seeker.id, job_id=job_id))
     session.commit()
     session.close()
 

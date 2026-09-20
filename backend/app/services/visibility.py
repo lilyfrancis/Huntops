@@ -16,7 +16,7 @@ opening the network tab, which is not a meaningful lock at all.
 
 import math
 
-from app.models.enums import SubscriptionTier, UserRole
+from app.models.enums import UserRole
 from app.models.job import Job
 from app.models.user import User
 
@@ -26,18 +26,21 @@ MASK = "•"
 def is_locked(job: Job, viewer: User | None, unlocked_job_ids: set | None = None) -> bool:
     """Whether this viewer must be shown a redacted version.
 
+    Credits decide this, not the plan. Every tier sees as many listings as
+    their balance covers, and a plan is how many credits you get rather than
+    a different set of walls — which means one rule to explain, one thing to
+    buy, and no paying customer meeting a wall they cannot pay past.
+
     Internal listings are never locked: the user applies to those through us
     anyway, so there is nothing to route around and nothing to protect.
     """
-    if viewer is None:
-        return job.source != "internal"
-    if viewer.role != UserRole.job_seeker:
-        return False
-    if viewer.subscription_tier == SubscriptionTier.elite:
-        return False
     if job.source == "internal":
         return False
-    # Already applied for: they committed, and it is theirs to see.
+    if viewer is None:
+        return True
+    if viewer.role != UserRole.job_seeker:
+        return False
+    # Unlocked by paying to look, or by applying — either is a commitment.
     return job.id not in (unlocked_job_ids or set())
 
 

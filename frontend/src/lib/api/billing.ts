@@ -1,7 +1,10 @@
 import { api } from "../api-client";
-import type { Plan, SubscriptionStatus, SubscriptionTier } from "../types";
+import type { CreditPack, Plan, SubscriptionStatus, SubscriptionTier } from "../types";
 
 export const billingApi = {
+  creditPacks: () => api.get<CreditPack[]>("/api/billing/credit-packs"),
+  buyCredits: (pack: string) =>
+    api.post<{ checkout_url: string }>("/api/billing/buy-credits", { pack }),
   checkoutSession: (tier: Exclude<SubscriptionTier, "free">) =>
     api.post<{ checkout_url: string }>("/api/billing/checkout-session", { tier }),
   /** Paystack's hosted manage page: update the card, or cancel there. */

@@ -328,11 +328,19 @@ export interface SubscriptionStatus {
  *  an array of per-field objects for request validation (422). Typing it as
  *  only the string meant the array reached `new Error(...)` and every
  *  validation failure in the app read "[object Object]". */
+export interface CreditPack {
+  code: string;
+  credits: number;
+  price: number;
+  currency: string;
+}
+
 export interface ConciergeAllowance {
   /** null = unlimited (Elite). */
   remaining: number | null;
   allowance: number;
   credit_cost: number;
+  unlock_credit_cost: number;
   credits: number;
 }
 

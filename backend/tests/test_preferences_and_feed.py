@@ -23,23 +23,28 @@ def _job(session, *, title="Role", market=None, lane=JobLane.marketing, remote=F
 
 
 def _feed(client, headers, **params):
-    """Read the feed as a user who sees jobs in full.
+    """Read the feed as a user who has already unlocked everything.
 
-    Everything in this file is about which jobs the query returns, and it
-    identifies them by title. Non-Elite viewers now get external titles
-    partly masked, which would make every assertion here a test of the
-    redaction rather than of the filter. Redaction has its own file
-    (test_visibility.py); this one promotes the viewer so the filter is
-    what is being measured.
+    This file is about which jobs the query returns, and it identifies them
+    by title. External titles are masked until unlocked, which would make
+    every assertion here a test of the redaction rather than of the filter.
+    Redaction has its own file (test_visibility.py); this one unlocks the
+    listings so the filter is what is being measured.
     """
     from app.db.base import SessionLocal
-    from app.models.enums import SubscriptionTier, UserRole
+    from app.models.enums import UserRole
+    from app.models.job import Job
+    from app.models.job_unlock import JobUnlock
     from app.models.user import User
 
     session = SessionLocal()
-    session.query(User).filter(User.role == UserRole.job_seeker).update(
-        {User.subscription_tier: SubscriptionTier.elite}, synchronize_session=False
-    )
+    seekers = session.query(User.id).filter(User.role == UserRole.job_seeker).all()
+    job_ids = [row[0] for row in session.query(Job.id).all()]
+    existing = {(u, j) for u, j in session.query(JobUnlock.user_id, JobUnlock.job_id).all()}
+    for (user_id,) in seekers:
+        for job_id in job_ids:
+            if (user_id, job_id) not in existing:
+                session.add(JobUnlock(user_id=user_id, job_id=job_id))
     session.commit()
     session.close()
 

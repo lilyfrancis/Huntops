@@ -12,7 +12,7 @@ from app.models.resume import Resume
 from app.models.user import User
 from app.schemas.job import JobOut, job_out_for
 from app.schemas.job_match import JobMatchOut, MatchRunOut
-from app.services import matching, preferences
+from app.services import matching, preferences, unlocking
 from app.services.ai_client import AIResponseError
 
 router = APIRouter(prefix="/api/ai", tags=["matching"])
@@ -54,13 +54,10 @@ def match_jobs(
     persisted = matching.persist_matches(db, current_user, scored)
     db.commit()
 
-    # Applied-to jobs are unlocked: the user committed, so it is theirs to see.
-    applied_job_ids = {
-        job_id
-        for (job_id,) in db.query(Application.job_id).filter(
-            Application.candidate_id == current_user.id
-        )
-    }
+    # Paid-for unlocks and applications alike: both are commitments that
+    # earn the full listing. Same helper as the feed, so the two can never
+    # disagree about what this user may see.
+    applied_job_ids = unlocking.unlocked_ids(db, current_user, [j.id for j in jobs])
 
     results = [
         JobMatchOut(
