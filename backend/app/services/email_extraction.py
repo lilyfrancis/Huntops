@@ -33,12 +33,20 @@ If a job has no visible direct URL in the email, set "url" to null — do not
 invent one."""
 
 
+# A daily digest from LinkedIn or Indeed routinely lists 25 roles, and each
+# extracted posting is a title, company, URL and location — about 60 tokens.
+# The flat 1500 here had the same fault as scoring: enough for a short alert,
+# silently cut off on a long one, and reported as malformed JSON.
+MAX_EXTRACTED_JOBS = 40
+TOKENS_PER_EXTRACTED_JOB = 80
+
+
 def extract_jobs_from_email(email_text: str) -> list[ExtractedJobPosting]:
     raw = ai_client.complete_json(
         system=SYSTEM_PROMPT,
         prompt=_build_prompt(email_text),
         model=settings.ANTHROPIC_SCORING_MODEL,
-        max_tokens=1500,
+        max_tokens=MAX_EXTRACTED_JOBS * TOKENS_PER_EXTRACTED_JOB,
     )
     if not raw:
         return []

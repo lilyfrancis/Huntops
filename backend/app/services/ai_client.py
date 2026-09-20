@@ -52,12 +52,26 @@ def complete_json(system: str, prompt: str, model: str, max_tokens: int = 1024) 
             messages=[{"role": "user", "content": prompt}],
         )
         raw_text = response.content[0].text
+        stop_reason = response.stop_reason
     except Exception as e:  # network/API errors from the SDK
         logger.error("Anthropic API call failed: %s", e)
         raise AIResponseError(f"AI provider call failed: {e}") from e
 
+    # Checked before parsing, because a truncated reply is invalid JSON and
+    # would otherwise be reported as a malformed model response — which sends
+    # you looking at the prompt and the model when the real problem is that
+    # the answer did not fit in the budget it was given.
+    if stop_reason == "max_tokens":
+        logger.error(
+            "Model reply truncated at max_tokens=%s (%d chars returned)", max_tokens, len(raw_text)
+        )
+        raise AIResponseError(
+            f"The model's reply was cut off at {max_tokens} tokens — "
+            f"the request asked for more output than it had room for."
+        )
+
     try:
         return json.loads(_strip_json_fence(raw_text))
     except json.JSONDecodeError as e:
-        logger.error("AI response was not valid JSON: %s", raw_text[:500])
+        logger.error("AI response was not valid JSON (stop_reason=%s): %s", stop_reason, raw_text[:500])
         raise AIResponseError("AI response was not valid JSON") from e

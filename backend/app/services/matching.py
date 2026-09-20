@@ -45,7 +45,7 @@ For each job, provide:
 2. Skills match score (0-100)
 3. Experience match score (0-100)
 4. Location/remote fit (0-100)
-5. Brief reason
+5. Brief reason — at most 15 words
 
 Respond ONLY with a valid JSON array, one object per job, in this exact format:
 [
@@ -60,6 +60,25 @@ Respond ONLY with a valid JSON array, one object per job, in this exact format:
 ]"""
 
 
+# One scored job is five numbers and a short sentence — about 80 tokens of
+# JSON. 120 leaves room for a wordier model without being wasteful, since
+# max_tokens is a ceiling and unused budget costs nothing.
+TOKENS_PER_SCORED_JOB = 120
+SCORING_TOKEN_FLOOR = 1000
+
+
+def _scoring_budget(job_count: int) -> int:
+    """Room for every job to be scored.
+
+    This was a flat 2000 while MAX_MATCH_CANDIDATES is 40, so a full
+    candidate set needed roughly 3000 and the reply was cut off mid-array.
+    Truncated JSON does not parse, and the error said only "AI response was
+    not valid JSON" — so every match run failed, and the page reported it as
+    having found nothing.
+    """
+    return max(SCORING_TOKEN_FLOOR, job_count * TOKENS_PER_SCORED_JOB)
+
+
 def score_jobs(resume: Resume, jobs: list[Job], home_market: str | None) -> list[tuple[Job, JobFitScore, bool]]:
     """Returns (job, score, geo_boost_applied) tuples, geo-boosted and sorted best-first."""
     if not jobs:
@@ -69,7 +88,7 @@ def score_jobs(resume: Resume, jobs: list[Job], home_market: str | None) -> list
         system=SYSTEM_PROMPT,
         prompt=_build_prompt(resume, jobs, home_market),
         model=settings.ANTHROPIC_SCORING_MODEL,
-        max_tokens=2000,
+        max_tokens=_scoring_budget(len(jobs)),
     )
     scores: list[JobFitScore] = validate_or_raise(JobFitScore, raw)
 
