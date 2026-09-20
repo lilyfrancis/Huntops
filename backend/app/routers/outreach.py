@@ -10,7 +10,7 @@ from app.db.base import get_db
 from app.models.job import Job
 from app.models.outreach import Outreach
 from app.models.user import User
-from app.schemas.outreach import OutreachOut, OutreachRequest
+from app.schemas.outreach import OutreachOut, OutreachRequest, OutreachSendRequest
 from app.services import outreach as outreach_service
 from app.services.ai_client import AIResponseError
 
@@ -66,3 +66,29 @@ def get_outreach(
     if not result or result.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Outreach record not found")
     return result
+
+
+@router.post("/{outreach_id}/send", response_model=OutreachOut)
+@limiter.limit("30/hour")
+def send_outreach(
+    request: Request,
+    outreach_id: uuid.UUID,
+    payload: OutreachSendRequest,
+    current_user: User = Depends(require_job_seeker),
+    db: Session = Depends(get_db),
+) -> Outreach:
+    """Send a draft, optionally edited, optionally to an address the user
+    supplied. Rate limited well above the drafting limit: this spends no
+    credits and no AI, and a person correcting a bounced address should not
+    be made to wait."""
+    result = db.get(Outreach, outreach_id)
+    if not result or result.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Outreach record not found")
+
+    try:
+        return outreach_service.send_draft(
+            db, current_user, result,
+            to_email=payload.to_email, subject=payload.subject, body=payload.body,
+        )
+    except outreach_service.OutreachSendError as e:
+        raise HTTPException(status_code=400, detail=str(e))

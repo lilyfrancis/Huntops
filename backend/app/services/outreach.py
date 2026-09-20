@@ -75,6 +75,77 @@ def _get_or_discover_recruiter(db: Session, job: Job) -> RecruiterContact | None
         return None
 
 
+class OutreachSendError(Exception):
+    pass
+
+
+def send_draft(
+    db: Session,
+    user: User,
+    result: Outreach,
+    *,
+    to_email: str | None = None,
+    subject: str | None = None,
+    body: str | None = None,
+) -> Outreach:
+    """Send a draft by hand, optionally edited, optionally to an address the
+    user supplied themselves.
+
+    Apollo does not always find an email, and when it does not the pitch was
+    drafted, charged for, and then stranded: the page could show it and
+    nothing else. Most people can find the hiring manager on LinkedIn in a
+    minute — the draft is the expensive part, not the address — so the two
+    are separated here.
+
+    Edits are kept. Nobody should have to send a generated email they cannot
+    change a word of, and a draft the person has revised is the one worth
+    sending.
+
+    No credits are charged: the draft already was. Sending it once more,
+    after a failure or with a corrected address, is not a second piece of
+    work we did.
+    """
+    if result.status == OutreachStatus.sent:
+        raise OutreachSendError("This outreach has already been sent.")
+
+    if subject is not None:
+        result.email_subject = subject.strip()
+    if body is not None:
+        result.email_body = body.strip()
+
+    if not result.email_subject or not result.email_body:
+        raise OutreachSendError("The draft needs both a subject and a body before it can be sent.")
+
+    recipient = (to_email or "").strip() or None
+    if recipient is None and result.recruiter_contact_id:
+        contact = db.query(RecruiterContact).filter(
+            RecruiterContact.id == result.recruiter_contact_id
+        ).first()
+        recipient = contact.email if contact else None
+    if not recipient:
+        raise OutreachSendError(
+            "No recipient. Apollo found no email for this role — add the hiring "
+            "contact's address to send it."
+        )
+
+    if _send(db, user, recipient, result.email_subject, result.email_body):
+        result.status = OutreachStatus.sent
+        result.sent_at = datetime.now(timezone.utc)
+        result.sent_to_email = recipient
+    else:
+        result.status = OutreachStatus.failed
+
+    db.commit()
+    db.refresh(result)
+
+    if result.status is OutreachStatus.failed:
+        raise OutreachSendError(
+            "The message could not be sent. The draft is kept — check Outbound "
+            "email under Admin, Integrations, then try again."
+        )
+    return result
+
+
 def _send(db: Session, user: User, to: str, subject: str, body: str) -> bool:
     """Send as the user if they connected Gmail, otherwise from the platform.
 
@@ -143,6 +214,7 @@ def initiate_outreach(db: Session, user: User, job: Job) -> Outreach:
         if _send(db, user, contact.email, draft.email_subject, draft.email_body):
             result.status = OutreachStatus.sent
             result.sent_at = datetime.now(timezone.utc)
+            result.sent_to_email = contact.email
         else:
             result.status = OutreachStatus.failed
 

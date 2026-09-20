@@ -5,4 +5,6 @@ export const outreachApi = {
   create: (jobId: string) => api.post<Outreach>("/api/outreach", { job_id: jobId }),
   mine: () => api.get<Outreach[]>("/api/outreach/mine"),
   get: (id: string) => api.get<Outreach>(`/api/outreach/${id}`),
+  send: (id: string, payload: { to_email?: string; subject?: string; body?: string }) =>
+    api.post<Outreach>(`/api/outreach/${id}/send`, payload),
 };
