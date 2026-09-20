@@ -33,7 +33,6 @@ const PLANS = [
     name: "Free",
     tier: "free",
     cadence: "forever",
-    credits: "10 AI credits / mo",
     features: ["Job feed for your market", "AI fit scoring", "Ghost-listing detection", "Daily digest"],
     cta: "Start free",
     featured: false,
@@ -42,12 +41,11 @@ const PLANS = [
     name: "Pro",
     tier: "pro",
     cadence: "/ month",
-    credits: "100 AI credits / mo",
     features: [
       "Everything in Free",
       "Mock interview simulator",
       "Negotiation coach",
-      "10x the AI credits",
+      "Enough credits for about 20 applications a month",
       "Priority digest placement",
     ],
     cta: "Go Pro",
@@ -57,12 +55,11 @@ const PLANS = [
     name: "Elite",
     tier: "elite",
     cadence: "/ month",
-    credits: "500 AI credits / mo",
     features: [
       "Everything in Pro",
-      "Autopilot — applies and reaches out for you",
-      "Apollo hiring-manager discovery",
-      "AI-drafted pitches, sent from your address or ours",
+      "Unlimited concierge applications — credits are the only limit",
+      "Hiring-manager lookup and direct messages",
+      "About 65 applications a month, at the best credit rate",
     ],
     cta: "Go Elite",
     featured: false,
@@ -79,8 +76,25 @@ export function Pricing() {
     return plan ? formatPrice(plan.price, plan.currency) : "—";
   };
 
+  const creditsFor = (tier: string): string => {
+    const plan = plans?.find((p) => p.tier === tier);
+    // Guarded rather than assumed. During a deploy the browser can hold a
+    // newer bundle than the API is serving, and reading a field that is not
+    // there yet took the whole landing page down — a blank marketing site
+    // for the length of a rollout is a worse bug than a missing line.
+    const credits = plan?.credits;
+    if (typeof credits !== "number") return "";
+    return tier === "free"
+      ? `${credits} credits to start`
+      : `${credits.toLocaleString()} credits / month`;
+  };
+
   return (
-    <section id="pricing" className="mx-auto max-w-6xl px-5 py-24">
+    <section id="pricing" className="relative isolate overflow-hidden py-28">
+      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
+        <div className="absolute left-1/2 top-0 h-[32rem] w-[52rem] -translate-x-1/2 rounded-full bg-violet-soft/70 blur-[130px]" />
+      </div>
+      <div className="mx-auto max-w-7xl px-6">
       <Reveal className="mx-auto max-w-2xl text-center">
         <span className="eyebrow">Pricing</span>
         <h2 className="mt-3 text-3xl sm:text-4xl">Pay for reach, not for looking</h2>
@@ -96,7 +110,13 @@ export function Pricing() {
             <Card
               className={cn(
                 "flex h-full flex-col",
-                plan.featured ? "border-violet/60 lift-lg" : "lift",
+                "transition-all duration-300 hover:-translate-y-1",
+                plan.featured
+                  // The plan we want chosen is raised off the row rather
+                  // than merely outlined — an outline is easy to miss at a
+                  // glance, and this is the glance that decides.
+                  ? "ring-gradient scale-[1.03] border-violet/60 bg-white lift-lg"
+                  : "glass-light lift",
               )}
             >
               <CardHeader>
@@ -111,7 +131,7 @@ export function Pricing() {
                   <span className="text-sm text-ink-muted">{plan.cadence}</span>
                 </div>
                 <p className="mt-1 text-xs font-semibold uppercase tracking-widest text-ink-faint">
-                  {plan.credits}
+                  {creditsFor(plan.tier)}
                 </p>
               </CardHeader>
               <CardContent className="flex-1">
@@ -132,6 +152,7 @@ export function Pricing() {
             </Card>
           </Reveal>
         ))}
+      </div>
       </div>
     </section>
   );

@@ -313,6 +313,7 @@ export interface Plan {
   /* False when no Paystack plan code is configured for the tier — buying it
      would only ever return a 400, so don't offer the button. */
   available: boolean;
+  credits: number;
 }
 
 export interface SubscriptionStatus {

@@ -26,7 +26,13 @@ const STEPS = [
 
 export function HowItWorks() {
   return (
-    <section id="how" className="mx-auto max-w-6xl px-5 py-24">
+    <section id="how" className="relative isolate mx-auto max-w-7xl px-6 py-28">
+      {/* A thread down the middle, so three steps read as one sequence
+          rather than three unrelated cards. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute left-1/2 top-64 hidden h-[calc(100%-20rem)] w-px -translate-x-1/2 bg-gradient-to-b from-violet/30 via-cyan/20 to-transparent lg:block"
+      />
       <Reveal className="mx-auto max-w-2xl text-center">
         <span className="eyebrow">How it works</span>
         <h2 className="mt-3 text-3xl sm:text-4xl">Two minutes to set up. Then you stop applying.</h2>
@@ -50,7 +56,7 @@ export function HowItWorks() {
                 <h3 className="mt-5 text-2xl">{step.title}</h3>
                 <p className="mt-3 text-lg leading-relaxed text-ink-muted">{step.body}</p>
               </div>
-              <div className="overflow-hidden rounded-2xl border border-border bg-white lift-lg">
+              <div className="ring-gradient overflow-hidden rounded-2xl border border-border bg-white transition-transform duration-500 hover:scale-[1.015] lift-lg">
                 <img
                   src={step.image}
                   alt={step.alt}

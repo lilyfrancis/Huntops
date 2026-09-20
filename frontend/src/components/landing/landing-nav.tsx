@@ -29,21 +29,35 @@ export function LandingNav() {
         scrolled ? "border-b border-border bg-white/85 backdrop-blur-lg" : "bg-transparent",
       )}
     >
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3.5">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3.5">
         <a href="#top" aria-label="HuntOps home">
-          <Logo height={30} />
+          <Logo variant={scrolled ? "navy" : "white"} height={30} />
         </a>
 
-        <nav className="hidden items-center gap-8 text-sm font-medium text-ink-muted md:flex">
+        <nav
+          className={cn(
+            "hidden items-center gap-8 text-sm font-medium transition-colors md:flex",
+            scrolled ? "text-ink-muted" : "text-white/70",
+          )}
+        >
           {LINKS.map((l) => (
-            <a key={l.href} href={l.href} className="transition-colors hover:text-ink">
+            <a
+              key={l.href}
+              href={l.href}
+              className={cn("transition-colors", scrolled ? "hover:text-ink" : "hover:text-white")}
+            >
               {l.label}
             </a>
           ))}
         </nav>
 
         <div className="hidden items-center gap-2 md:flex">
-          <Button asChild variant="ghost" size="sm">
+          <Button
+            asChild
+            variant="ghost"
+            size="sm"
+            className={cn(!scrolled && "text-white/80 hover:bg-white/10 hover:text-white")}
+          >
             <Link to="/login">Sign in</Link>
           </Button>
           <Button asChild size="sm">
@@ -52,7 +66,7 @@ export function LandingNav() {
         </div>
 
         <button
-          className="rounded-lg p-2 text-ink md:hidden"
+          className={cn("rounded-lg p-2 md:hidden", scrolled ? "text-ink" : "text-white")}
           onClick={() => setOpen((v) => !v)}
           aria-label={open ? "Close menu" : "Open menu"}
           aria-expanded={open}

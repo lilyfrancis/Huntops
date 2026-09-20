@@ -36,8 +36,14 @@ const FEATURES = [
 
 export function Features() {
   return (
-    <section id="features" className="bg-bg-tint py-24">
-      <div className="mx-auto max-w-6xl px-5">
+    <section id="features" className="relative isolate overflow-hidden bg-bg-tint py-28">
+      {/* A ground for the glass to sit on. Flat white boxes on a flat white
+          page are the reason this section read as a spreadsheet. */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
+        <div className="absolute -left-40 top-10 h-[28rem] w-[28rem] rounded-full bg-violet-soft blur-[110px]" />
+        <div className="absolute -right-32 bottom-0 h-[24rem] w-[24rem] rounded-full bg-cyan-soft blur-[110px]" />
+      </div>
+      <div className="mx-auto max-w-7xl px-6">
         <Reveal className="mx-auto max-w-2xl text-center">
           <span className="eyebrow">The platform</span>
           <h2 className="mt-3 text-3xl sm:text-4xl">The part everyone hates, done for you</h2>
@@ -46,7 +52,7 @@ export function Features() {
         <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {FEATURES.map((f, i) => (
             <Reveal key={f.title} delay={(i % 3) as 0 | 1 | 2}>
-              <article className="group h-full rounded-2xl border border-border bg-white p-6 transition-all hover:border-violet/40 lift">
+              <article className="glass-light group h-full rounded-2xl p-6 transition-all duration-300 hover:-translate-y-1 hover:border-violet/40 lift hover:lift-lg">
                 <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-violet-soft text-violet transition-colors group-hover:brand-gradient group-hover:text-white">
                   <f.icon className="h-5 w-5" strokeWidth={2} />
                 </span>

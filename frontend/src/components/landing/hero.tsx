@@ -3,6 +3,7 @@ import { ArrowRight, CheckCircle2, FileText, MessageSquare, Mic, Send, Target } 
 import { Button } from "@/components/ui/button";
 import { Reveal } from "@/components/landing/reveal";
 import { Counter } from "@/components/landing/counter";
+import { useParallax } from "@/hooks/use-parallax";
 
 // The whole product, in the order it happens. Five short beats rather than
 // a features section, because the reason to believe the headline is seeing
@@ -17,67 +18,86 @@ const ARC = [
 ];
 
 export function Hero() {
+  // The screenshot drifts against the page as you scroll. Small on purpose:
+  // enough to feel like depth, not enough to notice as an effect.
+  const shot = useParallax<HTMLDivElement>(-0.06);
+
   return (
-    <section id="top" className="relative overflow-hidden pt-28 pb-16 sm:pt-32">
-      {/* Ambient brand wash. Decorative only — never carries meaning. */}
+    <section
+      id="top"
+      className="grain relative isolate overflow-hidden bg-navy pt-28 pb-28 sm:pt-32 lg:pb-36"
+    >
+      {/* Aurora. Frosted panels need something with structure behind them,
+          and on a white page there is nothing for glass to frost. */}
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute -top-40 left-1/2 h-[520px] w-[820px] -translate-x-1/2 rounded-full bg-violet-soft blur-3xl" />
-        <div className="absolute right-[-10%] top-40 h-[320px] w-[320px] rounded-full bg-cyan-soft blur-3xl" />
+        <div className="absolute inset-0 grid-fade" />
+        <div className="animate-drift-a absolute -top-1/3 left-1/2 h-[46rem] w-[46rem] -translate-x-1/2 rounded-full bg-violet/35 blur-[120px]" />
+        <div className="animate-drift-b absolute -right-40 top-20 h-[34rem] w-[34rem] rounded-full bg-cyan/20 blur-[130px]" />
+        <div className="absolute -bottom-40 left-0 h-[30rem] w-[30rem] rounded-full bg-violet-dark/25 blur-[140px]" />
+        {/* Hands the section back to the page below instead of ending on a
+            hard edge. */}
+        <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-b from-transparent to-bg" />
       </div>
 
-      <div className="mx-auto grid max-w-6xl items-center gap-12 px-5 lg:grid-cols-[1.05fr_1fr]">
+      <div className="mx-auto grid max-w-7xl items-center gap-14 px-6 lg:grid-cols-[1.02fr_1fr] lg:gap-10">
         <div>
           <Reveal>
-            <span className="inline-flex items-center gap-2 rounded-full border border-border bg-white px-3 py-1.5 text-xs font-semibold text-ink-muted lift">
+            <span className="glass inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-xs font-semibold text-white/85">
               <span className="relative flex h-2 w-2">
-                <span className="animate-pulse-ring absolute inline-flex h-full w-full rounded-full bg-violet" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-violet" />
+                <span className="animate-pulse-ring absolute inline-flex h-full w-full rounded-full bg-cyan" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-cyan" />
               </span>
               Filing applications right now
             </span>
           </Reveal>
 
           <Reveal delay={1}>
-            {/* The headline is the whole proposition, because it is the one
-                thing no other job tool does: the applying itself. Everything
-                else here — sourcing, scoring, ghost detection — is table
-                stakes that a reader will assume anyway. */}
-            {/* Sized to land in two lines in this column. At 4rem it broke
-                into four, which turns a claim into a paragraph. */}
-            <h1 className="mt-5 text-[2.6rem] leading-[1.05] tracking-tight sm:text-5xl lg:text-[3.4rem]">
+            <h1 className="mt-6 text-[2.7rem] font-semibold leading-[1.02] tracking-[-0.03em] text-white sm:text-5xl lg:text-[3.55rem] xl:text-[4rem]">
               You pick the jobs.
               <br />
-              <span className="brand-gradient-text">We do the applying.</span>
+              <span className="text-gradient-bright">We do the applying.</span>
             </h1>
           </Reveal>
 
           <Reveal delay={2}>
-            <p className="mt-5 max-w-xl text-lg leading-relaxed text-ink-muted sm:text-xl">
-              Every role scored against your CV. Your CV rewritten for the ones you
-              want. The application <strong className="font-semibold text-ink">filed
-              for you</strong>, and the hiring manager messaged directly — while you
-              watch it happen from one dashboard.
+            <p className="mt-6 max-w-xl text-lg leading-relaxed text-white/65 sm:text-xl">
+              Every role scored against your CV. Your CV rewritten for the ones you want.
+              The application <strong className="font-semibold text-white">filed for you</strong>,
+              and the hiring manager messaged directly — while you watch it happen from one
+              dashboard.
             </p>
           </Reveal>
 
           <Reveal delay={3}>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Button asChild size="lg">
+            <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+              <Button asChild size="lg" className="group relative overflow-hidden">
                 <Link to="/register">
-                  Apply to your first job free <ArrowRight className="h-4 w-4" />
+                  Apply to your first job free
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                  {/* A light passing across the primary action. One moving
+                      thing on the page, on the thing we want clicked. */}
+                  <span
+                    aria-hidden
+                    className="animate-sheen pointer-events-none absolute inset-y-0 w-1/3 bg-gradient-to-r from-transparent via-white/25 to-transparent"
+                  />
                 </Link>
               </Button>
-              <Button asChild variant="outline" size="lg">
+              <Button
+                asChild
+                size="lg"
+                variant="ghost"
+                className="glass text-white hover:bg-white/15 hover:text-white"
+              >
                 <a href="#how">See how it works</a>
               </Button>
             </div>
           </Reveal>
 
           <Reveal delay={4}>
-            <ul className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm text-ink-muted">
+            <ul className="mt-7 flex flex-wrap gap-x-6 gap-y-2 text-sm text-white/55">
               {["Your first application is free", "No card to start", "Cancel anytime"].map((t) => (
                 <li key={t} className="flex items-center gap-1.5">
-                  <CheckCircle2 className="h-4 w-4 text-good" strokeWidth={2} />
+                  <CheckCircle2 className="h-4 w-4 text-cyan" strokeWidth={2} />
                   {t}
                 </li>
               ))}
@@ -86,44 +106,45 @@ export function Hero() {
         </div>
 
         <Reveal delay={2} className="relative">
-          <div className="animate-float-slow overflow-hidden rounded-2xl border border-border bg-white lift-lg">
-            {/* The actual product, not a stock desk. It carries the whole
-                proposition without a caption: fit scores, salaries in the
-                reader's own currency, "Apply for me", one already filed,
-                and a locked row showing what unlocking is for. */}
-            <img
-              src="/brand/hero-product.webp"
-              alt="The HuntOps job feed: roles scored against your CV, salaries shown, one already applied for"
-              width={1400}
-              height={837}
-              className="w-full"
-              fetchPriority="high"
-            />
-          </div>
+          <div ref={shot} className="will-change-transform">
+            <div className="ring-gradient glass-strong animate-float-slow overflow-hidden rounded-2xl p-1.5 shadow-[0_40px_80px_-30px_rgb(0_0_0/0.65)]">
+              {/* The actual product, not a stock desk. It carries the whole
+                  proposition without a caption: fit scores, salaries in the
+                  reader's own currency, "Apply for me", one already filed,
+                  and a locked row showing what unlocking is for. */}
+              <img
+                src="/brand/hero-product.webp"
+                alt="The HuntOps job feed: roles scored against your CV, salaries shown, one already applied for"
+                width={1400}
+                height={837}
+                className="w-full rounded-xl"
+                fetchPriority="high"
+              />
+            </div>
 
-          {/* Floating proof chip — the product's promise, stated as a number. */}
-          <div className="absolute -bottom-6 -left-5 hidden rounded-xl border border-border bg-white px-4 py-3 lift-lg sm:block">
-            <p className="text-2xl font-bold text-ink">
-              <Counter to={92} suffix="%" />
-            </p>
-            <p className="text-xs text-ink-muted">fit — filed for you this morning</p>
+            <div className="glass-strong ring-gradient absolute -bottom-6 -left-4 hidden rounded-xl px-4 py-3 sm:block">
+              <p className="text-2xl font-bold text-white">
+                <Counter to={92} suffix="%" />
+              </p>
+              <p className="text-xs text-white/60">fit — filed for you this morning</p>
+            </div>
           </div>
         </Reveal>
       </div>
 
       <Reveal delay={4}>
-        <ol className="mx-auto mt-20 grid max-w-5xl gap-y-8 border-t border-border px-5 pt-10 sm:grid-cols-2 lg:grid-cols-5 lg:gap-x-4">
+        <ol className="mx-auto mt-24 grid max-w-7xl gap-y-8 border-t border-white/10 px-6 pt-12 sm:grid-cols-2 lg:grid-cols-5 lg:gap-x-6">
           {ARC.map((step, i) => (
-            <li key={step.label} className="flex gap-3 lg:block">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-soft text-violet lg:mb-3">
+            <li key={step.label} className="group flex gap-3 lg:block">
+              <span className="glass flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-cyan transition-colors group-hover:bg-white/15 lg:mb-4">
                 <step.icon className="h-4.5 w-4.5" strokeWidth={2} />
               </span>
               <div>
-                <p className="text-sm font-semibold text-ink">
-                  <span className="font-mono text-xs text-ink-faint">{i + 1}. </span>
+                <p className="text-sm font-semibold text-white">
+                  <span className="font-mono text-xs text-white/40">{i + 1}. </span>
                   {step.label}
                 </p>
-                <p className="mt-0.5 text-sm text-ink-muted">{step.body}</p>
+                <p className="mt-1 text-sm leading-relaxed text-white/55">{step.body}</p>
               </div>
             </li>
           ))}

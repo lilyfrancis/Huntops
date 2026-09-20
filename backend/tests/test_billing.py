@@ -15,7 +15,6 @@ from app.services import billing as billing_service
 from app.services.paystack import PaystackError
 from tests.conftest import auth_headers, register_user
 
-from app.core.config import get_settings
 
 # Read rather than restated, so repricing is one line and not a test sweep.
 FREE = get_settings().FREE_TIER_CREDITS
@@ -389,16 +388,37 @@ def test_the_pricing_table_is_public(client):
     resp = client.get("/api/billing/plans")
 
     assert resp.status_code == 200
-    assert {p["tier"] for p in resp.json()} == {"pro", "elite"}
+    # Free is a row on the pricing table — people compare against it — even
+    # though it is never something you buy. Status, which answers "what can
+    # I move to", deliberately does not include it.
+    body = resp.json()
+    assert {p["tier"] for p in body} == {"free", "pro", "elite"}
+    # Credits ride along with the price for the same reason the endpoint
+    # exists: the landing page had its own copy and it went stale.
+    assert {p["tier"]: p["credits"] for p in body}["pro"] == settings.PRO_TIER_CREDITS
 
 
 def test_the_public_and_signed_in_prices_are_the_same_numbers(client):
-    """The whole point: two endpoints, one source, no drift."""
-    data = register_user(client, email="same-price@example.com")
-    public = client.get("/api/billing/plans").json()
-    signed_in = client.get("/api/billing/status", headers=auth_headers(data["access_token"])).json()["plans"]
+    """The whole point: two endpoints, one source, no drift.
 
-    assert public == signed_in
+    They carry different rows on purpose — the public table includes Free
+    to compare against, the signed-in one lists only what you could move to
+    — so this compares the rows they share, which is where drift would
+    actually cost somebody money.
+    """
+    data = register_user(client, email="same-price@example.com")
+    public = {p["tier"]: p for p in client.get("/api/billing/plans").json()}
+    signed_in = {
+        p["tier"]: p
+        for p in client.get(
+            "/api/billing/status", headers=auth_headers(data["access_token"])
+        ).json()["plans"]
+    }
+
+    assert set(signed_in) == {"pro", "elite"}
+    assert signed_in.keys() <= public.keys()
+    for tier, plan in signed_in.items():
+        assert plan == public[tier], tier
 
 
 def test_the_price_shown_comes_from_config(client, monkeypatch):

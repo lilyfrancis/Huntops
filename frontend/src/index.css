@@ -201,6 +201,80 @@
       0 2px 4px rgb(9 21 40 / 0.04),
       0 24px 48px -20px rgb(9 21 40 / 0.18);
   }
+
+  /* ---- Glass ----------------------------------------------------------
+     Frosted panels only read against something with structure behind them.
+     On a white page a translucent white panel is invisible, so the dark
+     variant is the real one: it lives over the navy hero, where the brand
+     cyan is also legible (10.9:1) in a way it never is on white. */
+  .glass {
+    background: rgb(255 255 255 / 0.07);
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    border: 1px solid rgb(255 255 255 / 0.14);
+  }
+  .glass-strong {
+    background: rgb(255 255 255 / 0.11);
+    backdrop-filter: blur(22px) saturate(160%);
+    -webkit-backdrop-filter: blur(22px) saturate(160%);
+    border: 1px solid rgb(255 255 255 / 0.2);
+  }
+  /* For light sections: a panel that lifts off a tinted ground without the
+     muddiness of white-on-white. */
+  .glass-light {
+    background: rgb(255 255 255 / 0.72);
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    border: 1px solid rgb(255 255 255 / 0.9);
+  }
+
+  /* A hairline gradient edge. Reads as precision rather than decoration,
+     which is most of what "premium" means on a page like this. */
+  .ring-gradient {
+    position: relative;
+  }
+  .ring-gradient::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(140deg, rgb(255 255 255 / 0.35), rgb(255 255 255 / 0.02) 45%);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  /* Blueprint grid, faded at the edges so it never competes with text. */
+  .grid-fade {
+    background-image:
+      linear-gradient(rgb(255 255 255 / 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(255 255 255 / 0.05) 1px, transparent 1px);
+    background-size: 56px 56px;
+    -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 35%, #000 20%, transparent 75%);
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 35%, #000 20%, transparent 75%);
+  }
+
+  /* Film grain. A flat gradient at this scale bands visibly on cheap
+     panels; a little noise hides it and reads as texture rather than as a
+     rendering fault. */
+  .grain::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  .text-gradient-bright {
+    background-image: linear-gradient(110deg, #ffffff 10%, var(--color-cyan) 55%, #b9a8ff 95%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
 }
 
 /* Landing-page motion. Everything here is decorative and switches off for
@@ -228,6 +302,40 @@
   .animate-float-slow,
   .animate-marquee,
   .animate-pulse-ring {
+    animation: none;
+  }
+}
+
+
+/* ---- Ambient motion -----------------------------------------------------
+   Slow enough to be felt rather than watched. Anything faster than this on
+   a page people read turns into a distraction they scroll past. */
+@keyframes drift-a {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  33%      { transform: translate3d(6%, -8%, 0) scale(1.12); }
+  66%      { transform: translate3d(-5%, 5%, 0) scale(0.94); }
+}
+@keyframes drift-b {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1.05); }
+  50%      { transform: translate3d(-8%, 6%, 0) scale(0.9); }
+}
+@keyframes sheen {
+  0%   { transform: translateX(-120%); }
+  100% { transform: translateX(220%); }
+}
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(18px); filter: blur(6px); }
+  to   { opacity: 1; transform: translateY(0);    filter: blur(0); }
+}
+
+.animate-drift-a { animation: drift-a 22s ease-in-out infinite; }
+.animate-drift-b { animation: drift-b 28s ease-in-out infinite; }
+.animate-sheen   { animation: sheen 5.5s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-drift-a,
+  .animate-drift-b,
+  .animate-sheen {
     animation: none;
   }
 }

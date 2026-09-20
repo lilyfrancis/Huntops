@@ -20,6 +20,9 @@ class PlanOut(BaseModel):
     price: float
     currency: str
     available: bool
+    # Sent for the same reason the price is: the landing page had its own
+    # copy of these and they went stale the moment the plans were resized.
+    credits: int
 
 
 class SubscriptionStatusOut(BaseModel):

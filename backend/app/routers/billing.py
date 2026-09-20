@@ -59,15 +59,26 @@ def public_plans() -> list[PlanOut]:
 
 def _plans() -> list[PlanOut]:
     plan_codes = billing_service.tier_plan_codes()
-    prices = {SubscriptionTier.pro: settings.PRO_PRICE, SubscriptionTier.elite: settings.ELITE_PRICE}
+    prices = {
+        SubscriptionTier.free: 0.0,
+        SubscriptionTier.pro: settings.PRO_PRICE,
+        SubscriptionTier.elite: settings.ELITE_PRICE,
+    }
+    credits = {
+        SubscriptionTier.free: settings.FREE_TIER_CREDITS,
+        SubscriptionTier.pro: settings.PRO_TIER_CREDITS,
+        SubscriptionTier.elite: settings.ELITE_TIER_CREDITS,
+    }
     return [
         PlanOut(
             tier=tier,
             price=price,
             currency=settings.BILLING_CURRENCY,
+            credits=credits[tier],
             # A tier with no plan code cannot be bought, so the UI must not
-            # offer a button that would only ever return a 400.
-            available=bool(plan_codes.get(tier)),
+            # offer a button that would only ever return a 400. Free needs
+            # no code — signing up is how you get it.
+            available=tier is SubscriptionTier.free or bool(plan_codes.get(tier)),
         )
         for tier, price in prices.items()
     ]
@@ -79,7 +90,10 @@ def subscription_status(current_user: User = Depends(get_current_user)) -> Subsc
         tier=current_user.subscription_tier,
         has_subscription=bool(current_user.paystack_subscription_code),
         currency=settings.BILLING_CURRENCY,
-        plans=_plans(),
+        # What this user could move to, which is not the same list as the
+        # public pricing table: Free is a row on that table and never an
+        # upgrade, so offering it here would be a button that does nothing.
+        plans=[p for p in _plans() if p.tier is not SubscriptionTier.free],
     )
 
 
