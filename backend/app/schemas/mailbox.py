@@ -81,6 +81,19 @@ class MailboxOut(BaseModel):
     last_synced_at: datetime | None
     last_error: str | None
 
+    # Derived from the sync-run history rather than stored, so they cannot
+    # drift from what actually happened. "Read 40 but inserted 0" is the
+    # single most useful thing on this page when a mailbox looks healthy and
+    # produces nothing: it separates "no mail arriving" from "mail arriving
+    # that we do not recognise" from "jobs we already have".
+    jobs_ingested: int = 0
+    last_run_fetched: int = 0
+    last_run_inserted: int = 0
+    # "success" | "error" | None for a mailbox that has never run. Without it
+    # the UI cannot tell a sync that looked and found nothing from one that
+    # never connected, and both have fetched_count 0.
+    last_run_status: str | None = None
+
 
 class MailboxSyncResult(BaseModel):
     mailbox: str

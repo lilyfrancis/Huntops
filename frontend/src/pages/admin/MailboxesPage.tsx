@@ -285,6 +285,37 @@ function statusLabel(mailbox: AlertMailbox): string {
   return mailbox.last_error ? "Failing" : "Active";
 }
 
+/** What this mailbox has actually produced.
+ *
+ * The gap between fetched and inserted is the whole diagnosis. A mailbox can
+ * look perfectly healthy — connected, synced minutes ago, no error — and be
+ * contributing nothing, and until now the page gave no way to tell that from
+ * a mailbox doing its job. Reading 40 messages and inserting 0 means the
+ * senders are not recognised or the jobs are already in the pool; reading 0
+ * means nothing is arriving at all, which is a problem at the provider, not
+ * here.
+ */
+function yieldSummary(mailbox: AlertMailbox): string {
+  if (!mailbox.last_synced_at) return "no jobs yet — never synced";
+
+  const total = `${mailbox.jobs_ingested} job${mailbox.jobs_ingested === 1 ? "" : "s"} ingested`;
+
+  if (mailbox.last_run_status === "error") {
+    // A failed run fetched nothing because it never connected, not because
+    // nothing was waiting. Saying "found no new mail" about it is a claim we
+    // did not make and cannot support; the error beneath says what happened.
+    return `${total} · last sync failed`;
+  }
+  if (mailbox.last_run_fetched === 0) {
+    return `${total} · last sync found no new mail`;
+  }
+  const read = `read ${mailbox.last_run_fetched}`;
+  if (mailbox.last_run_inserted === 0) {
+    return `${total} · last sync ${read}, added none`;
+  }
+  return `${total} · last sync ${read}, added ${mailbox.last_run_inserted}`;
+}
+
 function statusTone(mailbox: AlertMailbox): "good" | "danger" | "neutral" {
   if (!mailbox.is_active) return "neutral";
   return mailbox.last_error ? "danger" : "good";
@@ -357,6 +388,7 @@ function MailboxRow({ mailbox, onEdit }: { mailbox: AlertMailbox; onEdit: () => 
               ? `synced ${formatDistanceToNow(new Date(mailbox.last_synced_at), { addSuffix: true })}`
               : "never synced — runs daily at 07:10 UTC"}
           </p>
+          <p className="mt-1 text-xs text-ink-muted">{yieldSummary(mailbox)}</p>
         </button>
 
         <div className="flex shrink-0 flex-wrap items-center gap-2">

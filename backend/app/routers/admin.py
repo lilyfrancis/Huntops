@@ -214,7 +214,9 @@ def list_email_sync_runs(
 
 @router.get("/mailboxes", response_model=list[MailboxOut])
 def list_mailboxes(db: Session = Depends(get_db)) -> list[AlertMailbox]:
-    return db.query(AlertMailbox).order_by(AlertMailbox.market, AlertMailbox.label).all()
+    return alert_mailboxes.with_counts(
+        db, db.query(AlertMailbox).order_by(AlertMailbox.market, AlertMailbox.label).all()
+    )
 
 
 @router.put("/mailboxes", response_model=MailboxOut)

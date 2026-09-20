@@ -537,3 +537,104 @@ def test_a_failure_that_does_say_something_keeps_its_own_words_plus_the_host(db_
 
     assert "Login failed" in summary["error"]
     assert "imap.huntops.site:993" in summary["error"]
+
+
+# ---------- what each mailbox has actually produced ----------
+
+def test_the_list_reports_how_many_jobs_each_mailbox_has_ingested(client, db_session):
+    """A mailbox can look healthy — connected, synced, no error — and be
+    contributing nothing. The page gave no way to tell that apart from one
+    doing its job."""
+    canada = _seed_mailbox(db_session, market="Canada")
+    uk = _seed_mailbox(db_session, market="UK")
+
+    for uid, postings in ((1, 2), (2, 1)):
+        _sync(
+            db_session, canada,
+            messages=[FetchedMessage(uid=uid, sender=LINKEDIN, body="alert")],
+            postings=[
+                ExtractedJobPosting(title=f"Role {uid}-{n}", company="A",
+                                    url=f"https://x.test/{uid}-{n}", location="Toronto, ON")
+                for n in range(postings)
+            ],
+        )
+
+    headers = _make_admin(client, email="counts-admin@example.com")
+    rows = {m["market"]: m for m in client.get("/api/admin/mailboxes", headers=headers).json()}
+
+    assert rows["Canada"]["jobs_ingested"] == 3      # 2 + 1 across two runs
+    assert rows["Canada"]["last_run_fetched"] == 1
+    assert rows["Canada"]["last_run_inserted"] == 1  # the most recent run only
+    assert rows["UK"]["jobs_ingested"] == 0
+    assert rows["UK"]["last_run_fetched"] == 0
+
+
+def test_a_mailbox_reading_mail_but_adding_nothing_is_visible_as_such(client, db_session):
+    """The gap between fetched and inserted is the diagnosis: mail is
+    arriving and none of it is becoming supply."""
+    mailbox = _seed_mailbox(db_session, market="Canada")
+    _sync(
+        db_session, mailbox,
+        messages=[FetchedMessage(uid=1, sender="Random <news@substack.com>", body="not an alert")],
+        postings=[],
+    )
+
+    headers = _make_admin(client, email="gap-admin@example.com")
+    row = client.get("/api/admin/mailboxes", headers=headers).json()[0]
+
+    assert row["last_run_fetched"] == 1
+    assert row["last_run_inserted"] == 0
+    assert row["jobs_ingested"] == 0
+
+
+def test_counting_does_not_issue_a_query_per_mailbox(db_session):
+    """Five mailboxes on one page is ten round trips done the naive way."""
+    from sqlalchemy import event
+    from app.db.base import engine
+
+    for market in ("Canada", "UK", "USA", "Nigeria", "UAE"):
+        _seed_mailbox(db_session, market=market)
+    mailboxes = db_session.query(AlertMailbox).all()
+
+    statements = []
+    def record(conn, cursor, statement, *args):
+        statements.append(statement)
+
+    event.listen(engine, "before_cursor_execute", record)
+    try:
+        alert_mailboxes.with_counts(db_session, mailboxes)
+    finally:
+        event.remove(engine, "before_cursor_execute", record)
+
+    assert len(statements) == 2, statements
+
+
+def test_counting_nothing_does_not_query_at_all(db_session):
+    assert alert_mailboxes.with_counts(db_session, []) == []
+
+
+def test_a_failed_run_is_not_reported_as_having_found_no_mail(client, db_session):
+    """A run that timed out fetched nothing because it never connected, not
+    because nothing was waiting. Both have fetched_count 0, so the status has
+    to come through or the UI states something it cannot support."""
+    mailbox = _seed_mailbox(db_session, market="USA")
+
+    with patch("app.services.alert_mailboxes.imap_client.fetch_messages", side_effect=TimeoutError()):
+        alert_mailboxes.sync_mailbox(db_session, mailbox)
+
+    headers = _make_admin(client, email="failed-run-admin@example.com")
+    row = client.get("/api/admin/mailboxes", headers=headers).json()[0]
+
+    assert row["last_run_status"] == "error"
+    assert row["last_run_fetched"] == 0
+
+
+def test_a_successful_run_that_found_nothing_is_marked_successful(client, db_session):
+    mailbox = _seed_mailbox(db_session, market="Nigeria")
+    _sync(db_session, mailbox, messages=[], postings=[])
+
+    headers = _make_admin(client, email="empty-run-admin@example.com")
+    row = client.get("/api/admin/mailboxes", headers=headers).json()[0]
+
+    assert row["last_run_status"] == "success"
+    assert row["last_run_fetched"] == 0

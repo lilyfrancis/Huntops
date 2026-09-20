@@ -203,6 +203,11 @@ export interface AlertMailbox {
   created_at: string;
   last_synced_at: string | null;
   last_error: string | null;
+  /* Derived server-side from the sync-run history, never stored. */
+  jobs_ingested: number;
+  last_run_fetched: number;
+  last_run_inserted: number;
+  last_run_status: "success" | "error" | null;
   /* No password field, deliberately — the API has no read path for it. */
 }
 

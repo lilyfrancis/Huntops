@@ -17,6 +17,7 @@ import urllib.parse
 import uuid
 from datetime import datetime, timezone
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
@@ -333,6 +334,58 @@ def sync_all_mailboxes(db: Session) -> list[dict]:
     """Every active mailbox — the scheduled job's entry point."""
     mailboxes = db.query(AlertMailbox).filter(AlertMailbox.is_active.is_(True)).all()
     return [sync_mailbox(db, mailbox) for mailbox in mailboxes]
+
+
+def with_counts(db: Session, mailboxes: list[AlertMailbox]) -> list[AlertMailbox]:
+    """Attach ingest counters to each mailbox for the admin list.
+
+    Two aggregates in total rather than two queries per mailbox: five
+    mailboxes on one page is ten round trips done the naive way, and the
+    numbers are only ever read together.
+
+    Set as plain attributes on the ORM objects. They are not columns and must
+    not become columns — a stored counter is a second source of truth that
+    goes stale the first time a sync run is deleted.
+    """
+    if not mailboxes:
+        return mailboxes
+
+    ids = [m.id for m in mailboxes]
+
+    totals = dict(
+        db.query(EmailSyncRun.mailbox_id, func.coalesce(func.sum(EmailSyncRun.inserted_count), 0))
+        .filter(EmailSyncRun.mailbox_id.in_(ids))
+        .group_by(EmailSyncRun.mailbox_id)
+        .all()
+    )
+
+    # The most recent run per mailbox, by started_at.
+    latest = (
+        db.query(
+            EmailSyncRun.mailbox_id,
+            EmailSyncRun.fetched_count,
+            EmailSyncRun.inserted_count,
+            EmailSyncRun.status,
+            func.row_number().over(
+                partition_by=EmailSyncRun.mailbox_id,
+                order_by=EmailSyncRun.started_at.desc(),
+            ).label("rank"),
+        )
+        .filter(EmailSyncRun.mailbox_id.in_(ids))
+        .subquery()
+    )
+    last_runs = {
+        row.mailbox_id: (row.fetched_count, row.inserted_count, row.status)
+        for row in db.query(latest).filter(latest.c.rank == 1).all()
+    }
+
+    for mailbox in mailboxes:
+        mailbox.jobs_ingested = int(totals.get(mailbox.id, 0))
+        fetched, inserted, status = last_runs.get(mailbox.id, (0, 0, None))
+        mailbox.last_run_fetched = fetched
+        mailbox.last_run_inserted = inserted
+        mailbox.last_run_status = status
+    return mailboxes
 
 
 def known_markets(db: Session) -> list[str]:
