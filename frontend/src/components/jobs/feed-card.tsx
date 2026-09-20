@@ -153,7 +153,7 @@ export function FeedCard({
         ) : (
           <Button size="sm" variant="ghost" onClick={onOutreach} disabled={isDrafting}>
             <Send className="h-3.5 w-3.5" />
-            {isDrafting ? "Drafting…" : "Find a contact"}
+            {isDrafting ? "Writing it…" : "Message the hiring manager"}
           </Button>
         )}
       </div>

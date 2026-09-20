@@ -8,10 +8,10 @@ export function FinalCta() {
     <section className="px-5 py-24">
       <Reveal className="mx-auto max-w-4xl overflow-hidden rounded-3xl bg-navy px-6 py-16 text-center lift-lg sm:px-12">
         <div aria-hidden className="pointer-events-none absolute inset-0 -z-10" />
-        <h2 className="text-3xl text-white sm:text-4xl">Ready to let HuntOps hunt?</h2>
+        <h2 className="text-3xl text-white sm:text-4xl">Your next application, without the form</h2>
         <p className="mx-auto mt-4 max-w-lg text-lg text-white/70">
-          Pick your role and market, and the engine starts working today. Free to begin —
-          no card, no inbox to connect.
+          Tell us the role and the market. Your first one is on us — no card, and
+          nothing to install.
         </p>
         <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Button asChild size="lg">

@@ -1,36 +1,36 @@
-import { Radar, Target, Ghost, Send, MessageSquare, Handshake } from "lucide-react";
+import { Radar, Target, Ghost, Send, MessageSquare, FileText } from "lucide-react";
 import { Reveal } from "@/components/landing/reveal";
 
 const FEATURES = [
   {
-    icon: Radar,
-    title: "Real job aggregation",
-    body: "Six live sources plus curated alert feeds, deduped and refreshed daily. Not a stale scrape from last week.",
+    icon: Send,
+    title: "We file the application",
+    body: "Tap apply and a person at HuntOps fills in the form on the job board for you, under an address we set up in your name. You never open the site.",
+  },
+  {
+    icon: FileText,
+    title: "A cover letter per job",
+    body: "Written against that role's actual requirements, with your CV bullets rewritten to match. Read it, change anything, send it.",
   },
   {
     icon: Target,
-    title: "AI fit scoring",
-    body: "Every opening scored against your CV — skills, experience and location — so the best work rises to the top.",
+    title: "Scored against your CV",
+    body: "Every opening rated on skills, experience and location, with the reason in plain words — so you spend your time on the ten worth having.",
+  },
+  {
+    icon: Radar,
+    title: "Jobs the boards don't show you",
+    body: "Sourced from live alert feeds across Nigeria, the UK, the USA, Canada and the UAE, deduped daily. Not a stale scrape from last week.",
   },
   {
     icon: Ghost,
-    title: "Ghost-job detector",
-    body: "Flags listings that aren't a real, fillable seat, and tells you exactly why it thinks so.",
-  },
-  {
-    icon: Send,
-    title: "Autopilot Outreach",
-    body: "Finds the hiring manager, drafts a pitch in your voice, and sends it from your account. No copy-paste.",
+    title: "Ghost listings flagged",
+    body: "Postings that aren't a real, fillable seat get marked before you spend anything on them, with the reason shown.",
   },
   {
     icon: MessageSquare,
-    title: "Mock interviews",
-    body: "Practise the real screen for the role you're chasing, with every answer scored and rewritten stronger.",
-  },
-  {
-    icon: Handshake,
-    title: "Negotiation coach",
-    body: "See where your offer sits against real listings, and get the exact words to counter with.",
+    title: "Straight to the hiring manager",
+    body: "We find whoever is actually hiring and write to them for you — the thing that works when an application form does not.",
   },
 ];
 
@@ -40,7 +40,7 @@ export function Features() {
       <div className="mx-auto max-w-6xl px-5">
         <Reveal className="mx-auto max-w-2xl text-center">
           <span className="eyebrow">The platform</span>
-          <h2 className="mt-3 text-3xl sm:text-4xl">Everything the hunt needs, in one place</h2>
+          <h2 className="mt-3 text-3xl sm:text-4xl">The part everyone hates, done for you</h2>
         </Reveal>
 
         <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">

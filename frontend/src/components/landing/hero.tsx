@@ -5,9 +5,9 @@ import { Reveal } from "@/components/landing/reveal";
 import { Counter } from "@/components/landing/counter";
 
 const PROOF = [
-  { to: 6, suffix: "", label: "live job sources" },
-  { to: 60, suffix: "s", label: "to your first matches" },
-  { to: 0, suffix: "", label: "job boards to refresh", literal: "0" },
+  { to: 0, suffix: "", label: "application forms you fill in", literal: "0" },
+  { to: 5, suffix: "", label: "markets, from Lagos to Toronto" },
+  { to: 15, suffix: "s", label: "to say yes to a job" },
 ];
 
 export function Hero() {
@@ -27,23 +27,30 @@ export function Hero() {
                 <span className="animate-pulse-ring absolute inline-flex h-full w-full rounded-full bg-violet" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-violet" />
               </span>
-              Sourcing jobs right now
+              Filing applications right now
             </span>
           </Reveal>
 
           <Reveal delay={1}>
-            <h1 className="mt-5 text-4xl leading-[1.08] sm:text-5xl lg:text-6xl">
-              Stop refreshing job boards.
+            {/* The headline is the whole proposition, because it is the one
+                thing no other job tool does: the applying itself. Everything
+                else here — sourcing, scoring, ghost detection — is table
+                stakes that a reader will assume anyway. */}
+            {/* Sized to land in two lines in this column. At 4rem it broke
+                into four, which turns a claim into a paragraph. */}
+            <h1 className="mt-5 text-[2.6rem] leading-[1.05] tracking-tight sm:text-5xl lg:text-[3.4rem] xl:text-[3.9rem]">
+              You pick the jobs.
               <br />
-              <span className="brand-gradient-text">Let HuntOps hunt.</span>
+              <span className="brand-gradient-text">We do the applying.</span>
             </h1>
           </Reveal>
 
           <Reveal delay={2}>
-            <p className="mt-5 max-w-xl text-lg leading-relaxed text-ink-muted">
-              Tell us the role and the market you want. HuntOps pulls matching openings
-              from six live sources, scores every one against your CV, and reaches out to
-              the hiring manager for you.
+            <p className="mt-5 max-w-xl text-lg leading-relaxed text-ink-muted sm:text-xl">
+              HuntOps watches every job board in your market, scores each role against
+              your CV, then <strong className="font-semibold text-ink">files the
+              application for you</strong> — form, cover letter and all. You tap yes.
+              We do the rest.
             </p>
           </Reveal>
 
@@ -51,7 +58,7 @@ export function Hero() {
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Button asChild size="lg">
                 <Link to="/register">
-                  Start free <ArrowRight className="h-4 w-4" />
+                  Apply to your first job free <ArrowRight className="h-4 w-4" />
                 </Link>
               </Button>
               <Button asChild variant="outline" size="lg">
@@ -62,7 +69,7 @@ export function Hero() {
 
           <Reveal delay={4}>
             <ul className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm text-ink-muted">
-              {["No credit card", "No inbox to connect", "Free forever tier"].map((t) => (
+              {["Your first application is free", "No card to start", "Cancel anytime"].map((t) => (
                 <li key={t} className="flex items-center gap-1.5">
                   <CheckCircle2 className="h-4 w-4 text-good" strokeWidth={2} />
                   {t}
@@ -89,7 +96,7 @@ export function Hero() {
             <p className="text-2xl font-bold text-ink">
               <Counter to={92} suffix="%" />
             </p>
-            <p className="text-xs text-ink-muted">top match score today</p>
+            <p className="text-xs text-ink-muted">fit — filed for you this morning</p>
           </div>
         </Reveal>
       </div>

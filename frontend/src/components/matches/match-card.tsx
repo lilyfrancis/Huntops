@@ -73,7 +73,7 @@ export function MatchCard({ match, onViewJob, onRequestOutreach, outreachPending
           disabled={outreachDisabled || outreachPending}
         >
           <Send className="h-3.5 w-3.5" />
-          {outreachPending ? "Reaching out…" : "Autopilot outreach"}
+          {outreachPending ? "Writing it…" : "Message the hiring manager"}
         </Button>
         {/* Said out loud rather than left in a title attribute, which never
             appears on a phone and is easy to miss anywhere else. A button

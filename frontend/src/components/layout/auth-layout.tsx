@@ -4,9 +4,9 @@ import { CheckCircle2 } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 
 const PROMISES = [
-  "Six live sources, scored against your CV",
+  "We fill in the application forms for you",
+  "Every role scored against your CV, salary shown",
   "Ghost listings flagged before you waste a day",
-  "Outreach drafted and sent for you",
 ];
 
 export function AuthLayout({ children }: { children: ReactNode }) {
@@ -30,9 +30,9 @@ export function AuthLayout({ children }: { children: ReactNode }) {
 
         <div className="relative max-w-md">
           <h1 className="text-4xl leading-tight text-white">
-            Your job hunt,
+            You pick.
             <br />
-            on autopilot.
+            We apply.
           </h1>
           <ul className="mt-8 space-y-3">
             {PROMISES.map((p) => (

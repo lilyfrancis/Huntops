@@ -4,21 +4,21 @@ const STEPS = [
   {
     n: "01",
     title: "Tell us what you want",
-    body: "Pick your role, your market and your seniority when you sign up. That is the whole setup — no inbox to connect, nothing to configure.",
+    body: "Your role, your market, your seniority, and upload your CV. Two minutes, and that is the whole setup.",
     image: "/brand/feature-interview.webp",
     alt: "A candidate reviewing a role on a video call",
   },
   {
     n: "02",
-    title: "We find and score the work",
-    body: "HuntOps pulls matching openings from six live sources plus curated alert feeds, then scores every one against your CV — skills, experience and location.",
+    title: "Wake up to scored matches",
+    body: "Every morning, the openings worth your time — rated against your CV, ghost listings already flagged, salary shown up front.",
     image: "/brand/hero-dashboard.webp",
     alt: "The HuntOps dashboard ranking matched roles by score",
   },
   {
     n: "03",
-    title: "Autopilot makes the approach",
-    body: "Set a score threshold and HuntOps takes it from there: it finds the hiring manager, drafts a pitch in your voice, and sends it — or holds it for your approval.",
+    title: "Tap apply. We file it.",
+    body: "We write the cover letter, fill in the form on the job board, and send it under your name. You watch the status change from queued to filed — and never open a job site.",
     image: "/brand/feature-offer.webp",
     alt: "A candidate celebrating a call from a recruiter",
   },
@@ -29,7 +29,7 @@ export function HowItWorks() {
     <section id="how" className="mx-auto max-w-6xl px-5 py-24">
       <Reveal className="mx-auto max-w-2xl text-center">
         <span className="eyebrow">How it works</span>
-        <h2 className="mt-3 text-3xl sm:text-4xl">Three steps, then it runs itself</h2>
+        <h2 className="mt-3 text-3xl sm:text-4xl">Two minutes to set up. Then you stop applying.</h2>
         <p className="mt-4 text-lg text-ink-muted">
           Set it up once. HuntOps works every day whether you open it or not.
         </p>

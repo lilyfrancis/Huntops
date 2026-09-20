@@ -13,6 +13,7 @@ from app.services import (
     matching,
     notifications,
     preferences,
+    unlocking,
     whatsapp,
 )
 from app.services.aggregation import ingest_all
@@ -69,17 +70,17 @@ def _run_email_sync() -> None:
         db.close()
 
 
-def _deliver_email(user, matches) -> bool:
-    subject, body = digest.format_digest_email(matches)
+def _deliver_email(user, matches, unlocked=None) -> bool:
+    subject, body = digest.format_digest_email(matches, unlocked)
     return notifications.send_email(user.email, subject, body)
 
 
-def _deliver_whatsapp(user, matches) -> bool:
+def _deliver_whatsapp(user, matches, unlocked=None) -> bool:
     """False whenever the message did not go out, for any reason: no number
     on file, no provider configured, or Meta rejecting it."""
     if not user.whatsapp_number:
         return False
-    params = digest.format_digest_whatsapp(user, matches)
+    params = digest.format_digest_whatsapp(user, matches, unlocked)
     # None means no matches. A daily "nothing today" email is ignorable; the
     # same on WhatsApp gets the number blocked, and a block is permanent.
     if params is None:
@@ -132,11 +133,16 @@ def _run_daily_digest() -> None:
             channel = prefs.digest_channel
             delivered = False
 
+            # The digest is redacted the same way the feed is. Mailing the
+            # company name every morning would be a more convenient leak
+            # than the website ever was.
+            unlocked = unlocking.unlocked_ids(db, user, [job.id for _m, job in matches])
+
             if channel in ("email", "both"):
-                delivered = _deliver_email(user, matches)
+                delivered = _deliver_email(user, matches, unlocked)
 
             if channel in ("whatsapp", "both"):
-                delivered = _deliver_whatsapp(user, matches) or delivered
+                delivered = _deliver_whatsapp(user, matches, unlocked) or delivered
 
             if channel == "whatsapp" and not delivered and matches:
                 # Choosing WhatsApp is a preference about where to be reached,
@@ -146,7 +152,7 @@ def _run_daily_digest() -> None:
                 # and all of them would otherwise mean silence. Email carries
                 # the digest instead. Guarded on `matches` so a genuinely empty
                 # day still sends nothing.
-                delivered = _deliver_email(user, matches)
+                delivered = _deliver_email(user, matches, unlocked)
 
             if delivered:
                 sent_count += 1

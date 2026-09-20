@@ -22,6 +22,7 @@ import {
 import { useAuth } from "@/hooks/use-auth";
 import { cn, initials } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Wallet } from "@/components/billing/wallet";
 import { Badge } from "@/components/ui/badge";
 import { Logo } from "@/components/brand/logo";
 
@@ -40,7 +41,7 @@ const NAV_BY_ROLE: Record<string, NavItem[]> = {
     { to: "/app/momentum", label: "Momentum", icon: Flame },
     { to: "/app/resume", label: "Résumé", icon: FileText },
     { to: "/app/applications", label: "Applications", icon: Inbox },
-    { to: "/app/outreach", label: "Outreach", icon: Send },
+    { to: "/app/outreach", label: "Hiring managers", icon: Send },
     { to: "/app/interviews", label: "Interviews", icon: MessageSquare },
     { to: "/app/negotiation", label: "Negotiation", icon: Handshake },
     { to: "/app/digest", label: "Digest", icon: Newspaper },
@@ -94,12 +95,11 @@ export function AppShell() {
         </nav>
 
         <div className="border-t border-border p-3">
-          {user.role === "job_seeker" && (
-            <div className="mb-2 flex items-center justify-between rounded-lg bg-surface-2 px-3 py-2">
-              <span className="text-[0.7rem] font-semibold uppercase tracking-wide text-ink-faint">Credits</span>
-              <span className="text-sm font-bold text-violet-dark">{user.ai_credits}</span>
-            </div>
-          )}
+          {/* A balance nobody can act on is just a number. This one opens
+              the wallet and says what it buys. */}
+          <div className="mb-2">
+            <Wallet />
+          </div>
           <div className="flex items-center gap-2 rounded-lg px-2 py-1.5">
             <Avatar>
               <AvatarFallback>{initials(user.full_name)}</AvatarFallback>

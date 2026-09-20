@@ -55,9 +55,9 @@ export function OutreachPage() {
   return (
     <div>
       <PageHeader
-        eyebrow="Autopilot"
-        title="Outreach"
-        description="Every pitch drafted or sent on your behalf. Edit any draft before it goes, and add a recipient where we could not find one."
+        eyebrow="Direct contact"
+        title="Messages to hiring managers"
+        description="We find whoever is hiring and write to them for you. Edit anything before it goes, and add an address where we could not find one."
       />
 
       {isLoading ? (
@@ -66,7 +66,7 @@ export function OutreachPage() {
         <EmptyState
           icon={Send}
           title="No outreach yet"
-          description="Request Autopilot Outreach from a match to see it show up here."
+          description="Pick a job and choose “Message the hiring manager” to see it here."
         />
       ) : (
         <div className="space-y-3">
