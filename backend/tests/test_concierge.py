@@ -239,3 +239,109 @@ def test_the_queue_shows_only_what_is_waiting_by_default(client, db_session, fre
 
     assert len(client.get("/api/admin/concierge", headers=admin).json()) == 1
     assert len(client.get("/api/admin/concierge?status=submitted", headers=admin).json()) == 1
+
+
+# ---------- telling an admin there is work ----------
+
+def test_an_admin_is_told_the_moment_a_request_arrives(client, db_session, elite):
+    """The queue only updates when somebody opens it. A request nobody knows
+    about is a user watching "queued" for a day."""
+    job = _external(db_session)
+
+    with patch("app.services.concierge.notifications.alert_admin") as alert:
+        client.post("/api/applications", json={"job_id": str(job.id)},
+                    headers=_login(client, elite.email))
+
+    alert.assert_called_once()
+    subject, body = alert.call_args.args
+    assert "Elite User" in subject and job.title in subject
+    assert job.source_url in body            # where to go
+    assert "/admin/concierge" in body        # and where to mark it done
+
+
+def test_the_suggested_address_is_flagged_as_not_yet_created(client, db_session, free_user):
+    job = _external(db_session)
+    with patch("app.services.concierge.notifications.alert_admin") as alert:
+        client.post("/api/applications", json={"job_id": str(job.id)},
+                    headers=_login(client, free_user.email))
+
+    body = alert.call_args.args[1]
+    assert "jennifer@huntops.site" in body
+    assert "not created yet" in body
+
+
+def test_a_failed_notification_does_not_fail_the_request(client, db_session, elite):
+    """The request is the user's; a mail server being down is ours. Rolling
+    back a paid-for request over our outage would be charging for it."""
+    job = _external(db_session)
+    before = elite.ai_credits
+
+    with patch("app.services.concierge.notifications.alert_admin",
+               side_effect=RuntimeError("smtp down")):
+        resp = client.post("/api/applications", json={"job_id": str(job.id)},
+                           headers=_login(client, elite.email))
+
+    assert resp.status_code == 201
+    assert db_session.query(Application).count() == 1
+    db_session.refresh(elite)
+    assert elite.ai_credits == before - settings.CONCIERGE_CREDIT_COST
+
+
+def test_notifications_can_be_turned_off(client, db_session, elite, monkeypatch):
+    monkeypatch.setattr(settings, "NOTIFY_ADMIN_ON_CONCIERGE", False)
+    with patch("app.services.concierge.notifications.alert_admin") as alert:
+        client.post("/api/applications", json={"job_id": str(_external(db_session).id)},
+                    headers=_login(client, elite.email))
+    alert.assert_not_called()
+
+
+# ---------- chasing a backlog ----------
+
+def test_a_request_past_the_sla_is_chased(client, db_session, elite):
+    from datetime import datetime, timedelta, timezone
+
+    job = _external(db_session)
+    with patch("app.services.concierge.notifications.alert_admin"):
+        client.post("/api/applications", json={"job_id": str(job.id)},
+                    headers=_login(client, elite.email))
+
+    application = db_session.query(Application).one()
+    application.created_at = datetime.now(timezone.utc) - timedelta(hours=48)
+    db_session.commit()
+
+    with patch("app.services.concierge.notifications.alert_admin") as alert:
+        assert concierge.alert_on_backlog(db_session) == 1
+
+    assert "still waiting" in alert.call_args.args[0]
+
+
+def test_a_current_queue_says_nothing(client, db_session, elite):
+    """A daily "nothing to do" mail is how a daily alert stops being read,
+    and this one has to be read."""
+    with patch("app.services.concierge.notifications.alert_admin"):
+        client.post("/api/applications", json={"job_id": str(_external(db_session).id)},
+                    headers=_login(client, elite.email))
+
+    with patch("app.services.concierge.notifications.alert_admin") as alert:
+        assert concierge.alert_on_backlog(db_session) == 0   # queued, but not yet overdue
+    alert.assert_not_called()
+
+
+def test_something_already_filed_is_not_chased(client, db_session, elite):
+    from datetime import datetime, timedelta, timezone
+    from tests.test_alert_mailboxes import _make_admin
+
+    with patch("app.services.concierge.notifications.alert_admin"):
+        app_id = client.post("/api/applications", json={"job_id": str(_external(db_session).id)},
+                             headers=_login(client, elite.email)).json()["id"]
+
+    application = db_session.query(Application).one()
+    application.created_at = datetime.now(timezone.utc) - timedelta(hours=48)
+    db_session.commit()
+
+    client.patch(f"/api/admin/concierge/{app_id}", headers=_make_admin(client, "done@example.com"),
+                 json={"concierge_status": "submitted"})
+
+    with patch("app.services.concierge.notifications.alert_admin") as alert:
+        assert concierge.alert_on_backlog(db_session) == 0
+    alert.assert_not_called()

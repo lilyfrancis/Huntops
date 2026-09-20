@@ -145,6 +145,14 @@ class Settings(BaseSettings):
     # see it land, not enough to run a job hunt on. Credits are charged on
     # top, so this is a ceiling rather than a currency.
     CONCIERGE_FREE_ALLOWANCE: int = 3
+    # Tell an admin the moment work arrives. The queue only updates when
+    # somebody opens it, and a request nobody knows about is a user watching
+    # "queued" for a day.
+    NOTIFY_ADMIN_ON_CONCIERGE: bool = True
+    # How long a request may sit before the backlog is worth chasing. The
+    # per-request email can be missed; this one cannot be, because it keeps
+    # arriving.
+    CONCIERGE_SLA_HOURS: int = 24
 
     @property
     def recruiter_titles_list(self) -> List[str]:

@@ -7,6 +7,7 @@ from app.core.config import get_settings
 from app.db.base import SessionLocal
 from app.services import (
     autopilot,
+    concierge,
     digest,
     ghost_detection,
     matching,
@@ -158,6 +159,24 @@ def _run_daily_digest() -> None:
         db.close()
 
 
+def _run_concierge_backlog() -> None:
+    """Chase anything still waiting to be filed.
+
+    The per-request email can be missed — read on a phone, buried, sent
+    while nobody was working. This one keeps arriving until the queue is
+    worked, and says nothing at all when it is current.
+    """
+    db = SessionLocal()
+    try:
+        waiting = concierge.alert_on_backlog(db)
+        if waiting:
+            logger.info("Concierge backlog: %d application(s) past the SLA", waiting)
+    except Exception as e:
+        logger.error("Concierge backlog check failed: %s", e)
+    finally:
+        db.close()
+
+
 def _run_autopilot() -> None:
     db = SessionLocal()
     try:
@@ -206,6 +225,11 @@ def start_scheduler() -> BackgroundScheduler | None:
         # digest run is what refreshes them. Firing first would have it applying
         # on yesterday's scores against today's jobs.
         _scheduler.add_job(_run_autopilot, "cron", hour=8, minute=0, id="daily_autopilot")
+
+    # Twice a day rather than once: a request that arrives just after the
+    # morning run would otherwise wait a full day before anyone is chased,
+    # which is most of the SLA spent before the first reminder.
+    _scheduler.add_job(_run_concierge_backlog, "cron", hour="9,16", minute=0, id="concierge_backlog")
 
     if _scheduler.get_jobs():
         _scheduler.start()
