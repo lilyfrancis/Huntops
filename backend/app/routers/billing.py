@@ -16,6 +16,7 @@ from app.schemas.billing import (
     BillingPortalOut,
     CheckoutSessionOut,
     CheckoutSessionRequest,
+    CreditCostsOut,
     CreditPackOut,
     CreditPackRequest,
     PlanOut,
@@ -82,6 +83,20 @@ def _plans() -> list[PlanOut]:
         )
         for tier, price in prices.items()
     ]
+
+
+@router.get("/credit-costs", response_model=CreditCostsOut)
+def credit_costs() -> CreditCostsOut:
+    """The price in credits of each action, unauthenticated.
+
+    Public because deciding on a plan means knowing what its credits cover,
+    and that is a question asked before signing up.
+    """
+    return CreditCostsOut(
+        unlock=settings.UNLOCK_CREDIT_COST,
+        tailor=settings.TAILOR_CREDIT_COST,
+        concierge=settings.CONCIERGE_CREDIT_COST,
+    )
 
 
 @router.get("/status", response_model=SubscriptionStatusOut)

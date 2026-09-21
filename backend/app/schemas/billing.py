@@ -38,6 +38,20 @@ class SubscriptionStatusOut(BaseModel):
     plans: list[PlanOut]
 
 
+class CreditCostsOut(BaseModel):
+    """What one of each chargeable action costs.
+
+    Served for the same reason the prices are. The pricing page shows what a
+    month of credits buys, and that arithmetic has to use the numbers the
+    charging code actually uses — a second copy in the UI would quietly start
+    promising a count the product does not honour.
+    """
+
+    unlock: int
+    tailor: int
+    concierge: int
+
+
 class CreditPackOut(BaseModel):
     code: str
     credits: int

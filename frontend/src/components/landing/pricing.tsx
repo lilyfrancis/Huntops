@@ -70,8 +70,10 @@ export function Pricing() {
   const plans = usePrices();
 
   const priceFor = (tier: string): string => {
-    if (tier === "free") return "Free";
     const plan = plans?.find((p) => p.tier === tier);
+    // "Free" is already the card's title; repeating it as the price read as
+    // a duplication rather than as a number.
+    if (tier === "free") return plan ? formatPrice(plan.price, plan.currency) : "$0";
     // Never guess at a number someone will be charged.
     return plan ? formatPrice(plan.price, plan.currency) : "—";
   };
@@ -90,21 +92,21 @@ export function Pricing() {
   };
 
   return (
-    <section id="pricing" className="relative isolate overflow-hidden py-28">
+    <section id="pricing" className="relative isolate overflow-hidden py-28 lg:py-36">
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
         <div className="absolute left-1/2 top-0 h-[32rem] w-[52rem] -translate-x-1/2 rounded-full bg-violet-soft/70 blur-[130px]" />
       </div>
-      <div className="mx-auto max-w-7xl px-6">
-      <Reveal className="mx-auto max-w-2xl text-center">
-        <span className="eyebrow">Pricing</span>
-        <h2 className="mt-3 text-3xl sm:text-4xl">Pay for reach, not for looking</h2>
-        <p className="mt-4 text-ink-muted">
+      <div className="shell">
+      <Reveal className="mx-auto max-w-3xl text-center">
+        <span className="eyebrow t-eyebrow-lg">Pricing</span>
+        <h2 className="t-h2 mt-4">Pay for reach, not for looking</h2>
+        <p className="t-lead mt-5 text-ink-muted">
           Every action that costs AI — a fit score, an extracted alert, a drafted outreach —
           spends credits. Upgrade when you need more reach, not because a paywall says so.
         </p>
       </Reveal>
 
-      <div className="mt-16 grid gap-6 lg:grid-cols-3">
+      <div className="mx-auto mt-16 grid max-w-6xl gap-6 lg:grid-cols-3 lg:gap-7">
         {PLANS.map((plan, i) => (
           <Reveal key={plan.name} delay={i as 0 | 1 | 2}>
             <Card
@@ -125,9 +127,9 @@ export function Pricing() {
                     Most popular
                   </span>
                 )}
-                <CardTitle className="text-lg">{plan.name}</CardTitle>
+                <CardTitle className="t-h3">{plan.name}</CardTitle>
                 <div className="mt-2 flex items-baseline gap-1">
-                  <span className="text-4xl font-bold text-ink">{priceFor(plan.tier)}</span>
+                  <span className="text-[clamp(2.4rem,3vw,3.4rem)] font-bold leading-none text-ink">{priceFor(plan.tier)}</span>
                   <span className="text-sm text-ink-muted">{plan.cadence}</span>
                 </div>
                 <p className="mt-1 text-xs font-semibold uppercase tracking-widest text-ink-faint">
@@ -137,7 +139,7 @@ export function Pricing() {
               <CardContent className="flex-1">
                 <ul className="space-y-3">
                   {plan.features.map((feature) => (
-                    <li key={feature} className="flex items-start gap-2 text-sm text-ink-muted">
+                    <li key={feature} className="flex items-start gap-2.5 text-[0.98rem] leading-relaxed text-ink-muted">
                       <Check className="mt-0.5 h-4 w-4 shrink-0 text-good" strokeWidth={2} />
                       {feature}
                     </li>

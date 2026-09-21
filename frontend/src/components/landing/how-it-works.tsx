@@ -29,22 +29,22 @@ const STEPS = [
 
 export function HowItWorks() {
   return (
-    <section id="how" className="relative isolate mx-auto max-w-7xl px-6 py-28">
+    <section id="how" className="shell relative isolate py-28 lg:py-36">
       {/* A thread down the middle, so three steps read as one sequence
           rather than three unrelated cards. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute left-1/2 top-64 hidden h-[calc(100%-20rem)] w-px -translate-x-1/2 bg-gradient-to-b from-violet/30 via-cyan/20 to-transparent lg:block"
+        className="pointer-events-none absolute left-1/2 top-[26rem] hidden h-[calc(100%-34rem)] w-px -translate-x-1/2 bg-gradient-to-b from-violet/30 via-cyan/20 to-transparent lg:block"
       />
-      <Reveal className="mx-auto max-w-2xl text-center">
+      <Reveal className="mx-auto max-w-4xl text-center">
         <span className="eyebrow">How it works</span>
-        <h2 className="mt-3 text-3xl sm:text-4xl">Two minutes to set up. Then you stop applying.</h2>
-        <p className="mt-4 text-lg text-ink-muted">
+        <h2 className="t-h2 mt-3">Two minutes to set up. Then you stop applying.</h2>
+        <p className="t-lead mt-5 text-ink-muted">
           Set it up once. HuntOps works every day whether you open it or not.
         </p>
       </Reveal>
 
-      <div className="mt-16 space-y-20">
+      <div className="mt-20 space-y-16 lg:space-y-24">
         {STEPS.map((step, i) => (
           <Reveal key={step.n}>
             <div
@@ -56,8 +56,8 @@ export function HowItWorks() {
                 <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl brand-gradient text-base font-bold text-white">
                   {step.n}
                 </span>
-                <h3 className="mt-5 text-2xl">{step.title}</h3>
-                <p className="mt-3 text-lg leading-relaxed text-ink-muted">{step.body}</p>
+                <h3 className="t-h2 mt-6 !text-[clamp(1.6rem,2vw,2.4rem)]">{step.title}</h3>
+                <p className="t-lead mt-4 max-w-xl text-ink-muted">{step.body}</p>
               </div>
               <div
                 className={`ring-gradient overflow-hidden rounded-2xl border border-border transition-transform duration-500 hover:scale-[1.015] lift-lg ${

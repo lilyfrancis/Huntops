@@ -29,14 +29,14 @@ export function LandingNav() {
         scrolled ? "border-b border-border bg-white/85 backdrop-blur-lg" : "bg-transparent",
       )}
     >
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3.5">
+      <div className="shell flex items-center justify-between py-4">
         <a href="#top" aria-label="HuntOps home">
           <Logo variant={scrolled ? "navy" : "white"} height={30} />
         </a>
 
         <nav
           className={cn(
-            "hidden items-center gap-8 text-sm font-medium transition-colors md:flex",
+            "hidden items-center gap-9 text-[0.95rem] font-medium transition-colors md:flex",
             scrolled ? "text-ink-muted" : "text-white/70",
           )}
         >

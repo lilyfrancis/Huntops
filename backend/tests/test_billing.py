@@ -428,3 +428,24 @@ def test_the_price_shown_comes_from_config(client, monkeypatch):
     plan = next(p for p in client.get("/api/billing/plans").json() if p["tier"] == "pro")
     assert plan["price"] == 7500.0
     assert plan["currency"] == "NGN"
+
+
+def test_the_action_costs_are_public(client):
+    """The pricing page divides a plan's credits by these to show what a month
+    buys. Served rather than copied into the UI, for the same reason the
+    prices are: a second copy would eventually promise a count the product
+    then refuses to deliver."""
+    resp = client.get("/api/billing/credit-costs")
+
+    assert resp.status_code == 200
+    assert resp.json() == {
+        "unlock": settings.UNLOCK_CREDIT_COST,
+        "tailor": settings.TAILOR_CREDIT_COST,
+        "concierge": settings.CONCIERGE_CREDIT_COST,
+    }
+
+
+def test_the_action_costs_follow_config(client, monkeypatch):
+    monkeypatch.setattr(settings, "CONCIERGE_CREDIT_COST", 22)
+
+    assert client.get("/api/billing/credit-costs").json()["concierge"] == 22

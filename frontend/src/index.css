@@ -73,6 +73,10 @@
     background: var(--color-bg);
     color: var(--color-ink);
     font-family: var(--font-sans);
+    /* 16px is a UI size. Marketing pages are read at arm's length on large
+       displays, where it looks undersized. */
+    font-size: 1.0625rem;
+    line-height: 1.6;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
@@ -171,6 +175,60 @@
 }
 
 @layer utilities {
+  /* ---- Page shell -----------------------------------------------------
+     Every band on the marketing pages uses this. A fixed column looks
+     marooned on a 1920 display — 320px of dead gutter on each side — so the
+     shell grows with the viewport and its gutters grow with it. Line length
+     is controlled per text block (max-w-* on the prose), not by starving the
+     whole layout of width. */
+  .shell {
+    width: 100%;
+    max-width: 105rem;
+    margin-inline: auto;
+    padding-inline: 1.25rem;
+  }
+  @media (min-width: 640px) {
+    .shell { padding-inline: 2rem; }
+  }
+  @media (min-width: 1024px) {
+    .shell { padding-inline: 3.5rem; }
+  }
+  @media (min-width: 1536px) {
+    .shell { padding-inline: 5rem; }
+  }
+
+  /* ---- Fluid type -----------------------------------------------------
+     Sizes interpolate with the viewport instead of stepping at breakpoints,
+     so nothing looks stranded between them. Every clamp has a floor that is
+     readable on a phone and a ceiling that stops growth before the line
+     becomes a banner. */
+  .t-display {
+    font-size: clamp(2.6rem, 4.7vw, 5.25rem);
+    line-height: 1.02;
+    letter-spacing: -0.035em;
+  }
+  .t-h2 {
+    font-size: clamp(2rem, 3vw, 3.4rem);
+    line-height: 1.07;
+    letter-spacing: -0.028em;
+  }
+  .t-h3 {
+    font-size: clamp(1.3rem, 1.35vw, 1.75rem);
+    line-height: 1.25;
+    letter-spacing: -0.018em;
+  }
+  .t-lead {
+    font-size: clamp(1.1rem, 1.15vw, 1.4rem);
+    line-height: 1.55;
+  }
+  .t-body {
+    font-size: clamp(1rem, 0.92vw, 1.15rem);
+    line-height: 1.65;
+  }
+  .t-eyebrow-lg {
+    font-size: clamp(0.75rem, 0.72vw, 0.9rem);
+  }
+
   .eyebrow {
     font-size: 0.75rem;
     letter-spacing: 0.12em;

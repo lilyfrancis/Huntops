@@ -4,7 +4,7 @@ import { Logo } from "@/components/brand/logo";
 export function LandingFooter() {
   return (
     <footer className="border-t border-border bg-bg-tint">
-      <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 px-5 py-10 sm:flex-row">
+      <div className="shell flex flex-col items-center justify-between gap-6 py-12 sm:flex-row">
         <div className="flex flex-col items-center gap-2 sm:items-start">
           <Logo height={26} />
           <p className="text-sm text-ink-muted">Built for people who'd rather be hunted for.</p>

@@ -316,6 +316,14 @@ export interface Plan {
   credits: number;
 }
 
+/** What one of each chargeable action costs, served so the pricing page's
+    arithmetic cannot drift from what the backend actually charges. */
+export interface CreditCosts {
+  unlock: number;
+  tailor: number;
+  concierge: number;
+}
+
 export interface SubscriptionStatus {
   tier: SubscriptionTier;
   /* False for a free user, and also for a paid one who cancelled but whose

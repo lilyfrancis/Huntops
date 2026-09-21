@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 /**
  * Reveals an element the first time it reaches the viewport.
@@ -10,13 +10,18 @@ import { useEffect, useRef, useState } from "react";
  * element above the fold before the observer is even attached. Both are
  * covered here: the position is checked when the effect runs and again on
  * scroll, so the observer is a fast path rather than the only path.
+ *
+ * The returned ref is a callback ref rather than an object ref, so the effect
+ * runs when the element actually appears. A caller that renders nothing until
+ * its data loads — which is most of them — has no element on the first pass,
+ * and an object ref would leave that caller observing nothing forever.
  */
 export function useReveal<T extends HTMLElement>(threshold = 0) {
-  const ref = useRef<T | null>(null);
+  const [node, setNode] = useState<T | null>(null);
   const [isVisible, setIsVisible] = useState(false);
+  const ref = useCallback((el: T | null) => setNode(el), []);
 
   useEffect(() => {
-    const node = ref.current;
     if (!node) return;
 
     let done = false;
@@ -69,7 +74,7 @@ export function useReveal<T extends HTMLElement>(threshold = 0) {
     window.addEventListener("scroll", onScroll, { passive: true });
 
     return stop;
-  }, [threshold]);
+  }, [node, threshold]);
 
   return { ref, isVisible };
 }

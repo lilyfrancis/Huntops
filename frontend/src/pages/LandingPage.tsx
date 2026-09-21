@@ -3,6 +3,7 @@ import { Hero } from "@/components/landing/hero";
 import { SourceStrip } from "@/components/landing/source-strip";
 import { Features } from "@/components/landing/features";
 import { HowItWorks } from "@/components/landing/how-it-works";
+import { CreditsChart } from "@/components/landing/credits-chart";
 import { Pricing } from "@/components/landing/pricing";
 import { FinalCta } from "@/components/landing/final-cta";
 import { LandingFooter } from "@/components/landing/landing-footer";
@@ -16,6 +17,7 @@ export function LandingPage() {
         <SourceStrip />
         <Features />
         <HowItWorks />
+        <CreditsChart />
         <Pricing />
         <FinalCta />
       </main>

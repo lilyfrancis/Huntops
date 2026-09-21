@@ -39,7 +39,7 @@ export function Hero() {
         <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-b from-transparent to-bg" />
       </div>
 
-      <div className="mx-auto grid max-w-7xl items-center gap-14 px-6 lg:grid-cols-[1.02fr_1fr] lg:gap-10">
+      <div className="shell grid items-center gap-14 lg:grid-cols-[1.02fr_1fr] lg:gap-16">
         <div>
           <Reveal>
             <span className="glass inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-xs font-semibold text-white/85">
@@ -52,7 +52,7 @@ export function Hero() {
           </Reveal>
 
           <Reveal delay={1}>
-            <h1 className="mt-6 text-[2.7rem] font-semibold leading-[1.02] tracking-[-0.03em] text-white sm:text-5xl lg:text-[3.55rem] xl:text-[4rem]">
+            <h1 className="t-display mt-6 font-semibold text-white">
               You pick the jobs.
               <br />
               <span className="text-gradient-bright">We do the applying.</span>
@@ -60,7 +60,7 @@ export function Hero() {
           </Reveal>
 
           <Reveal delay={2}>
-            <p className="mt-6 max-w-xl text-lg leading-relaxed text-white/65 sm:text-xl">
+            <p className="t-lead mt-7 max-w-2xl text-white/70">
               Every role scored against your CV. Your CV rewritten for the ones you want.
               The application <strong className="font-semibold text-white">filed for you</strong>,
               and the hiring manager messaged directly — while you watch it happen from one
@@ -133,18 +133,18 @@ export function Hero() {
       </div>
 
       <Reveal delay={4}>
-        <ol className="mx-auto mt-24 grid max-w-7xl gap-y-8 border-t border-white/10 px-6 pt-12 sm:grid-cols-2 lg:grid-cols-5 lg:gap-x-6">
+        <ol className="shell mt-24 grid gap-y-8 border-t border-white/10 pt-12 sm:grid-cols-2 lg:grid-cols-5 lg:gap-x-10">
           {ARC.map((step, i) => (
             <li key={step.label} className="group flex gap-3 lg:block">
               <span className="glass flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-cyan transition-colors group-hover:bg-white/15 lg:mb-4">
                 <step.icon className="h-4.5 w-4.5" strokeWidth={2} />
               </span>
               <div>
-                <p className="text-sm font-semibold text-white">
+                <p className="text-[1.02rem] font-semibold text-white">
                   <span className="font-mono text-xs text-white/40">{i + 1}. </span>
                   {step.label}
                 </p>
-                <p className="mt-1 text-sm leading-relaxed text-white/55">{step.body}</p>
+                <p className="mt-1.5 text-[0.95rem] leading-relaxed text-white/55">{step.body}</p>
               </div>
             </li>
           ))}

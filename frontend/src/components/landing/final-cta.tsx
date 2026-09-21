@@ -5,11 +5,20 @@ import { Reveal } from "@/components/landing/reveal";
 
 export function FinalCta() {
   return (
-    <section className="px-5 py-24">
-      <Reveal className="mx-auto max-w-4xl overflow-hidden rounded-3xl bg-navy px-6 py-16 text-center lift-lg sm:px-12">
-        <div aria-hidden className="pointer-events-none absolute inset-0 -z-10" />
-        <h2 className="text-3xl text-white sm:text-4xl">Your next application, without the form</h2>
-        <p className="mx-auto mt-4 max-w-lg text-lg text-white/70">
+    <section className="shell py-24 lg:py-32">
+      <Reveal className="relative isolate mx-auto max-w-6xl overflow-hidden rounded-[2rem] bg-navy px-6 py-20 text-center lift-lg sm:px-12 lg:py-24 grain">
+        {/* The same aurora as the hero, so the page closes on the note it
+            opened with rather than on a flat navy slab. */}
+        <div
+          aria-hidden
+          className="animate-drift-a pointer-events-none absolute -left-24 top-[-30%] -z-10 h-[26rem] w-[26rem] rounded-full bg-violet/35 blur-[90px]"
+        />
+        <div
+          aria-hidden
+          className="animate-drift-b pointer-events-none absolute -right-20 bottom-[-40%] -z-10 h-[24rem] w-[24rem] rounded-full bg-cyan/20 blur-[100px]"
+        />
+        <h2 className="t-h2 text-white">Your next application, without the form</h2>
+        <p className="t-lead mx-auto mt-5 max-w-xl text-white/70">
           Tell us the role and the market. Your first one is on us — no card, and
           nothing to install.
         </p>

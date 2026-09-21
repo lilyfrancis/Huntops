@@ -36,28 +36,32 @@ const FEATURES = [
 
 export function Features() {
   return (
-    <section id="features" className="relative isolate overflow-hidden bg-bg-tint py-28">
+    <section id="features" className="relative isolate overflow-hidden bg-bg-tint py-28 lg:py-36">
       {/* A ground for the glass to sit on. Flat white boxes on a flat white
           page are the reason this section read as a spreadsheet. */}
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
         <div className="absolute -left-40 top-10 h-[28rem] w-[28rem] rounded-full bg-violet-soft blur-[110px]" />
         <div className="absolute -right-32 bottom-0 h-[24rem] w-[24rem] rounded-full bg-cyan-soft blur-[110px]" />
       </div>
-      <div className="mx-auto max-w-7xl px-6">
-        <Reveal className="mx-auto max-w-2xl text-center">
-          <span className="eyebrow">The platform</span>
-          <h2 className="mt-3 text-3xl sm:text-4xl">The part everyone hates, done for you</h2>
+      <div className="shell">
+        <Reveal className="mx-auto max-w-3xl text-center">
+          <span className="eyebrow t-eyebrow-lg">The platform</span>
+          <h2 className="t-h2 mt-4">The part everyone hates, done for you</h2>
+          <p className="t-lead mx-auto mt-5 max-w-2xl text-ink-muted">
+            Six jobs you are doing by hand tonight. Every one of them runs without you
+            from the moment you finish setup.
+          </p>
         </Reveal>
 
-        <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 lg:gap-7">
           {FEATURES.map((f, i) => (
             <Reveal key={f.title} delay={(i % 3) as 0 | 1 | 2}>
-              <article className="glass-light group h-full rounded-2xl p-6 transition-all duration-300 hover:-translate-y-1 hover:border-violet/40 lift hover:lift-lg">
-                <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-violet-soft text-violet transition-colors group-hover:brand-gradient group-hover:text-white">
-                  <f.icon className="h-5 w-5" strokeWidth={2} />
+              <article className="glass-light group h-full rounded-2xl p-7 transition-all duration-300 hover:-translate-y-1.5 hover:border-violet/40 lift hover:lift-lg lg:p-9">
+                <span className="inline-flex h-13 w-13 items-center justify-center rounded-xl bg-violet-soft text-violet transition-colors group-hover:brand-gradient group-hover:text-white">
+                  <f.icon className="h-6 w-6" strokeWidth={2} />
                 </span>
-                <h3 className="mt-4 text-lg">{f.title}</h3>
-                <p className="mt-2 text-[0.95rem] leading-relaxed text-ink-muted">{f.body}</p>
+                <h3 className="t-h3 mt-5">{f.title}</h3>
+                <p className="t-body mt-3 text-ink-muted">{f.body}</p>
               </article>
             </Reveal>
           ))}
