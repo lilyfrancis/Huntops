@@ -80,6 +80,16 @@ def _deliver_whatsapp(user, matches, unlocked=None) -> bool:
     on file, no provider configured, or Meta rejecting it."""
     if not user.whatsapp_number:
         return False
+    if user.whatsapp_opted_in_at is None:
+        # Meta drops a marketing template to anyone who has never messaged the
+        # business, accepting the send with a 200 and delivering nothing. Not
+        # sending is the same outcome and says so out loud, instead of
+        # reporting a success that never reached anybody.
+        logger.info(
+            "Skipping WhatsApp digest for user=%s: not opted in — Meta would drop it silently",
+            user.id,
+        )
+        return False
     params = digest.format_digest_whatsapp(user, matches, unlocked)
     # None means no matches. A daily "nothing today" email is ignorable; the
     # same on WhatsApp gets the number blocked, and a block is permanent.

@@ -39,6 +39,20 @@ class User(Base):
     # valid is refused at entry rather than found broken at 07:30.
     whatsapp_number: Mapped[str | None] = mapped_column(String(20), nullable=True)
 
+    # When this person first messaged the business number.
+    #
+    # Meta drops a marketing template to anyone who has never engaged with the
+    # business: the send is accepted with a 200 and the message never arrives,
+    # with no error anywhere the sender can see. The daily digest is
+    # classified as marketing — Meta refused Utility for it, because a digest
+    # of new matches reads as re-engagement rather than a transaction — so
+    # until somebody has messaged us once, WhatsApp cannot reach them at all.
+    # Set by the inbound webhook, which is the only honest source: a click on
+    # our own button proves nothing about whether the message was sent.
+    whatsapp_opted_in_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
     subscription_tier: Mapped[SubscriptionTier] = mapped_column(
         Enum(SubscriptionTier, name="subscription_tier"), nullable=False, default=SubscriptionTier.free
     )

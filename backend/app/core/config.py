@@ -1,4 +1,5 @@
 import logging
+import re
 import sys
 from functools import lru_cache
 from typing import List
@@ -243,7 +244,24 @@ class Settings(BaseSettings):
     # language is invisible until the first digest fails at 07:30.
     WHATSAPP_WABA_ID: str = ""
     WHATSAPP_TEMPLATE_NAME: str = "huntops_daily_digest"
+    # Meta's language *code*, not the language's name. "English" is the
+    # natural thing to type here and it is silently wrong: Meta looks for a
+    # translation in a language called English, finds none, and answers 132001
+    # at 07:30 where nobody is awake to read it. Validated on startup below.
     WHATSAPP_TEMPLATE_LANGUAGE: str = "en"
+
+    # The business number users message to opt in, E.164 — e.g. "+12268010899".
+    # Meta drops marketing templates to people who have never engaged with the
+    # business, accepting the send with a 200 and delivering nothing, so a
+    # digest to somebody who has not messaged first simply vanishes. This is
+    # the number behind the "Connect WhatsApp" link.
+    WHATSAPP_BUSINESS_NUMBER: str = ""
+    # Echoed back to Meta when it verifies the webhook URL. Any string; it
+    # must match what is typed into the Meta console.
+    WHATSAPP_WEBHOOK_VERIFY_TOKEN: str = ""
+    # Meta signs webhook bodies with the *app* secret. Without it the webhook
+    # refuses everything rather than trusting an unsigned caller.
+    WHATSAPP_APP_SECRET: str = ""
 
     ENABLE_SCHEDULED_DIGEST: bool = True
 
@@ -294,6 +312,11 @@ def get_settings() -> Settings:
     return Settings()
 
 
+# Meta's own format: a two-letter language, optionally with a region, as in
+# "en", "en_US", "pt_BR".
+_LANGUAGE_CODE = re.compile(r"^[a-z]{2}(_[A-Z]{2})?$")
+
+
 def validate_settings_on_startup(settings: Settings) -> None:
     """Fail fast on missing config, warn loudly on unsafe defaults.
 
@@ -315,6 +338,26 @@ def validate_settings_on_startup(settings: Settings) -> None:
             )
         if settings.PAYSTACK_SECRET_KEY and not (settings.PAYSTACK_PLAN_PRO and settings.PAYSTACK_PLAN_ELITE):
             warnings.append("PAYSTACK_PLAN_PRO / PAYSTACK_PLAN_ELITE are unset — paid tiers cannot be purchased")
+
+    # Checked in every environment, because the cost of getting it wrong is
+    # paid in silence: a language name rather than a code sends fine as far as
+    # this process can tell, and Meta answers 132001 at 07:30 to nobody.
+    if not _LANGUAGE_CODE.match(settings.WHATSAPP_TEMPLATE_LANGUAGE):
+        errors.append(
+            f"WHATSAPP_TEMPLATE_LANGUAGE is {settings.WHATSAPP_TEMPLATE_LANGUAGE!r} — Meta wants the "
+            "language code the template was created in, like 'en' or 'en_US', not the language's name"
+        )
+
+    if settings.WHATSAPP_PHONE_NUMBER_ID and not settings.WHATSAPP_BUSINESS_NUMBER:
+        warnings.append(
+            "WHATSAPP_BUSINESS_NUMBER is unset — users cannot be shown the link that opts them in, "
+            "and Meta drops template messages to anyone who has never messaged the business"
+        )
+    if settings.WHATSAPP_PHONE_NUMBER_ID and not settings.WHATSAPP_APP_SECRET:
+        warnings.append(
+            "WHATSAPP_APP_SECRET is unset — the webhook will refuse every delivery, so opt-ins and "
+            "failed sends stay invisible"
+        )
 
     if errors:
         for e in errors:

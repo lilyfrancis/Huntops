@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
 import { authApi } from "@/lib/api";
 import { billingApi } from "@/lib/api";
+import { WhatsAppConnect } from "@/components/profile/whatsapp-connect";
 import { ApiError } from "@/lib/api-client";
 
 interface ProfileFormValues {
@@ -148,6 +149,7 @@ export function ProfilePage() {
                 </Link>
                 .
               </p>
+              <WhatsAppConnect />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="positioning_statement">Positioning statement (optional)</Label>

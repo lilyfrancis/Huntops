@@ -115,12 +115,19 @@ def test_daily_digest_skips_user_on_ai_failure_without_crashing(db_session):
 
 # ---------- the digest goes to whichever channel the user chose ----------
 
-def _seeker_with_a_match(session, email, *, channel, number=None, matched=True):
+def _seeker_with_a_match(session, email, *, channel, number=None, matched=True, opted_in=True):
+    from datetime import datetime, timezone
+
     from app.models.job_match import JobMatch
     from app.models.user_preference import UserPreference
 
+    # A number alone is not reachability. Meta drops our template to anyone who
+    # has never messaged the business, so these default to somebody who has —
+    # the not-opted-in case gets its own test rather than silently colouring
+    # every other one.
     user = User(email=email, password_hash="x", full_name="Amara Obi",
-                role=UserRole.job_seeker, whatsapp_number=number)
+                role=UserRole.job_seeker, whatsapp_number=number,
+                whatsapp_opted_in_at=datetime.now(timezone.utc) if (number and opted_in) else None)
     session.add(user)
     session.flush()
     session.add(Resume(user_id=user.id, raw_text="dummy", parsed_skills=["Python"]))
@@ -174,6 +181,20 @@ def test_choosing_whatsapp_without_giving_a_number_still_gets_the_digest(mock_em
     say they would rather hear nothing, and a channel that cannot deliver is
     invisible to them — so the matches go out by email instead."""
     _seeker_with_a_match(db_session, "wa-nonumber@example.com", channel="whatsapp", number=None)
+    _run_digest_with_stubbed_scoring()
+
+    mock_whatsapp.assert_not_called()
+    mock_email.assert_called_once()
+
+
+@patch("app.services.scheduler.whatsapp.send_template", return_value=True)
+@patch("app.services.scheduler.notifications.send_email", return_value=True)
+def test_a_number_that_never_opted_in_gets_the_email_instead(mock_email, mock_whatsapp, db_session):
+    """The failure this was built for. Meta accepts a template to somebody who
+    has never messaged the business and then drops it, so sending would have
+    counted as delivered while the person received nothing at all."""
+    _seeker_with_a_match(db_session, "wa-no-optin@example.com", channel="whatsapp",
+                         number="+2348031234599", opted_in=False)
     _run_digest_with_stubbed_scoring()
 
     mock_whatsapp.assert_not_called()

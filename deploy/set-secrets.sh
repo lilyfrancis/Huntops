@@ -65,7 +65,36 @@ KEYS=(
   APOLLO_API_KEY
   WHATSAPP_API_BASE WHATSAPP_PHONE_NUMBER_ID WHATSAPP_ACCESS_TOKEN
   WHATSAPP_WABA_ID WHATSAPP_TEMPLATE_NAME WHATSAPP_TEMPLATE_LANGUAGE
+  WHATSAPP_BUSINESS_NUMBER WHATSAPP_WEBHOOK_VERIFY_TOKEN WHATSAPP_APP_SECRET
 )
+
+# A few keys have a format that is not obvious from the name, and getting one
+# wrong costs a morning of silence rather than an error. Shown with the prompt.
+hint_for() {
+  case "$1" in
+    WHATSAPP_TEMPLATE_LANGUAGE)
+      echo "Meta's language CODE, not the language's name — e.g. en or en_US" ;;
+    WHATSAPP_BUSINESS_NUMBER)
+      echo "the number users message to opt in, with country code — e.g. +12268010899" ;;
+    WHATSAPP_API_BASE)
+      echo "host only, no /vNN.N" ;;
+    CREDIT_PACKS)
+      echo "code:credits:price, comma separated" ;;
+    *) echo "" ;;
+  esac
+}
+
+# Rejected rather than stored: "English" here sends fine as far as this
+# machine can tell, and Meta answers 132001 at 07:30 where nobody sees it.
+is_valid() {
+  case "$1" in
+    WHATSAPP_TEMPLATE_LANGUAGE)
+      printf '%s' "$2" | grep -qE '^[a-z]{2}(_[A-Z]{2})?$' ;;
+    WHATSAPP_BUSINESS_NUMBER)
+      printf '%s' "$2" | tr -d ' ()-' | grep -qE '^\+[1-9][0-9]{7,14}$' ;;
+    *) return 0 ;;
+  esac
+}
 
 # Values that are not secret are echoed while typing — hiding a port number
 # helps nobody and makes typos likelier.
@@ -107,14 +136,24 @@ for key in "${KEYS[@]}"; do
     shown="(empty)"
   fi
 
-  if is_secret "$key"; then
-    printf '%s %s: ' "$key" "$shown"
-    read -rs value
-    echo
-  else
-    printf '%s %s: ' "$key" "$shown"
-    read -r value
-  fi
+  hint="$(hint_for "$key")"
+  [ -n "$hint" ] && printf '  # %s\n' "$hint"
+
+  while :; do
+    if is_secret "$key"; then
+      printf '%s %s: ' "$key" "$shown"
+      read -rs value
+      echo
+    else
+      printf '%s %s: ' "$key" "$shown"
+      read -r value
+    fi
+    [ -z "$value" ] && break
+    if is_valid "$key" "$value"; then
+      break
+    fi
+    echo "  that is not the expected format — $hint" >&2
+  done
 
   [ -z "$value" ] && continue
 

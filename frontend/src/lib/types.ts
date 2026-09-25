@@ -316,6 +316,18 @@ export interface Plan {
   credits: number;
 }
 
+/** The state of a user's WhatsApp, which has four cases the UI must tell
+    apart: not set up by the operator, no number saved, a number saved but
+    never opted in (nothing will arrive, silently), and working. */
+export interface WhatsAppConnection {
+  configured: boolean;
+  business_number: string | null;
+  opt_in_url: string | null;
+  number_on_file: string | null;
+  opted_in: boolean;
+  opted_in_at: string | null;
+}
+
 /** What one of each chargeable action costs, served so the pricing page's
     arithmetic cannot drift from what the backend actually charges. */
 export interface CreditCosts {

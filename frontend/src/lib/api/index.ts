@@ -13,3 +13,4 @@ export { statsApi } from "./stats";
 export { negotiationApi } from "./negotiation";
 export { preferencesApi } from "./preferences";
 export { autopilotApi } from "./autopilot";
+export { whatsappApi } from "./whatsapp";

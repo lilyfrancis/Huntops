@@ -26,6 +26,7 @@ from app.routers import (
     resumes,
     stats,
     users,
+    whatsapp,
 )
 from app.services.scheduler import shutdown_scheduler, start_scheduler
 
@@ -79,6 +80,7 @@ app.include_router(stats.router)
 app.include_router(negotiation.router)
 app.include_router(digest.router)
 app.include_router(autopilot.router)
+app.include_router(whatsapp.router)
 app.include_router(admin.router)
 
 

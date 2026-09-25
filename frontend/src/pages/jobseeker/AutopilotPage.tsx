@@ -14,7 +14,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { ChipGroup } from "@/components/ui/chip-group";
 import { TagInput } from "@/components/ui/tag-input";
 import { humanize } from "@/lib/labels";
-import { autopilotApi, preferencesApi } from "@/lib/api";
+import { autopilotApi, preferencesApi, whatsappApi } from "@/lib/api";
 import { ApiError } from "@/lib/api-client";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
@@ -138,6 +138,13 @@ export function AutopilotPage() {
 
   const { data: prefs, isLoading } = useQuery({ queryKey: ["preferences"], queryFn: preferencesApi.get });
   const { data: options } = useQuery({ queryKey: ["preference-options"], queryFn: preferencesApi.options });
+  // A saved number is not the same as a reachable one: Meta drops our
+  // template to anyone who has never messaged the business, and says nothing.
+  const { data: whatsapp } = useQuery({
+    queryKey: ["whatsapp", "connection"],
+    queryFn: whatsappApi.connection,
+    retry: false,
+  });
   const { data: actions } = useQuery({ queryKey: ["autopilot", "actions"], queryFn: () => autopilotApi.actions() });
 
   /* Local mirror so sliders and chips stay responsive; saved explicitly rather
@@ -263,13 +270,27 @@ export function AutopilotPage() {
                 }}
               />
               {(draft.digest_channel === "whatsapp" || draft.digest_channel === "both") &&
-                !user?.whatsapp_number && (
+                whatsapp?.configured &&
+                !whatsapp.opted_in && (
                   <p className="rounded-lg border border-warning/30 bg-warning-soft px-3 py-2 text-sm text-warning">
-                    Add a WhatsApp number on your{" "}
-                    <Link to="/app/profile" className="underline">
-                      profile
-                    </Link>{" "}
-                    or nothing will be sent.
+                    {whatsapp.number_on_file ? (
+                      <>
+                        Your number is saved, but WhatsApp will not deliver until you have messaged
+                        us once — connect it on your{" "}
+                        <Link to="/app/profile" className="underline">
+                          profile
+                        </Link>
+                        .
+                      </>
+                    ) : (
+                      <>
+                        Add a WhatsApp number on your{" "}
+                        <Link to="/app/profile" className="underline">
+                          profile
+                        </Link>{" "}
+                        or nothing will be sent.
+                      </>
+                    )}
                   </p>
                 )}
             </div>

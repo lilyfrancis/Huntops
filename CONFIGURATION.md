@@ -245,15 +245,57 @@ Hi {{1}}, you have {{2}} new job matches on HuntOps today. Top one: {{3}}
 6. Provide samples when asked (`Amara`, `4`, `Growth Lead at Shopify`)
 7. Submit. Approval is usually minutes.
 
-Category matters: **Utility** is cheaper than Marketing and less likely to be
-rejected for a digest.
+Ask for **Utility**, but expect **Marketing**. Meta reviewed this template and
+refused Utility, on the grounds that "you have 3 new matches" invites somebody
+back rather than reporting a transaction. That refusal has a consequence worth
+understanding before you launch, below.
 
 ```
 WHATSAPP_PHONE_NUMBER_ID=<from API Setup>
 WHATSAPP_ACCESS_TOKEN=<system user token>
+WHATSAPP_WABA_ID=<WhatsApp Business account ID>
 WHATSAPP_TEMPLATE_NAME=huntops_daily_digest
 WHATSAPP_TEMPLATE_LANGUAGE=en
 ```
+
+`WHATSAPP_TEMPLATE_LANGUAGE` is Meta's language **code**, exactly as the
+template lists it — `en`, `en_US`, `pt_BR`. Not the language's name. "English"
+is the natural thing to type and it is silently wrong: Meta looks for a
+translation in a language called English, finds none, and answers 132001 at
+07:30 where nobody is awake to read it. The app now refuses to start on a value
+that is not a code.
+
+### Users have to message you first
+
+A marketing template is **dropped for anyone who has never messaged the
+business**. The send is accepted — HTTP 200, `message_status: accepted` — and
+the message simply never arrives. Nothing on the sending side reports a
+failure, which is what makes this worth spelling out: a WhatsApp digest to
+somebody who has not opted in looks exactly like a WhatsApp digest that worked.
+
+So the product asks each user to send one message. Set the number they send it
+to, and the webhook that records it:
+
+```
+WHATSAPP_BUSINESS_NUMBER=+12268010899          # what users message, E.164
+WHATSAPP_WEBHOOK_VERIFY_TOKEN=<any string>     # echoed back to Meta once
+WHATSAPP_APP_SECRET=<App settings -> Basic>    # Meta signs webhook bodies with it
+```
+
+Then in the Meta console, **WhatsApp → Configuration → Webhook**:
+
+- Callback URL: `https://huntops.site/api/whatsapp/webhook`
+- Verify token: whatever you put in `WHATSAPP_WEBHOOK_VERIFY_TOKEN`
+- Subscribe to the **messages** field — it carries both inbound messages and
+  delivery statuses.
+
+With that in place, Profile shows a **Connect WhatsApp** button, the user taps
+it once, and the digest starts arriving. Until they have, the scheduler skips
+WhatsApp for them and sends the email instead, rather than reporting a delivery
+that never happened.
+
+The webhook is also the only place delivery failures exist. `131049` in the
+logs is the marketing drop; anything else Meta reports arrives there too.
 
 ---
 

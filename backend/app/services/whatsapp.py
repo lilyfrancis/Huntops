@@ -16,6 +16,7 @@ anyway: ten jobs in a WhatsApp message is unreadable.
 
 import logging
 import re
+from urllib.parse import quote
 
 import httpx
 
@@ -127,3 +128,34 @@ def send_template(*, to: str, params: list[str]) -> bool:
         logger.error("WhatsApp rejected message to %s (%s): %s", number, resp.status_code, resp.text[:400])
         return False
     return True
+
+
+# ---- Opting in ------------------------------------------------------------
+#
+# A template we send first is a *marketing* message as far as Meta is
+# concerned — they reviewed the digest and refused Utility for it, on the
+# grounds that "you have 3 new matches" invites someone back rather than
+# reporting a transaction. Marketing templates are dropped for recipients who
+# have never engaged with the business, and dropped silently: the API returns
+# 200 with `message_status: accepted`, and nothing arrives.
+#
+# The way out is the one Meta intends — the person messages the business once.
+# That is a real opt-in, not a workaround, and it is what keeps the number's
+# quality rating out of the red.
+
+
+def business_number() -> str | None:
+    """The number users message to opt in, or None if it was never set."""
+    return normalise_number(settings.WHATSAPP_BUSINESS_NUMBER)
+
+
+def opt_in_url(text: str = "START") -> str | None:
+    """A wa.me link that opens WhatsApp with the first message pre-filled.
+
+    Pre-filled because "message us to turn this on" is an instruction people
+    get wrong — they message the wrong number, or send nothing and wait.
+    """
+    number = business_number()
+    if number is None:
+        return None
+    return f"https://wa.me/{number.lstrip('+')}?text={quote(text)}"
