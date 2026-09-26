@@ -119,7 +119,7 @@ export function AppShell() {
         >
           <Menu className="h-5 w-5" />
         </button>
-        <Link to="/" aria-label="HuntOps home">
+        <Link to="/" aria-label="JobQuick AI home">
           <Logo height={22} />
         </Link>
         <div className="ml-auto flex items-center gap-1">
@@ -154,7 +154,7 @@ export function AppShell() {
         )}
       >
         <div className="flex items-center justify-between px-5 py-5">
-          <Link to="/" aria-label="HuntOps home">
+          <Link to="/" aria-label="JobQuick AI home">
             <Logo height={26} />
           </Link>
           <button

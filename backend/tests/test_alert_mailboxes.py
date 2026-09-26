@@ -20,13 +20,13 @@ LINKEDIN = "LinkedIn <jobalerts-noreply@linkedin.com>"
 
 def _seed_mailbox(session, market="Canada", lanes=None) -> AlertMailbox:
     mailbox = AlertMailbox(
-        email_address=f"alerts-{market.lower().replace(' ', '-')}@huntops.site",
+        email_address=f"alerts-{market.lower().replace(' ', '-')}@jobquickai.site",
         label=f"{market} alerts",
         market=market,
         lanes=lanes or [],
-        imap_host="imap.huntops.site",
+        imap_host="imap.jobquickai.site",
         imap_port=993,
-        imap_username=f"alerts-{market.lower().replace(' ', '-')}@huntops.site",
+        imap_username=f"alerts-{market.lower().replace(' ', '-')}@jobquickai.site",
         imap_password_encrypted=encrypt("app-password"),
         imap_use_ssl=True,
         imap_folder="INBOX",
@@ -173,7 +173,7 @@ def test_an_imap_failure_is_recorded_rather_than_raised(db_session):
     mailbox = _seed_mailbox(db_session)
 
     with patch("app.services.alert_mailboxes.imap_client.fetch_messages",
-               side_effect=ImapError("Login failed for alerts@huntops.site")):
+               side_effect=ImapError("Login failed for alerts@jobquickai.site")):
         summary = alert_mailboxes.sync_mailbox(db_session, mailbox)
 
     assert summary["status"] == "error"
@@ -229,13 +229,13 @@ def test_adding_a_mailbox_encrypts_the_password(db_session):
     """A plaintext IMAP password in the database is a mailbox anyone with a
     database dump can read."""
     mailbox = alert_mailboxes.upsert_mailbox(
-        db_session, admin_id=None, email_address="a@huntops.site", market="Canada",
-        imap_host="imap.huntops.site", imap_username=None, imap_password="s3cret",
+        db_session, admin_id=None, email_address="a@jobquickai.site", market="Canada",
+        imap_host="imap.jobquickai.site", imap_username=None, imap_password="s3cret",
     )
 
     assert mailbox.imap_password_encrypted != "s3cret"
     assert decrypt(mailbox.imap_password_encrypted) == "s3cret"
-    assert mailbox.imap_username == "a@huntops.site"  # defaults to the address
+    assert mailbox.imap_username == "a@jobquickai.site"  # defaults to the address
 
 
 def test_adding_a_mailbox_without_a_password_is_rejected(db_session):
@@ -243,8 +243,8 @@ def test_adding_a_mailbox_without_a_password_is_rejected(db_session):
 
     with pytest.raises(ValueError):
         alert_mailboxes.upsert_mailbox(
-            db_session, admin_id=None, email_address="a@huntops.site", market="Canada",
-            imap_host="imap.huntops.site", imap_username=None, imap_password=None,
+            db_session, admin_id=None, email_address="a@jobquickai.site", market="Canada",
+            imap_host="imap.jobquickai.site", imap_username=None, imap_password=None,
         )
 
 
@@ -252,11 +252,11 @@ def test_resubmitting_an_address_updates_it_instead_of_duplicating(db_session):
     """Re-submitting is how an operator rotates a password or moves hosts. A
     second row would double every job that mailbox reads."""
     alert_mailboxes.upsert_mailbox(
-        db_session, admin_id=None, email_address="a@huntops.site", market="Canada",
+        db_session, admin_id=None, email_address="a@jobquickai.site", market="Canada",
         imap_host="old.example.com", imap_username=None, imap_password="old",
     )
     updated = alert_mailboxes.upsert_mailbox(
-        db_session, admin_id=None, email_address="a@huntops.site", market="Canada",
+        db_session, admin_id=None, email_address="a@jobquickai.site", market="Canada",
         imap_host="new.example.com", imap_username=None, imap_password="new",
     )
 
@@ -269,12 +269,12 @@ def test_an_edit_that_omits_the_password_keeps_the_stored_one(db_session):
     """The API never returns the password, so an edit form cannot round-trip
     it — omitting it must mean "unchanged", not "blank it"."""
     alert_mailboxes.upsert_mailbox(
-        db_session, admin_id=None, email_address="a@huntops.site", market="Canada",
-        imap_host="imap.huntops.site", imap_username=None, imap_password="keepme",
+        db_session, admin_id=None, email_address="a@jobquickai.site", market="Canada",
+        imap_host="imap.jobquickai.site", imap_username=None, imap_password="keepme",
     )
     updated = alert_mailboxes.upsert_mailbox(
-        db_session, admin_id=None, email_address="a@huntops.site", market="United Kingdom",
-        imap_host="imap.huntops.site", imap_username=None, imap_password=None,
+        db_session, admin_id=None, email_address="a@jobquickai.site", market="United Kingdom",
+        imap_host="imap.jobquickai.site", imap_username=None, imap_password=None,
     )
 
     assert updated.market == "United Kingdom"
@@ -304,24 +304,24 @@ def test_adding_a_mailbox_over_the_api(client, db_session):
     headers = _make_admin(client, email="add-admin@example.com")
 
     resp = client.put("/api/admin/mailboxes", headers=headers, json={
-        "email_address": "alerts-ca@huntops.site",
+        "email_address": "alerts-ca@jobquickai.site",
         "market": "Canada",
-        "imap_host": "imap.huntops.site",
+        "imap_host": "imap.jobquickai.site",
         "imap_password": "s3cret",
         "lanes": ["marketing"],
     })
 
     assert resp.status_code == 200
     assert resp.json()["market"] == "Canada"
-    assert resp.json()["imap_username"] == "alerts-ca@huntops.site"
+    assert resp.json()["imap_username"] == "alerts-ca@jobquickai.site"
     assert db_session.query(AlertMailbox).count() == 1
 
 
 def test_adding_a_mailbox_rejects_a_blank_market(client):
     headers = _make_admin(client, email="blank-market-admin@example.com")
     resp = client.put("/api/admin/mailboxes", headers=headers, json={
-        "email_address": "a@huntops.site", "market": "   ",
-        "imap_host": "imap.huntops.site", "imap_password": "x",
+        "email_address": "a@jobquickai.site", "market": "   ",
+        "imap_host": "imap.jobquickai.site", "imap_password": "x",
     })
     assert resp.status_code == 422
 
@@ -329,8 +329,8 @@ def test_adding_a_mailbox_rejects_a_blank_market(client):
 def test_adding_a_mailbox_rejects_an_unknown_lane(client):
     headers = _make_admin(client, email="bad-lane-admin@example.com")
     resp = client.put("/api/admin/mailboxes", headers=headers, json={
-        "email_address": "a@huntops.site", "market": "Canada",
-        "imap_host": "imap.huntops.site", "imap_password": "x", "lanes": ["astrology"],
+        "email_address": "a@jobquickai.site", "market": "Canada",
+        "imap_host": "imap.jobquickai.site", "imap_password": "x", "lanes": ["astrology"],
     })
     assert resp.status_code == 422
 
@@ -449,12 +449,12 @@ def test_one_account_can_serve_several_markets_through_folders(db_session):
     a free-text location puts Lagos jobs in a Toronto feed. But that needs a
     separate *folder*, not a separate account."""
     canada = alert_mailboxes.upsert_mailbox(
-        db_session, admin_id=None, email_address="alerts@huntops.site", market="Canada",
-        imap_host="imap.huntops.site", imap_username=None, imap_password="pw", imap_folder="Canada",
+        db_session, admin_id=None, email_address="alerts@jobquickai.site", market="Canada",
+        imap_host="imap.jobquickai.site", imap_username=None, imap_password="pw", imap_folder="Canada",
     )
     uk = alert_mailboxes.upsert_mailbox(
-        db_session, admin_id=None, email_address="alerts@huntops.site", market="United Kingdom",
-        imap_host="imap.huntops.site", imap_username=None, imap_password="pw", imap_folder="UK",
+        db_session, admin_id=None, email_address="alerts@jobquickai.site", market="United Kingdom",
+        imap_host="imap.jobquickai.site", imap_username=None, imap_password="pw", imap_folder="UK",
     )
 
     assert db_session.query(AlertMailbox).count() == 2
@@ -466,11 +466,11 @@ def test_each_folder_keeps_its_own_uid_cursor(db_session):
     """A shared cursor across folders would have one market's progress skip
     another market's mail."""
     canada = alert_mailboxes.upsert_mailbox(
-        db_session, admin_id=None, email_address="alerts@huntops.site", market="Canada",
+        db_session, admin_id=None, email_address="alerts@jobquickai.site", market="Canada",
         imap_host="h", imap_username=None, imap_password="pw", imap_folder="Canada",
     )
     uk = alert_mailboxes.upsert_mailbox(
-        db_session, admin_id=None, email_address="alerts@huntops.site", market="UK",
+        db_session, admin_id=None, email_address="alerts@jobquickai.site", market="UK",
         imap_host="h", imap_username=None, imap_password="pw", imap_folder="UK",
     )
 
@@ -484,11 +484,11 @@ def test_each_folder_keeps_its_own_uid_cursor(db_session):
 
 def test_resubmitting_the_same_address_and_folder_still_updates_in_place(db_session):
     alert_mailboxes.upsert_mailbox(
-        db_session, admin_id=None, email_address="alerts@huntops.site", market="Canada",
+        db_session, admin_id=None, email_address="alerts@jobquickai.site", market="Canada",
         imap_host="old.example.com", imap_username=None, imap_password="pw", imap_folder="Canada",
     )
     updated = alert_mailboxes.upsert_mailbox(
-        db_session, admin_id=None, email_address="alerts@huntops.site", market="Canada",
+        db_session, admin_id=None, email_address="alerts@jobquickai.site", market="Canada",
         imap_host="new.example.com", imap_username=None, imap_password=None, imap_folder="Canada",
     )
 
@@ -501,7 +501,7 @@ def test_resubmitting_the_same_address_and_folder_still_updates_in_place(db_sess
 
 def test_a_timeout_produces_a_message_rather_than_an_empty_string(db_session):
     """A bare socket timeout raises TimeoutError() with no arguments, so
-    str(e) is "". The toast read "alerts-canada@huntops.site:" and stopped."""
+    str(e) is "". The toast read "alerts-canada@jobquickai.site:" and stopped."""
     mailbox = _seed_mailbox(db_session)
 
     with patch("app.services.alert_mailboxes.imap_client.fetch_messages",
@@ -511,7 +511,7 @@ def test_a_timeout_produces_a_message_rather_than_an_empty_string(db_session):
     assert summary["status"] == "error"
     assert summary["error"]
     assert "Timed out" in summary["error"]
-    assert "imap.huntops.site:993" in summary["error"]   # where it was pointed
+    assert "imap.jobquickai.site:993" in summary["error"]   # where it was pointed
 
 
 @pytest.mark.parametrize("failure", [OSError(), ConnectionResetError(), Exception()])
@@ -532,11 +532,11 @@ def test_a_failure_that_does_say_something_keeps_its_own_words_plus_the_host(db_
     mailbox = _seed_mailbox(db_session)
 
     with patch("app.services.alert_mailboxes.imap_client.fetch_messages",
-               side_effect=ImapError("Login failed for alerts-canada@huntops.site")):
+               side_effect=ImapError("Login failed for alerts-canada@jobquickai.site")):
         summary = alert_mailboxes.sync_mailbox(db_session, mailbox)
 
     assert "Login failed" in summary["error"]
-    assert "imap.huntops.site:993" in summary["error"]
+    assert "imap.jobquickai.site:993" in summary["error"]
 
 
 # ---------- what each mailbox has actually produced ----------

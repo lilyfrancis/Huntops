@@ -4,18 +4,18 @@ export function TermsPage() {
   return (
     <LegalLayout title="Terms of Service" updated="6 September 2026">
       <p>
-        These terms govern your use of HuntOps at{" "}
-        <a href="https://huntops.site">huntops.site</a>. By creating an account you agree to them.
+        These terms govern your use of JobQuick AI at{" "}
+        <a href="https://jobquickai.site">jobquickai.site</a>. By creating an account you agree to them.
       </p>
 
-      <h2>What HuntOps does</h2>
+      <h2>What JobQuick AI does</h2>
       <p>
-        HuntOps aggregates job listings from public job boards and from email job alerts received
+        JobQuick AI aggregates job listings from public job boards and from email job alerts received
         by mailboxes we operate, scores them against your CV, and can draft and send outreach on
         your behalf. It also offers mock interviews and offer-negotiation guidance.
       </p>
 
-      <h2>What HuntOps is not</h2>
+      <h2>What JobQuick AI is not</h2>
       <ul>
         <li>
           <strong>It is not an employer or a recruiter.</strong> We do not offer jobs, guarantee
@@ -42,7 +42,7 @@ export function TermsPage() {
 
       <h2>Autopilot</h2>
       <p>
-        If you switch autopilot on, HuntOps will submit applications and send outreach messages in
+        If you switch autopilot on, JobQuick AI will submit applications and send outreach messages in
         your name, without asking you first, whenever a job clears the score threshold you set.
         That is the entire point of the feature and you should turn it on deliberately.
       </p>
@@ -57,7 +57,7 @@ export function TermsPage() {
       </ul>
 
       <h2>Acceptable use</h2>
-      <p>Do not use HuntOps to:</p>
+      <p>Do not use JobQuick AI to:</p>
       <ul>
         <li>Misrepresent your identity, experience or qualifications;</li>
         <li>Send bulk unsolicited mail beyond genuine job outreach;</li>
@@ -99,7 +99,7 @@ export function TermsPage() {
 
       <h2>Availability</h2>
       <p>
-        We aim to keep HuntOps running but do not promise it will be uninterrupted or error-free.
+        We aim to keep JobQuick AI running but do not promise it will be uninterrupted or error-free.
         Job sources go down, third-party APIs fail, and we take the service offline for
         maintenance. We may change or discontinue features; if we discontinue something you are
         paying for, you can cancel and we will refund the unused part of that period.
@@ -107,7 +107,7 @@ export function TermsPage() {
 
       <h2>Liability</h2>
       <p>
-        To the fullest extent the law allows, HuntOps is provided as-is, and we are not liable for
+        To the fullest extent the law allows, JobQuick AI is provided as-is, and we are not liable for
         indirect or consequential loss — including a job you did not get, an offer you did not
         receive, or a decision you made on the basis of something the service told you. Where
         liability cannot be excluded, it is limited to what you paid us in the twelve months before
@@ -123,13 +123,13 @@ export function TermsPage() {
 
       <h2>Changes</h2>
       <p>
-        We will email you before any material change takes effect. Continuing to use HuntOps after
+        We will email you before any material change takes effect. Continuing to use JobQuick AI after
         that means you accept the new terms.
       </p>
 
       <h2>Contact</h2>
       <p>
-        <a href="mailto:support@huntops.site">support@huntops.site</a>
+        <a href="mailto:support@jobquickai.site">support@jobquickai.site</a>
       </p>
     </LegalLayout>
   );

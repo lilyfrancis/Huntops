@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /*
-  HuntOps design system — light.
+  JobQuick AI design system — light.
 
   Colours are taken from the logo itself (sampled from the artwork, not
   eyeballed): navy #091528, violet #6F5AFB, cyan #0EDBF7.
@@ -183,7 +183,7 @@
      whole layout of width. */
   .shell {
     width: 100%;
-    max-width: 105rem;
+    max-width: 118rem;
     margin-inline: auto;
     padding-inline: 1.25rem;
   }
@@ -191,10 +191,10 @@
     .shell { padding-inline: 2rem; }
   }
   @media (min-width: 1024px) {
-    .shell { padding-inline: 3.5rem; }
+    .shell { padding-inline: 3rem; }
   }
   @media (min-width: 1536px) {
-    .shell { padding-inline: 5rem; }
+    .shell { padding-inline: 3.5rem; }
   }
 
   /* ---- Fluid type -----------------------------------------------------
@@ -287,10 +287,13 @@
   }
 
   /* A hairline gradient edge. Reads as precision rather than decoration,
-     which is most of what "premium" means on a page like this. */
-  .ring-gradient {
-    position: relative;
-  }
+     which is most of what "premium" means on a page like this.
+
+     It deliberately does NOT set `position: relative`. It used to, and that
+     beat `absolute` in the cascade wherever an element carried both — every
+     pinned glass card in the hero silently fell back into normal flow and
+     stacked on the one below it. The ::before needs a positioned ancestor,
+     so callers add `relative` themselves when they are not already placed. */
   .ring-gradient::before {
     content: "";
     position: absolute;
@@ -386,6 +389,30 @@
   to   { opacity: 1; transform: translateY(0);    filter: blur(0); }
 }
 
+/* A third layer, slower and rotating rather than drifting, so the wash behind
+   the hero never settles into a pattern the eye can predict. */
+@keyframes drift-c {
+  from { transform: rotate(0deg) scale(1.1); }
+  to   { transform: rotate(360deg) scale(1.1); }
+}
+/* The second marquee row runs the other way. Same 50% translate, mirrored, so
+   both rows loop seamlessly off one duplicated track. */
+@keyframes marquee-reverse {
+  from { transform: translateX(-50%); }
+  to   { transform: translateX(0); }
+}
+
+.animate-drift-c { animation: drift-c 90s linear infinite; }
+.animate-marquee-reverse { animation: marquee-reverse 46s linear infinite; }
+.animate-marquee-slow { animation: marquee 52s linear infinite; }
+
+/* Both edges of a scrolling row fade out, so cards enter and leave rather
+   than being chopped off by the viewport. */
+.marquee-mask {
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+}
+
 .animate-drift-a { animation: drift-a 22s ease-in-out infinite; }
 .animate-drift-b { animation: drift-b 28s ease-in-out infinite; }
 .animate-sheen   { animation: sheen 5.5s ease-in-out infinite; }
@@ -393,6 +420,9 @@
 @media (prefers-reduced-motion: reduce) {
   .animate-drift-a,
   .animate-drift-b,
+  .animate-drift-c,
+  .animate-marquee-reverse,
+  .animate-marquee-slow,
   .animate-sheen {
     animation: none;
   }

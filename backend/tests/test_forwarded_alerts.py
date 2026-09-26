@@ -19,9 +19,9 @@ def _msg(raw: str):
 
 AUTO_FORWARDED = """\
 From: LinkedIn Job Alerts <jobalerts-noreply@linkedin.com>
-To: alerts-canada@huntops.site
-X-Forwarded-For: lily@gmail.com alerts-canada@huntops.site
-X-Forwarded-To: alerts-canada@huntops.site
+To: alerts-canada@jobquickai.site
+X-Forwarded-For: lily@gmail.com alerts-canada@jobquickai.site
+X-Forwarded-To: alerts-canada@jobquickai.site
 Subject: 8 new jobs for "growth marketer"
 Content-Type: text/plain; charset="utf-8"
 
@@ -30,7 +30,7 @@ Growth Marketer at Shopify - Toronto, ON
 
 MANUAL_FORWARD = """\
 From: Lily Francis <lily@gmail.com>
-To: alerts-canada@huntops.site
+To: alerts-canada@jobquickai.site
 Subject: Fwd: 8 new jobs for "growth marketer"
 Content-Type: text/plain; charset="utf-8"
 
@@ -47,7 +47,7 @@ Growth Marketer at Shopify - Toronto, ON
 
 OUTLOOK_FORWARD = """\
 From: Lily Francis <lily@outlook.com>
-To: alerts-uk@huntops.site
+To: alerts-uk@jobquickai.site
 Subject: FW: New jobs matching your search
 Content-Type: text/html; charset="utf-8"
 
@@ -120,7 +120,7 @@ def test_an_ordinary_reply_chain_is_not_mistaken_for_a_forward():
     would hand the extractor a conversation and let it invent jobs from it."""
     raw = """\
 From: Recruiter <person@somecompany.com>
-To: alerts-uk@huntops.site
+To: alerts-uk@jobquickai.site
 Subject: Re: your application
 Content-Type: text/plain; charset="utf-8"
 
@@ -143,7 +143,7 @@ def test_the_scan_does_not_read_an_unbounded_body():
     padding = "filler line\n" * 2000
     raw = f"""\
 From: Lily Francis <lily@gmail.com>
-To: alerts-uk@huntops.site
+To: alerts-uk@jobquickai.site
 Subject: Fwd: something
 Content-Type: text/plain; charset="utf-8"
 

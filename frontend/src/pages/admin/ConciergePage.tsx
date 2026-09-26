@@ -34,7 +34,7 @@ export function ConciergePage() {
       <PageHeader
         eyebrow="Concierge"
         title="Applications to file"
-        description="Jobs users asked us to apply to on their behalf. Apply under their HuntOps address, then mark it filed."
+        description="Jobs users asked us to apply to on their behalf. Apply under their JobQuick AI address, then mark it filed."
       />
 
       <div className="mb-4 flex flex-wrap gap-2">
@@ -138,7 +138,7 @@ function QueueRow({ row }: { row: ConciergeQueueItem }) {
               id={`email-${row.id}`}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="e.g. jennifer@huntops.site"
+              placeholder="e.g. jennifer@jobquickai.site"
             />
             <p className="mt-1 text-xs text-ink-faint">
               {row.concierge_email

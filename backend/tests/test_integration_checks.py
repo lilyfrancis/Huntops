@@ -202,7 +202,7 @@ def _profile_ok():
     profile = MagicMock(status_code=200)
     profile.json.return_value = {
         "display_phone_number": "+1 226 801 0899",
-        "verified_name": "HuntOps",
+        "verified_name": "JobQuick AI",
         "quality_rating": "GREEN",
     }
     return profile

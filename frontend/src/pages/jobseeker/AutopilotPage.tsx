@@ -317,7 +317,7 @@ export function AutopilotPage() {
               <Switch
                 checked={draft.autopilot_apply_enabled ?? false}
                 onChange={(v) => set({ autopilot_apply_enabled: v })}
-                label="Auto-apply to jobs posted on HuntOps"
+                label="Auto-apply to jobs posted on JobQuick AI"
                 description="Only jobs posted here — a listing on someone else's site is behind their form, so we can't submit it for you."
               />
               <div className="space-y-1.5 pl-3">

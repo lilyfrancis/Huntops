@@ -49,7 +49,7 @@ export function IntegrationsPage() {
   const disconnectMutation = useMutation({
     mutationFn: integrationsApi.gmailDisconnect,
     onSuccess: () => {
-      toast.success("Gmail disconnected — outreach will send from HuntOps instead");
+      toast.success("Gmail disconnected — outreach will send from JobQuick AI instead");
       queryClient.invalidateQueries({ queryKey: ["gmail", "status"] });
     },
   });
@@ -74,7 +74,7 @@ export function IntegrationsPage() {
           </CardHeader>
           <CardContent>
             <p className="text-sm text-ink-muted">
-              Outreach is sent for you from HuntOps with{" "}
+              Outreach is sent for you from JobQuick AI with{" "}
               <span className="font-medium text-ink">{user?.email}</span> as the reply-to address,
               so anyone who replies reaches you directly. Sending from your own Gmail instead isn't
               offered right now.
@@ -108,7 +108,7 @@ export function IntegrationsPage() {
               </p>
             ) : (
               <p className="text-sm text-ink-muted">
-                Right now outreach sends from HuntOps with{" "}
+                Right now outreach sends from JobQuick AI with{" "}
                 <span className="font-medium text-ink">{user?.email}</span> as the reply-to address, so replies still
                 reach you. Connecting Gmail sends it from your own address instead, which tends to get better
                 response rates.

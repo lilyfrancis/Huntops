@@ -43,7 +43,7 @@ async def lifespan(app: FastAPI):
     shutdown_scheduler()
 
 
-app = FastAPI(title="HuntOps API", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="JobQuick AI API", version="0.1.0", lifespan=lifespan)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
@@ -86,4 +86,4 @@ app.include_router(admin.router)
 
 @app.get("/")
 def root() -> dict:
-    return {"name": "HuntOps API", "status": "ok"}
+    return {"name": "JobQuick AI API", "status": "ok"}

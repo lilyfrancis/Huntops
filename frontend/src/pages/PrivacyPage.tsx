@@ -9,16 +9,16 @@ export function PrivacyPage() {
   return (
     <LegalLayout title="Privacy Policy" updated="6 September 2026">
       <p>
-        HuntOps ("we", "us") runs a job-search service at{" "}
-        <a href="https://huntops.site">huntops.site</a>. This policy explains what we collect, why,
+        JobQuick AI ("we", "us") runs a job-search service at{" "}
+        <a href="https://jobquickai.site">jobquickai.site</a>. This policy explains what we collect, why,
         who we share it with, and how to get it deleted. It is written to be read, not to be
         survived.
       </p>
 
       <h2>Who we are</h2>
       <p>
-        HuntOps is the data controller for the information described below. You can reach us at{" "}
-        <a href="mailto:privacy@huntops.site">privacy@huntops.site</a> for any question or request
+        JobQuick AI is the data controller for the information described below. You can reach us at{" "}
+        <a href="mailto:privacy@jobquickai.site">privacy@jobquickai.site</a> for any question or request
         in this policy.
       </p>
 
@@ -60,7 +60,7 @@ export function PrivacyPage() {
 
       <h2>Google account data</h2>
       <p>
-        There are two entirely separate Google connections in HuntOps, and it matters which is
+        There are two entirely separate Google connections in JobQuick AI, and it matters which is
         which.
       </p>
 
@@ -73,7 +73,7 @@ export function PrivacyPage() {
 
       <h3>Sending outreach from your address (optional)</h3>
       <p>
-        If — and only if — you choose to connect your own Gmail on the integrations page, HuntOps
+        If — and only if — you choose to connect your own Gmail on the integrations page, JobQuick AI
         requests the <strong>send</strong> permission and nothing else. We cannot read, list,
         search, label or delete anything in your mailbox, because we never ask for the permission
         that would allow it. We use it solely to send outreach messages you have asked us to send,
@@ -87,7 +87,7 @@ export function PrivacyPage() {
 
       <h3>Limited Use</h3>
       <p>
-        HuntOps' use and transfer of information received from Google APIs to any other app will
+        JobQuick AI' use and transfer of information received from Google APIs to any other app will
         adhere to the{" "}
         <a
           href="https://developers.google.com/terms/api-services-user-data-policy"
@@ -104,7 +104,7 @@ export function PrivacyPage() {
 
       <h2>Automated processing</h2>
       <p>
-        HuntOps scores jobs against your CV and can, if you switch it on, apply to jobs or send
+        JobQuick AI scores jobs against your CV and can, if you switch it on, apply to jobs or send
         outreach on your behalf without asking each time. Autopilot is off by default, only acts
         above a score threshold you set, and is capped at a number of actions per day you choose.
         Everything it does — including the jobs it considered and passed on — is listed on your
@@ -139,14 +139,14 @@ export function PrivacyPage() {
       </ul>
       <p>
         We do not sell your data, and we do not share it with advertisers. When you apply to a job
-        posted directly on HuntOps, the employer who posted it sees your name, email and
+        posted directly on JobQuick AI, the employer who posted it sees your name, email and
         application — which is the point of applying.
       </p>
 
       <h2>Where your data is held</h2>
       <p>
         Our servers are in the European Union (London). If you are outside that region, using
-        HuntOps means your data is transferred there.
+        JobQuick AI means your data is transferred there.
       </p>
 
       <h2>How long we keep it</h2>
@@ -167,7 +167,7 @@ export function PrivacyPage() {
       <h2>Your rights</h2>
       <p>
         You can ask us to give you a copy of your data, correct it, delete it, or stop a particular
-        use of it. Email <a href="mailto:privacy@huntops.site">privacy@huntops.site</a> and we will
+        use of it. Email <a href="mailto:privacy@jobquickai.site">privacy@jobquickai.site</a> and we will
         respond within 30 days. Deleting your account removes your profile, CV, preferences,
         applications, outreach, interviews and offers, and revokes any Gmail connection.
       </p>
@@ -186,7 +186,7 @@ export function PrivacyPage() {
       </p>
 
       <h2>Children</h2>
-      <p>HuntOps is not for anyone under 16, and we do not knowingly collect their data.</p>
+      <p>JobQuick AI is not for anyone under 16, and we do not knowingly collect their data.</p>
 
       <h2>Changes</h2>
       <p>

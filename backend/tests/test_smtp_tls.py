@@ -162,9 +162,9 @@ def smtp_env(monkeypatch, certs):
         for attr, value in {
             "SMTP_HOST": "localhost",
             "SMTP_PORT": server.port,
-            "SMTP_USERNAME": "digest@huntops.site",
+            "SMTP_USERNAME": "digest@jobquickai.site",
             "SMTP_PASSWORD": password,
-            "SMTP_FROM_EMAIL": "digest@huntops.site",
+            "SMTP_FROM_EMAIL": "digest@jobquickai.site",
             "SMTP_USE_TLS": True,
             # The port is ephemeral, so the dialect is stated outright rather
             # than inferred from it.
@@ -245,7 +245,7 @@ def test_a_server_that_is_not_there_returns_false_rather_than_raising(monkeypatc
     for attr, value in {
         "SMTP_HOST": "localhost", "SMTP_PORT": dead_port,
         "SMTP_USERNAME": "u", "SMTP_PASSWORD": "p",
-        "SMTP_FROM_EMAIL": "digest@huntops.site",
+        "SMTP_FROM_EMAIL": "digest@jobquickai.site",
         "SMTP_USE_TLS": True, "SMTP_USE_SSL": False,
     }.items():
         monkeypatch.setattr(settings, attr, value, raising=False)

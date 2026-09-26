@@ -124,7 +124,7 @@ export function FeedCard({
         ) : (
           /*
             An aggregated listing lives behind someone else's form, so nothing
-            here submits it — a person at HuntOps files it under an address
+            here submits it — a person at JobQuick AI files it under an address
             created for this user. The button says "Apply" because that is
             what the user is asking for; the status that follows says "queued"
             rather than pretending it is already done.

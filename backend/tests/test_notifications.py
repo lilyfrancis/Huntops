@@ -18,10 +18,10 @@ def test_send_email_skips_when_smtp_not_configured(mock_settings):
 @patch("app.services.notifications.send_email", return_value=True)
 @patch("app.services.notifications.settings")
 def test_alert_admin_uses_configured_address(mock_settings, mock_send):
-    mock_settings.ADMIN_ALERT_EMAIL = "admin@huntops.app"
+    mock_settings.ADMIN_ALERT_EMAIL = "admin@jobquickai.site"
     notifications.alert_admin("Something broke", "details here")
     mock_send.assert_called_once()
-    assert mock_send.call_args[0][0] == "admin@huntops.app"
+    assert mock_send.call_args[0][0] == "admin@jobquickai.site"
     assert "Something broke" in mock_send.call_args[0][1]
 
 

@@ -24,7 +24,7 @@ export function AuthLayout({ children }: { children: ReactNode }) {
           }}
         />
 
-        <Link to="/" className="relative w-fit" aria-label="HuntOps home">
+        <Link to="/" className="relative w-fit" aria-label="JobQuick AI home">
           <Logo variant="white" height={28} />
         </Link>
 
@@ -57,7 +57,7 @@ export function AuthLayout({ children }: { children: ReactNode }) {
 
       <div className="flex items-center justify-center bg-white px-6 py-12">
         <div className="w-full max-w-sm">
-          <Link to="/" className="mb-8 inline-block lg:hidden" aria-label="HuntOps home">
+          <Link to="/" className="mb-8 inline-block lg:hidden" aria-label="JobQuick AI home">
             <Logo height={28} />
           </Link>
           {children}

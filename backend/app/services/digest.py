@@ -41,7 +41,7 @@ def format_digest_email(
     website would have been.
     """
     if not matches:
-        return "Your HuntOps digest", "No new high-fit matches today — check back tomorrow."
+        return "Your JobQuick AI digest", "No new high-fit matches today — check back tomorrow."
 
     unlocked = unlocked_job_ids or set()
     home_market_count = sum(1 for match, _ in matches if match.geo_boost_applied)
@@ -57,7 +57,7 @@ def format_digest_email(
             f"{where} ({job.location}{salary}) — fit {round(match.fit_score)}"
         )
 
-    subject = f"HuntOps digest: {len(matches)} match{'es' if len(matches) != 1 else ''}"
+    subject = f"JobQuick AI digest: {len(matches)} match{'es' if len(matches) != 1 else ''}"
     if home_market_count:
         subject += f" ({home_market_count} home-market)"
 
@@ -75,7 +75,7 @@ def format_digest_whatsapp(
     morning gets the number blocked, and a block is permanent.
 
     Order matches the template:
-      "Hi {{1}}, you have {{2}} new job matches on HuntOps today. Top one: {{3}}"
+      "Hi {{1}}, you have {{2}} new job matches on JobQuick AI today. Top one: {{3}}"
     """
     if not matches:
         return None

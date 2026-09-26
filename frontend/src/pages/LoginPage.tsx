@@ -65,7 +65,7 @@ export function LoginPage() {
       </form>
 
       <p className="mt-6 text-sm text-ink-muted">
-        New to HuntOps?{" "}
+        New to JobQuick AI?{" "}
         <Link to="/register" className="text-accent-strong hover:underline">
           Create an account
         </Link>

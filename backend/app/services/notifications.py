@@ -73,4 +73,4 @@ def alert_admin(subject: str, body_text: str) -> None:
     if not settings.ADMIN_ALERT_EMAIL:
         logger.warning("ADMIN_ALERT_EMAIL not set — alert dropped: %s", subject)
         return
-    send_email(settings.ADMIN_ALERT_EMAIL, f"[HuntOps alert] {subject}", body_text)
+    send_email(settings.ADMIN_ALERT_EMAIL, f"[JobQuick AI alert] {subject}", body_text)

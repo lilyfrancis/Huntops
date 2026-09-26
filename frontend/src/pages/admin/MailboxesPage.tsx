@@ -133,7 +133,7 @@ function AddDialog({
 
         <div className="-mx-6 mt-4 flex-1 space-y-5 overflow-y-auto px-6">
           <p className="text-sm text-ink-muted">
-            A mailbox you own that receives this market's job alerts. HuntOps reads it over IMAP —
+            A mailbox you own that receives this market's job alerts. JobQuick AI reads it over IMAP —
             no OAuth, no consent screen, and it works with any provider.
           </p>
           {/* Asked more than once: a send-only relay looks like "our email
@@ -150,7 +150,7 @@ function AddDialog({
             <Input
               id="email_address"
               type="email"
-              placeholder="e.g. alerts-canada@huntops.site"
+              placeholder="e.g. alerts-canada@jobquickai.site"
               value={form.email_address}
               disabled={!!existing}
               onChange={(e) =>
@@ -352,7 +352,7 @@ function MailboxRow({ mailbox, onEdit }: { mailbox: AlertMailbox; onEdit: () => 
         toast.success(`${result.mailbox}: ${result.inserted} new job${result.inserted === 1 ? "" : "s"}`);
       } else {
         // Belt and braces. Some exceptions stringify to "", and a toast
-        // reading "alerts-canada@huntops.site:" with nothing after it tells
+        // reading "alerts-canada@jobquickai.site:" with nothing after it tells
         // the reader only that they should be worried.
         toast.error(`${result.mailbox}: ${result.error || "failed with no reported reason — check the API logs"}`, {
           duration: 12000,
@@ -509,7 +509,7 @@ export function MailboxesPage() {
             <EmptyState
               icon={Inbox}
               title="Add your first market"
-              description="Create a mailbox on your domain, subscribe it to that country's LinkedIn, Indeed or Glassdoor alerts, then point HuntOps at it."
+              description="Create a mailbox on your domain, subscribe it to that country's LinkedIn, Indeed or Glassdoor alerts, then point JobQuick AI at it."
               action={
                 <Button size="sm" onClick={() => setDialog({ open: true, editing: null })}>
                   <Plus className="h-3.5 w-3.5" /> Add mailbox

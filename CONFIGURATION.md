@@ -84,15 +84,15 @@ Powers the daily digest and outreach sent on a user's behalf. **Its failure
 mode is silence** — the code logs and moves on, so nothing errors anywhere and
 mail simply never arrives.
 
-1. In hPanel, create the mailbox `noreply@huntops.site` and set a password
-2. **Emails → huntops.site → Configuration settings** — note the SMTP host
+1. In hPanel, create the mailbox `noreply@jobquickai.site` and set a password
+2. **Emails → jobquickai.site → Configuration settings** — note the SMTP host
 
 ```
 SMTP_HOST=smtp.hostinger.com
 SMTP_PORT=587
-SMTP_USERNAME=noreply@huntops.site
+SMTP_USERNAME=noreply@jobquickai.site
 SMTP_PASSWORD=<that mailbox's password>
-SMTP_FROM_EMAIL=noreply@huntops.site
+SMTP_FROM_EMAIL=noreply@jobquickai.site
 SMTP_USE_TLS=true
 ADMIN_ALERT_EMAIL=<your own address>
 ```
@@ -165,7 +165,7 @@ the Paystack plan says. Keep them matching by hand.
 Same **API Keys & Webhooks** page, set the webhook URL to:
 
 ```
-https://huntops.site/api/billing/webhook
+https://jobquickai.site/api/billing/webhook
 ```
 
 There is no separate signing secret; Paystack signs with the secret key you
@@ -239,7 +239,7 @@ a digest.
 5. Body, exactly:
 
 ```
-Hi {{1}}, you have {{2}} new job matches on HuntOps today. Top one: {{3}}
+Hi {{1}}, you have {{2}} new job matches on JobQuick AI today. Top one: {{3}}
 ```
 
 6. Provide samples when asked (`Amara`, `4`, `Growth Lead at Shopify`)
@@ -284,7 +284,7 @@ WHATSAPP_APP_SECRET=<App settings -> Basic>    # Meta signs webhook bodies with 
 
 Then in the Meta console, **WhatsApp → Configuration → Webhook**:
 
-- Callback URL: `https://huntops.site/api/whatsapp/webhook`
+- Callback URL: `https://jobquickai.site/api/whatsapp/webhook`
 - Verify token: whatever you put in `WHATSAPP_WEBHOOK_VERIFY_TOKEN`
 - Subscribe to the **messages** field — it carries both inbound messages and
   delivery statuses.
@@ -302,7 +302,7 @@ logs is the marketing drop; anything else Meta reports arrives there too.
 ## Step 6 — Fix the two wrong values already in the file
 
 ```
-GOOGLE_OAUTH_REDIRECT_URI=https://huntops.site/api/integrations/gmail/callback
+GOOGLE_OAUTH_REDIRECT_URI=https://jobquickai.site/api/integrations/gmail/callback
 ```
 
 It currently points at `jobquick.site`. Harmless today — that flow is off by

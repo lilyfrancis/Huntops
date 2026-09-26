@@ -30,7 +30,7 @@ export function LandingNav() {
       )}
     >
       <div className="shell flex items-center justify-between py-4">
-        <a href="#top" aria-label="HuntOps home">
+        <a href="#top" aria-label="JobQuick AI home">
           <Logo variant={scrolled ? "navy" : "white"} height={30} />
         </a>
 

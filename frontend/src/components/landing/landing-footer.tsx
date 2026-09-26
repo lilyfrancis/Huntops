@@ -19,7 +19,7 @@ export function LandingFooter() {
       </div>
       <div className="border-t border-border py-4">
         <p className="text-center text-xs text-ink-faint">
-          © {new Date().getFullYear()} HuntOps. All rights reserved.
+          © {new Date().getFullYear()} JobQuick AI. All rights reserved.
         </p>
       </div>
     </footer>

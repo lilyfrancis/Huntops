@@ -25,21 +25,29 @@ export function Hero() {
   return (
     <section
       id="top"
-      className="grain relative isolate overflow-hidden bg-navy pt-28 pb-28 sm:pt-32 lg:pb-36"
+      className="grain relative isolate overflow-hidden bg-navy pt-24 pb-24 sm:pt-28 lg:pb-32"
     >
-      {/* Aurora. Frosted panels need something with structure behind them,
-          and on a white page there is nothing for glass to frost. */}
+      {/* Aurora, drifting, over a blueprint grid and film grain.
+
+          Frosted panels need something with structure behind them, and on
+          flat colour there is nothing for glass to frost. The grid and grain
+          also stop these large flat areas banding on cheap panels. The
+          photograph lives in the composition on the right rather than back
+          here: a dimmed one behind the headline reads as a smudge, and an
+          undimmed one fights the words. */}
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute inset-0 grid-fade" />
+        <div className="animate-drift-c absolute left-1/2 top-1/2 h-[64rem] w-[64rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[conic-gradient(from_0deg,transparent,rgb(111_90_251/0.22),transparent_35%,rgb(14_219_247/0.16),transparent_70%)] blur-[80px]" />
         <div className="animate-drift-a absolute -top-1/3 left-1/2 h-[46rem] w-[46rem] -translate-x-1/2 rounded-full bg-violet/35 blur-[120px]" />
         <div className="animate-drift-b absolute -right-40 top-20 h-[34rem] w-[34rem] rounded-full bg-cyan/20 blur-[130px]" />
         <div className="absolute -bottom-40 left-0 h-[30rem] w-[30rem] rounded-full bg-violet-dark/25 blur-[140px]" />
+
+        <div className="absolute inset-0 grid-fade" />
         {/* Hands the section back to the page below instead of ending on a
             hard edge. */}
         <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-b from-transparent to-bg" />
       </div>
 
-      <div className="shell grid items-center gap-14 lg:grid-cols-[1.02fr_1fr] lg:gap-16">
+      <div className="shell grid items-center gap-14 lg:grid-cols-[1.08fr_1fr] lg:gap-20">
         <div>
           <Reveal>
             <span className="glass inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-xs font-semibold text-white/85">
@@ -53,18 +61,18 @@ export function Hero() {
 
           <Reveal delay={1}>
             <h1 className="t-display mt-6 font-semibold text-white">
-              You pick the jobs.
+              Stop applying.
               <br />
-              <span className="text-gradient-bright">We do the applying.</span>
+              <span className="text-gradient-bright">Start interviewing.</span>
             </h1>
           </Reveal>
 
           <Reveal delay={2}>
             <p className="t-lead mt-7 max-w-2xl text-white/70">
-              Every role scored against your CV. Your CV rewritten for the ones you want.
-              The application <strong className="font-semibold text-white">filed for you</strong>,
-              and the hiring manager messaged directly — while you watch it happen from one
-              dashboard.
+              JobQuick AI reads every opening across five markets, scores it against your CV,
+              rewrites the CV for the ones you want, and{" "}
+              <strong className="font-semibold text-white">files the application for you</strong> —
+              then messages the hiring manager directly. You just say yes.
             </p>
           </Reveal>
 
@@ -105,28 +113,54 @@ export function Hero() {
           </Reveal>
         </div>
 
-        <Reveal delay={2} className="relative">
-          <div ref={shot} className="will-change-transform">
-            <div className="ring-gradient glass-strong animate-float-slow overflow-hidden rounded-2xl p-1.5 shadow-[0_40px_80px_-30px_rgb(0_0_0/0.65)]">
-              {/* The actual product, not a stock desk. It carries the whole
-                  proposition without a caption: fit scores, salaries in the
-                  reader's own currency, "Apply for me", one already filed,
-                  and a locked row showing what unlocking is for. */}
+        {/* The person and the product, one composition. A screenshot alone is
+            a tool; a screenshot over somebody's good morning is what the tool
+            is for. The photo is the larger, softer shape behind; the product
+            overlaps its lower edge so the eye lands on the feed. */}
+        <Reveal delay={2} className="relative mx-auto w-full max-w-[34rem] pb-14 lg:mx-0 lg:ml-auto lg:max-w-[38rem] lg:pb-20">
+          <div ref={shot} className="relative will-change-transform">
+            <div className="ring-gradient relative animate-float-slow overflow-hidden rounded-[1.75rem] border border-white/10 shadow-[0_50px_90px_-40px_rgb(0_0_0/0.8)]">
               <img
-                src="/brand/hero-product.webp"
-                alt="The HuntOps job feed: roles scored against your CV, salaries shown, one already applied for"
-                width={1400}
-                height={837}
-                className="w-full rounded-xl"
+                src="/brand/feature-offer.webp"
+                alt="A candidate taking a call about a role that was applied for on their behalf"
+                width={1200}
+                height={1200}
+                className="aspect-[4/3] w-full object-cover object-[60%_22%]"
                 fetchPriority="high"
+              />
+              {/* Ties the photograph to the navy behind it, so it reads as
+                  part of the page rather than a rectangle pasted on. */}
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-0 bg-gradient-to-t from-navy via-navy/25 to-transparent"
               />
             </div>
 
-            <div className="glass-strong ring-gradient absolute -bottom-6 -left-4 hidden rounded-xl px-4 py-3 sm:block">
+            {/* The actual product: fit scores, salaries in the reader's own
+                currency, "Apply for me", one already filed, and a locked row
+                showing what unlocking is for. */}
+            <div className="glass-strong ring-gradient absolute -bottom-12 left-[-6%] w-[78%] overflow-hidden rounded-2xl p-1.5 shadow-[0_40px_80px_-25px_rgb(0_0_0/0.85)] sm:-bottom-14 lg:w-[74%]">
+              <img
+                src="/brand/hero-product.webp"
+                alt="The JobQuick AI job feed: roles scored against your CV, salaries shown, one already applied for"
+                width={1400}
+                height={837}
+                className="w-full rounded-xl"
+              />
+            </div>
+
+            <div className="glass-strong ring-gradient absolute -right-3 top-6 hidden rounded-xl px-4 py-3 sm:block">
               <p className="text-2xl font-bold text-white">
                 <Counter to={92} suffix="%" />
               </p>
-              <p className="text-xs text-white/60">fit — filed for you this morning</p>
+              <p className="text-xs text-white/60">fit — filed this morning</p>
+            </div>
+
+            <div className="glass-strong ring-gradient absolute -right-4 bottom-4 hidden max-w-[13rem] rounded-xl px-4 py-3 lg:block">
+              <p className="text-xs font-semibold uppercase tracking-wide text-cyan">Queued</p>
+              <p className="mt-0.5 text-sm leading-snug text-white/75">
+                3 applications, filed by tonight
+              </p>
             </div>
           </div>
         </Reveal>

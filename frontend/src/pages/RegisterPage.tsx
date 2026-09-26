@@ -97,7 +97,7 @@ export function RegisterPage() {
               }
             : undefined,
       });
-      toast.success("Welcome to HuntOps");
+      toast.success("Welcome to JobQuick AI");
       navigate(homePathForRole(user.role), { replace: true });
     } catch (e) {
       setServerError(e instanceof ApiError ? e.message : "Something went wrong");

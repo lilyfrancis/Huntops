@@ -12,7 +12,7 @@ class AlertMailbox(Base):
     """An admin-owned mailbox that receives job-alert email for one market.
 
     This is the supply side of the product. Job seekers never connect an inbox;
-    the operator points HuntOps at a handful of mailboxes — one subscribed to
+    the operator points JobQuick AI at a handful of mailboxes — one subscribed to
     Canadian alerts, one to UK, one to Nigerian — and every user's feed is drawn
     from that shared pool, filtered by what they asked for at signup.
 

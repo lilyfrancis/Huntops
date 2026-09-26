@@ -71,7 +71,7 @@ class ApplicationStatus(str, enum.Enum):
 
 
 class ConciergeStatus(str, enum.Enum):
-    """How far HuntOps has got with submitting this one on the user's behalf.
+    """How far JobQuick AI has got with submitting this one on the user's behalf.
 
     Deliberately separate from ApplicationStatus, which is what the *employer*
     has done. The two move independently: an application can be submitted by

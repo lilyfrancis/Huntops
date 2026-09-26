@@ -5,7 +5,7 @@ own alerts. That put the hardest step of the product — subscribe to the right
 alerts, in the right market, with the right filters — on the least motivated
 person in the loop, and meant a user's feed was empty until they did it.
 
-Here the operator points HuntOps at a handful of mailboxes instead, one per
+Here the operator points JobQuick AI at a handful of mailboxes instead, one per
 market, each subscribed to that country's job alerts. Everything they receive
 lands in one shared pool tagged by market, and a user's own preferences decide
 which slice they see.

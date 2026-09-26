@@ -1,4 +1,4 @@
-# HuntOps
+# JobQuick AI
 
 The job search copilot that finds real openings, scores your fit for where you
 actually live, and emails the recruiter for you.
@@ -208,7 +208,7 @@ honest data source for it.
 **Everything else from the blueprint's "new wow features" list** — ghost-job
 detector, mock interview simulator, negotiation coach, apply-anywhere
 browser extension, funnel/streak dashboard — is real product work, just not
-part of the core Job Engine → HuntOps port. Reasonable next phases once the
+part of the core Job Engine → JobQuick AI port. Reasonable next phases once the
 core loop (find → score → reach out) is validated with real users.
 
 ## Project layout
@@ -338,7 +338,7 @@ to disable the daily 07:00 UTC run and only trigger ingestion manually via
 1. Set a real `TOKEN_ENCRYPTION_KEY` (see `.env.example` for how to generate
    one). It encrypts every stored mailbox password; losing it means
    re-entering them all.
-2. Create a mailbox on whatever host you like — `alerts-canada@huntops.site`,
+2. Create a mailbox on whatever host you like — `alerts-canada@jobquickai.site`,
    say — and subscribe it to that country's LinkedIn, Indeed or Glassdoor job
    alerts.
 3. As an admin, go to **Alert mailboxes → Add mailbox** and enter the address,
@@ -369,7 +369,7 @@ serves; WhatsApp is where people actually read.
    digest stops with no error.
 3. Under **Message templates**, create one named `huntops_daily_digest` with
    three body parameters:
-   `Hi {{1}}, you have {{2}} new job matches on HuntOps today. Top one: {{3}}`
+   `Hi {{1}}, you have {{2}} new job matches on JobQuick AI today. Top one: {{3}}`
    Approval usually takes minutes.
 4. Set `WHATSAPP_PHONE_NUMBER_ID` and `WHATSAPP_ACCESS_TOKEN`.
 

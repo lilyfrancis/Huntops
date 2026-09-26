@@ -12,7 +12,7 @@ from app.services import imap_client
 from app.services.imap_client import Credentials, ImapError
 
 CREDS = Credentials(
-    host="imap.example.com", port=993, username="alerts@huntops.site",
+    host="imap.example.com", port=993, username="alerts@jobquickai.site",
     password="app-password", use_ssl=True, folder="INBOX",
 )
 

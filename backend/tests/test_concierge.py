@@ -169,7 +169,7 @@ def test_the_queue_carries_everything_needed_to_file_it(client, db_session, free
     row = rows[0]
     assert row["source_url"] == job.source_url          # where to go
     assert row["candidate_name"] == "Jennifer Okafor"
-    assert row["suggested_concierge_email"] == "jennifer@huntops.site"
+    assert row["suggested_concierge_email"] == "jennifer@jobquickai.site"
     assert row["concierge_email"] is None               # not created yet
 
 
@@ -182,7 +182,7 @@ def test_marking_it_submitted_records_who_and_when(client, db_session, free_user
     headers = _make_admin(client, "filer@example.com")
     resp = client.patch(f"/api/admin/concierge/{app_id}", headers=headers, json={
         "concierge_status": "submitted",
-        "concierge_email": "jennifer@huntops.site",
+        "concierge_email": "jennifer@jobquickai.site",
     })
 
     assert resp.status_code == 200
@@ -190,7 +190,7 @@ def test_marking_it_submitted_records_who_and_when(client, db_session, free_user
     assert resp.json()["submitted_at"] is not None
 
     db_session.expire_all()
-    assert db_session.get(User, free_user.id).concierge_email == "jennifer@huntops.site"
+    assert db_session.get(User, free_user.id).concierge_email == "jennifer@jobquickai.site"
     assert db_session.get(Application, uuid.UUID(resp.json()["id"])).handled_by_id is not None
 
 
@@ -266,7 +266,7 @@ def test_the_suggested_address_is_flagged_as_not_yet_created(client, db_session,
                     headers=_login(client, free_user.email))
 
     body = alert.call_args.args[1]
-    assert "jennifer@huntops.site" in body
+    assert "jennifer@jobquickai.site" in body
     assert "not created yet" in body
 
 

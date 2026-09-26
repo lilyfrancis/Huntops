@@ -22,7 +22,7 @@ export function LegalLayout({
     <div className="min-h-screen bg-bg">
       <header className="border-b border-border">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-5 py-4">
-          <Link to="/" aria-label="HuntOps home">
+          <Link to="/" aria-label="JobQuick AI home">
             <Logo height={28} />
           </Link>
           <Link to="/" className="text-sm font-medium text-ink-muted transition-colors hover:text-ink">
@@ -42,11 +42,11 @@ export function LegalLayout({
 
       <footer className="border-t border-border py-6">
         <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-3 px-5 text-sm text-ink-muted">
-          <span>© {new Date().getFullYear()} HuntOps</span>
+          <span>© {new Date().getFullYear()} JobQuick AI</span>
           <div className="flex gap-5">
             <Link to="/privacy" className="transition-colors hover:text-ink">Privacy</Link>
             <Link to="/terms" className="transition-colors hover:text-ink">Terms</Link>
-            <a href="mailto:support@huntops.site" className="transition-colors hover:text-ink">Contact</a>
+            <a href="mailto:support@jobquickai.site" className="transition-colors hover:text-ink">Contact</a>
           </div>
         </div>
       </footer>

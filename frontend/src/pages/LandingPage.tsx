@@ -1,6 +1,6 @@
 import { LandingNav } from "@/components/landing/landing-nav";
 import { Hero } from "@/components/landing/hero";
-import { SourceStrip } from "@/components/landing/source-strip";
+import { JobMarquee } from "@/components/landing/job-marquee";
 import { Features } from "@/components/landing/features";
 import { HowItWorks } from "@/components/landing/how-it-works";
 import { CreditsChart } from "@/components/landing/credits-chart";
@@ -14,7 +14,7 @@ export function LandingPage() {
       <LandingNav />
       <main>
         <Hero />
-        <SourceStrip />
+        <JobMarquee />
         <Features />
         <HowItWorks />
         <CreditsChart />

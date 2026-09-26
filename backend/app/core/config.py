@@ -72,7 +72,7 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_SECRET: str = ""
     GOOGLE_OAUTH_REDIRECT_URI: str = "http://localhost:8000/api/integrations/gmail/callback"
     TOKEN_ENCRYPTION_KEY: str = ""
-    GMAIL_LABEL_NAME: str = "HuntOps"
+    GMAIL_LABEL_NAME: str = "JobQuick AI"
 
     # Whether job seekers may connect their own Gmail so outreach sends from
     # their address. Off by default because the OAuth client is an *Internal*
@@ -144,7 +144,7 @@ class Settings(BaseSettings):
     # cached, so revising and re-reading are free.
     TAILOR_CREDIT_COST: int = 10
 
-    # Asking HuntOps to file an application on an external site. A person
+    # Asking JobQuick AI to file an application on an external site. A person
     # does this by hand, so it is priced above the AI features rather than
     # against their token cost. Matched to FREE_TIER_CREDITS on purpose: a
     # new account can do exactly one and see it land, which is the argument
@@ -211,7 +211,7 @@ class Settings(BaseSettings):
     SMTP_PORT: int = 587
     SMTP_USERNAME: str = ""
     SMTP_PASSWORD: str = ""
-    SMTP_FROM_EMAIL: str = "noreply@huntops.app"
+    SMTP_FROM_EMAIL: str = "noreply@jobquickai.site"
     SMTP_USE_TLS: bool = True
     # Implicit TLS (the whole session encrypted from the first byte) rather
     # than STARTTLS. Left unset it follows the port, which is right for every
@@ -231,7 +231,7 @@ class Settings(BaseSettings):
     # A business-initiated message must use a template approved by Meta in
     # advance, so the digest becomes a short nudge with counts plus a link,
     # not the list itself. Create a template with three body parameters:
-    #   "Hi {{1}}, you have {{2}} new job matches on HuntOps today. Top one: {{3}}"
+    #   "Hi {{1}}, you have {{2}} new job matches on JobQuick AI today. Top one: {{3}}"
     # Meta's own endpoint by default. Several providers resell the Cloud API
     # behind their own host with an identical request shape — pointing this at
     # theirs is enough to use them, no code change. A provider with its own

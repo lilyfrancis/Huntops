@@ -19,7 +19,7 @@ const EXACT_CASE: Record<string, string> = {
   arbeitnow: "Arbeitnow",
   adzuna: "Adzuna",
   jobicy: "Jobicy",
-  internal: "HuntOps",
+  internal: "JobQuick AI",
   unknown: "the source site",
 };
 

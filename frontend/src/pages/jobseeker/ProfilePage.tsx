@@ -121,7 +121,7 @@ export function ProfilePage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader eyebrow="Account" title="Profile" description="How HuntOps scores and pitches on your behalf." />
+      <PageHeader eyebrow="Account" title="Profile" description="How JobQuick AI scores and pitches on your behalf." />
 
       <Card>
         <CardHeader>

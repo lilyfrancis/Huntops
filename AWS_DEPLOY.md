@@ -1,4 +1,4 @@
-# Deploying HuntOps to AWS Lightsail — step by step
+# Deploying JobQuick AI to AWS Lightsail — step by step
 
 Lightsail is the simplest thing on AWS that runs this stack: one fixed monthly
 price, one Linux box, no VPC/NAT/load-balancer bill to trip over. Everything
@@ -85,7 +85,7 @@ Verify it resolves before continuing — Caddy requests your HTTPS certificate o
 first boot and will fail if DNS isn't live yet:
 
 ```bash
-dig +short huntops.site
+dig +short jobquickai.site
 ```
 
 DNS can take anywhere from a minute to an hour. Wait for it.
@@ -146,8 +146,8 @@ nano .env
 ```
 
 ```
-DOMAIN=huntops.site
-TLS_EMAIL=you@huntops.site
+DOMAIN=jobquickai.site
+TLS_EMAIL=you@jobquickai.site
 POSTGRES_USER=huntops
 POSTGRES_PASSWORD=<the generated one>
 POSTGRES_DB=huntops
@@ -165,8 +165,8 @@ Change these (leave `DATABASE_URL` alone — compose sets it):
 ENVIRONMENT=production
 JWT_SECRET=<generated>
 TOKEN_ENCRYPTION_KEY=<generated>
-CORS_ORIGINS=https://huntops.site
-FRONTEND_URL=https://huntops.site
+CORS_ORIGINS=https://jobquickai.site
+FRONTEND_URL=https://jobquickai.site
 ANTHROPIC_API_KEY=sk-ant-...
 ```
 
@@ -207,7 +207,7 @@ You want `db`, `api`, `scheduler`, `web`, `caddy` all **running**, and `migrate`
 docker compose -f docker-compose.prod.yml logs migrate
 ```
 
-Now open **https://huntops.site**. You should get the landing page with a
+Now open **https://jobquickai.site**. You should get the landing page with a
 valid certificate.
 
 ---
@@ -219,7 +219,7 @@ this step is not optional housekeeping — it is where the product gets its jobs
 
 ```bash
 cd /opt/huntops && docker compose -f docker-compose.prod.yml exec api \
-  python -m app.scripts.create_admin you@huntops.site --name "Ops Admin"
+  python -m app.scripts.create_admin you@jobquickai.site --name "Ops Admin"
 ```
 
 It prompts for a password (twice, not echoed). If that email already has an
@@ -228,7 +228,7 @@ account it promotes it instead, so signing up through the UI first also works.
 Log out and back in — you'll land on the admin dashboard. Go to **Alert
 mailboxes → Add mailbox** and give it:
 
-- the mailbox address, e.g. `alerts-canada@huntops.site`
+- the mailbox address, e.g. `alerts-canada@jobquickai.site`
 - a market (`Canada`, `Nigeria`, …) — this exact string is what users pick at
   signup, so keep the spelling consistent
 - the IMAP host, username and password for that mailbox
@@ -305,7 +305,7 @@ Migrations run automatically on every update, before the new API starts.
 
 - **Paystack, Apollo and Anthropic have only ever run against
   mocks.** Do one real transaction through each before launch — especially the
-  Paystack webhook (`https://huntops.site/api/billing/webhook`), because it is
+  Paystack webhook (`https://jobquickai.site/api/billing/webhook`), because it is
   the only thing that can activate a paid subscription.
 - There is **no CI and no committed end-to-end suite** — verification so far has
   been manual.

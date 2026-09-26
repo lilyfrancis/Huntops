@@ -13,7 +13,7 @@ const STEPS = [
     title: "Wake up to scored matches",
     body: "Every morning, the openings worth your time — rated against your CV, ghost listings already flagged, salary shown up front.",
     image: "/brand/hero-product.webp",
-    alt: "The HuntOps dashboard ranking matched roles by score",
+    alt: "The JobQuick AI dashboard ranking matched roles by score",
     // A screenshot, not a photograph: cropping it to the panel's shape cuts
     // words off both edges, so this one is shown whole.
     contain: true,
@@ -40,7 +40,7 @@ export function HowItWorks() {
         <span className="eyebrow">How it works</span>
         <h2 className="t-h2 mt-3">Two minutes to set up. Then you stop applying.</h2>
         <p className="t-lead mt-5 text-ink-muted">
-          Set it up once. HuntOps works every day whether you open it or not.
+          Set it up once. JobQuick AI works every day whether you open it or not.
         </p>
       </Reveal>
 
@@ -60,7 +60,7 @@ export function HowItWorks() {
                 <p className="t-lead mt-4 max-w-xl text-ink-muted">{step.body}</p>
               </div>
               <div
-                className={`ring-gradient overflow-hidden rounded-2xl border border-border transition-transform duration-500 hover:scale-[1.015] lift-lg ${
+                className={`ring-gradient relative overflow-hidden rounded-2xl border border-border transition-transform duration-500 hover:scale-[1.015] lift-lg ${
                   step.contain ? "bg-surface-2 p-3" : "bg-white"
                 }`}
               >

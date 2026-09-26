@@ -5,7 +5,7 @@ honest thing to offer was a link out — which hands the user back the exact
 work the product exists to remove: opening thirty tabs and retyping the
 same details into thirty different forms.
 
-So the user says "apply", and a person at HuntOps files it for them, under
+So the user says "apply", and a person at JobQuick AI files it for them, under
 an address created for that user. From the user's side it is one click and
 a status that moves. From ours it is a queue.
 
@@ -221,4 +221,4 @@ def suggest_concierge_email(user: User) -> str:
     """
     first = (user.full_name or "").strip().split(" ")[0]
     cleaned = "".join(ch for ch in first.lower() if ch.isalpha()) or "candidate"
-    return f"{cleaned}@huntops.site"
+    return f"{cleaned}@jobquickai.site"

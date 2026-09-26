@@ -5,7 +5,7 @@ const FEATURES = [
   {
     icon: Send,
     title: "We file the application",
-    body: "Tap apply and a person at HuntOps fills in the form on the job board for you, under an address we set up in your name. You never open the site.",
+    body: "Tap apply and a person at JobQuick AI fills in the form on the job board for you, under an address we set up in your name. You never open the site.",
   },
   {
     icon: FileText,

@@ -32,11 +32,11 @@ def test_daily_email_sync_alerts_admin_when_a_single_mailbox_fails(mock_alert):
     """A mailbox that stops syncing is a market whose feed quietly stops
     filling — the run "succeeds" and nobody finds out until users complain."""
     failure = {
-        "mailbox": "alerts-uk@huntops.site", "market": "UK", "status": "error",
+        "mailbox": "alerts-uk@jobquickai.site", "market": "UK", "status": "error",
         "fetched": 0, "extracted": 0, "inserted": 0, "error": "invalid_grant",
     }
     ok = {
-        "mailbox": "alerts-ca@huntops.site", "market": "Canada", "status": "success",
+        "mailbox": "alerts-ca@jobquickai.site", "market": "Canada", "status": "success",
         "fetched": 3, "extracted": 5, "inserted": 5, "error": None,
     }
     with patch("app.services.scheduler.sync_all_mailboxes", return_value=[failure, ok]):
@@ -49,7 +49,7 @@ def test_daily_email_sync_alerts_admin_when_a_single_mailbox_fails(mock_alert):
 @patch("app.services.scheduler.notifications.alert_admin")
 def test_daily_email_sync_stays_quiet_when_every_mailbox_is_healthy(mock_alert):
     healthy = {
-        "mailbox": "alerts-ca@huntops.site", "market": "Canada", "status": "success",
+        "mailbox": "alerts-ca@jobquickai.site", "market": "Canada", "status": "success",
         "fetched": 3, "extracted": 5, "inserted": 5, "error": None,
     }
     with patch("app.services.scheduler.sync_all_mailboxes", return_value=[healthy]):

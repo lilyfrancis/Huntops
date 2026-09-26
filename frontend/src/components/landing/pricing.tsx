@@ -117,7 +117,7 @@ export function Pricing() {
                   // The plan we want chosen is raised off the row rather
                   // than merely outlined — an outline is easy to miss at a
                   // glance, and this is the glance that decides.
-                  ? "ring-gradient scale-[1.03] border-violet/60 bg-white lift-lg"
+                  ? "ring-gradient relative scale-[1.03] border-violet/60 bg-white lift-lg"
                   : "glass-light lift",
               )}
             >

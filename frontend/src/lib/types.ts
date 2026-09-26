@@ -7,7 +7,7 @@ export type JobStatus = "pending" | "active" | "rejected" | "closed";
 export type JobType = "full_time" | "part_time" | "contract" | "internship";
 export type ExperienceLevel = "entry" | "mid" | "senior" | "lead" | "executive";
 export type ApplicationStatus = "pending" | "reviewed" | "interviewing" | "offered" | "rejected" | "withdrawn";
-/** How far HuntOps has got filing it. Separate from ApplicationStatus,
+/** How far JobQuick AI has got filing it. Separate from ApplicationStatus,
  *  which is what the employer has done. */
 export type ConciergeStatus = "queued" | "submitted" | "blocked";
 export type OutreachStatus = "sent" | "draft_no_contact" | "failed";
