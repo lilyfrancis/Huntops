@@ -33,7 +33,13 @@ function money(pack: CreditPack): string {
   }
 }
 
-export function Wallet() {
+interface WalletProps {
+  /** "sidebar" is the full-width block in the nav; "compact" is the pill in
+      the mobile top bar, where there is room for a number and nothing else. */
+  variant?: "sidebar" | "compact";
+}
+
+export function Wallet({ variant = "sidebar" }: WalletProps) {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
 
@@ -68,16 +74,27 @@ export function Wallet() {
 
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
-        className="w-full rounded-lg bg-surface-2 px-3 py-2 text-left transition-colors hover:bg-surface-3"
-      >
-        <div className="flex items-center justify-between">
-          <span className="text-[0.7rem] font-semibold uppercase tracking-wide text-ink-faint">Credits</span>
-          <span className="text-sm font-bold text-violet-dark">{user.ai_credits}</span>
-        </div>
-        <p className="mt-0.5 text-[0.7rem] text-ink-faint">Tap to top up</p>
-      </button>
+      {variant === "compact" ? (
+        <button
+          onClick={() => setOpen(true)}
+          className="flex items-center gap-1.5 rounded-full border border-border bg-surface-2 px-2.5 py-1.5 text-sm font-semibold text-violet-dark transition-colors hover:bg-surface-3"
+          aria-label={`${user.ai_credits} credits — open wallet`}
+        >
+          <WalletIcon className="h-4 w-4" strokeWidth={2} />
+          {user.ai_credits}
+        </button>
+      ) : (
+        <button
+          onClick={() => setOpen(true)}
+          className="w-full rounded-lg bg-surface-2 px-3 py-2 text-left transition-colors hover:bg-surface-3"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[0.7rem] font-semibold uppercase tracking-wide text-ink-faint">Credits</span>
+            <span className="text-sm font-bold text-violet-dark">{user.ai_credits}</span>
+          </div>
+          <p className="mt-0.5 text-[0.7rem] text-ink-faint">Tap to top up</p>
+        </button>
+      )}
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-lg">

@@ -57,7 +57,7 @@ export function MomentumPage() {
           </p>
           <p className="mt-3 text-sm text-ink-muted">
             Longest run {streak.longest_days} {streak.longest_days === 1 ? "day" : "days"} ·{" "}
-            {streak.active_days_in_window} active in the last {streak.window_days}
+            {streak.active_days_in_window} active in the last {streak.window_days} days
           </p>
         </Card>
 

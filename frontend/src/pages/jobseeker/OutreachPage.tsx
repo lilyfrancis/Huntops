@@ -79,7 +79,7 @@ export function OutreachPage() {
                 onClick={() => setSelected(o)}
               >
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-ink">{job?.title ?? "Loading…"}</p>
+                  <p className="line-clamp-2 text-sm font-medium text-ink sm:truncate">{job?.title ?? "Loading…"}</p>
                   <p className="truncate text-xs text-ink-muted">{o.email_subject}</p>
                   <p className="truncate text-xs text-ink-faint">{subline(o)}</p>
                 </div>

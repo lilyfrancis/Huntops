@@ -32,7 +32,7 @@ export function DigestPage() {
           {data.entries.map((entry) => (
             <Card key={entry.job_id} className="flex items-center justify-between gap-4 p-4">
               <div className="min-w-0">
-                <p className="truncate text-sm font-medium text-ink">{entry.title}</p>
+                <p className="line-clamp-2 text-sm font-medium text-ink sm:truncate">{entry.title}</p>
                 <p className="text-xs text-ink-muted">
                   {entry.company_name ?? "Company withheld"} — {entry.location}
                 </p>

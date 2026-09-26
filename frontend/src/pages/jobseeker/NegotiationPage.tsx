@@ -296,7 +296,7 @@ export function NegotiationPage() {
             >
               <div className="flex items-center justify-between gap-4">
                 <div className="min-w-0">
-                  <p className="truncate font-semibold text-ink">{review.role_title}</p>
+                  <p className="line-clamp-2 font-semibold text-ink sm:truncate">{review.role_title}</p>
                   <p className="text-sm text-ink-muted">
                     {review.currency} {review.base_salary.toLocaleString()}
                     {review.benchmark ? ` · median ${review.benchmark.median.toLocaleString()}` : " · no market data"}

@@ -70,9 +70,14 @@ export function ApplicationsPage() {
           {applications.map((app, i) => {
             const job = jobQueries[i]?.data;
             return (
-              <Card key={app.id} className="flex items-center justify-between gap-4 p-4">
+              <Card
+                key={app.id}
+                // Stacked on a phone: a single row squeezed the title down to
+                // "Senior Pro…" to make room for a timestamp and two badges.
+                className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
+              >
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-ink">{job?.title ?? "Loading…"}</p>
+                  <p className="text-sm font-medium text-ink sm:truncate">{job?.title ?? "Loading…"}</p>
                   <p className="text-xs text-ink-muted">{job?.company_name ?? " "}</p>
                   {conciergeLine(app) && (
                     <p className="mt-0.5 text-xs text-ink-faint">{conciergeLine(app)}</p>
@@ -81,7 +86,7 @@ export function ApplicationsPage() {
                     <p className="mt-0.5 text-xs text-ink-muted">{app.concierge_note}</p>
                   )}
                 </div>
-                <div className="flex shrink-0 items-center gap-3">
+                <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2">
                   {app.ai_match_score != null && (
                     <span className="font-mono text-xs text-ink-faint">fit {Math.round(app.ai_match_score)}</span>
                   )}

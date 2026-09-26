@@ -66,7 +66,7 @@ export function FeedCard({
             <GhostBadge band={job.ghost_band} />
           </div>
 
-          <h3 className="truncate text-base font-semibold text-ink">{job.title}</h3>
+          <h3 className="line-clamp-2 text-base font-semibold text-ink sm:truncate">{job.title}</h3>
 
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-muted">
             <span className="flex items-center gap-1">

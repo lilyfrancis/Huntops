@@ -112,7 +112,7 @@ export function InterviewsPage() {
                       <Badge tone="cyan">{Math.round(session.average_score)} / 100</Badge>
                     )}
                   </div>
-                  <p className="truncate font-semibold text-ink">{session.role_title}</p>
+                  <p className="line-clamp-2 font-semibold text-ink sm:truncate">{session.role_title}</p>
                   {session.company_name && (
                     <p className="text-sm text-ink-muted">{session.company_name}</p>
                   )}
