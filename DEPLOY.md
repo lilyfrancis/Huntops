@@ -71,8 +71,8 @@ python3 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().
 Edit `.env`:
 
 ```
-DOMAIN=jobquickai.site
-TLS_EMAIL=you@jobquickai.site
+DOMAIN=jobquick.site
+TLS_EMAIL=you@jobquick.site
 POSTGRES_USER=huntops
 POSTGRES_PASSWORD=<generated>
 POSTGRES_DB=huntops
@@ -85,8 +85,8 @@ Edit `backend/.env` — these **must** change from the defaults:
 | `ENVIRONMENT` | `production` (startup validation refuses weak secrets here) |
 | `JWT_SECRET` | the generated hex string |
 | `TOKEN_ENCRYPTION_KEY` | the generated Fernet key — **losing this orphans every stored mailbox password** |
-| `CORS_ORIGINS` | `https://jobquickai.site` (never `*` in production) |
-| `FRONTEND_URL` | `https://jobquickai.site` |
+| `CORS_ORIGINS` | `https://jobquick.site` (never `*` in production) |
+| `FRONTEND_URL` | `https://jobquick.site` |
 | `GOOGLE_*` | only for the optional send-as-your-Gmail feature, off by default |
 | `ANTHROPIC_API_KEY` | required — every AI feature fails without it |
 | `PAYSTACK_SECRET_KEY` | live secret key — it signs the webhooks too, so there is no second secret |
@@ -104,7 +104,7 @@ docker compose -f docker-compose.prod.yml up -d --build
 On first boot: the DB starts, the `migrate` container runs `alembic upgrade
 head` and exits, then the API, scheduler, frontend, and Caddy come up. Caddy
 obtains the certificate automatically. Give it a minute, then visit
-`https://jobquickai.site`.
+`https://jobquick.site`.
 
 ```bash
 docker compose -f docker-compose.prod.yml ps
@@ -124,12 +124,12 @@ it never reaches your shell history.
 
 ```bash
 docker compose -f docker-compose.prod.yml exec api \
-  python -m app.scripts.create_admin you@jobquickai.site --name "Ops Admin"
+  python -m app.scripts.create_admin you@jobquick.site --name "Ops Admin"
 ```
 
 ## 5. Paystack webhook
 
-Set the webhook URL to `https://jobquickai.site/api/billing/webhook` under
+Set the webhook URL to `https://jobquick.site/api/billing/webhook` under
 Paystack **Settings → API Keys & Webhooks**. There is no separate signing
 secret — Paystack signs with the same secret key you already configured. The
 webhook is the

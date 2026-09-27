@@ -84,15 +84,15 @@ Powers the daily digest and outreach sent on a user's behalf. **Its failure
 mode is silence** — the code logs and moves on, so nothing errors anywhere and
 mail simply never arrives.
 
-1. In hPanel, create the mailbox `noreply@jobquickai.site` and set a password
-2. **Emails → jobquickai.site → Configuration settings** — note the SMTP host
+1. In hPanel, create the mailbox `noreply@jobquick.site` and set a password
+2. **Emails → jobquick.site → Configuration settings** — note the SMTP host
 
 ```
 SMTP_HOST=smtp.hostinger.com
 SMTP_PORT=587
-SMTP_USERNAME=noreply@jobquickai.site
+SMTP_USERNAME=noreply@jobquick.site
 SMTP_PASSWORD=<that mailbox's password>
-SMTP_FROM_EMAIL=noreply@jobquickai.site
+SMTP_FROM_EMAIL=noreply@jobquick.site
 SMTP_USE_TLS=true
 ADMIN_ALERT_EMAIL=<your own address>
 ```
@@ -165,7 +165,7 @@ the Paystack plan says. Keep them matching by hand.
 Same **API Keys & Webhooks** page, set the webhook URL to:
 
 ```
-https://jobquickai.site/api/billing/webhook
+https://jobquick.site/api/billing/webhook
 ```
 
 There is no separate signing secret; Paystack signs with the secret key you
@@ -284,7 +284,7 @@ WHATSAPP_APP_SECRET=<App settings -> Basic>    # Meta signs webhook bodies with 
 
 Then in the Meta console, **WhatsApp → Configuration → Webhook**:
 
-- Callback URL: `https://jobquickai.site/api/whatsapp/webhook`
+- Callback URL: `https://jobquick.site/api/whatsapp/webhook`
 - Verify token: whatever you put in `WHATSAPP_WEBHOOK_VERIFY_TOKEN`
 - Subscribe to the **messages** field — it carries both inbound messages and
   delivery statuses.
@@ -302,7 +302,7 @@ logs is the marketing drop; anything else Meta reports arrives there too.
 ## Step 6 — Fix the two wrong values already in the file
 
 ```
-GOOGLE_OAUTH_REDIRECT_URI=https://jobquickai.site/api/integrations/gmail/callback
+GOOGLE_OAUTH_REDIRECT_URI=https://jobquick.site/api/integrations/gmail/callback
 ```
 
 It currently points at `jobquick.site`. Harmless today — that flow is off by

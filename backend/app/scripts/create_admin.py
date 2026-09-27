@@ -6,7 +6,7 @@ box. That matters more than it used to: the entire supply side now runs
 through admin-connected alert mailboxes, so until an admin exists there is
 nobody who can give the product any jobs.
 
-    python -m app.scripts.create_admin ops@jobquickai.site --name "Ops Admin"
+    python -m app.scripts.create_admin ops@jobquick.site --name "Ops Admin"
 
 The password is read from the terminal without echoing rather than taken as an
 argument, so it never lands in shell history or the process list.

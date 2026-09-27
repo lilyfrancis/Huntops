@@ -46,7 +46,7 @@ export function LegalLayout({
           <div className="flex gap-5">
             <Link to="/privacy" className="transition-colors hover:text-ink">Privacy</Link>
             <Link to="/terms" className="transition-colors hover:text-ink">Terms</Link>
-            <a href="mailto:support@jobquickai.site" className="transition-colors hover:text-ink">Contact</a>
+            <a href="mailto:support@jobquick.site" className="transition-colors hover:text-ink">Contact</a>
           </div>
         </div>
       </footer>

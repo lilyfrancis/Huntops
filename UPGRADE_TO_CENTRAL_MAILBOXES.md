@@ -1,9 +1,9 @@
-# Upgrading the live server: central mailboxes + jobquickai.site
+# Upgrading the live server: central mailboxes + jobquick.site
 
 Run these on the Lightsail box, in order. Everything is one line so nothing
 breaks on a lost newline when pasting.
 
-This release changes the domain to `jobquickai.site` and moves the job supply
+This release changes the domain to `jobquick.site` and moves the job supply
 from per-user Gmail to admin-configured alert mailboxes read over IMAP. It also
 switches billing from Stripe to Paystack.
 
@@ -38,18 +38,18 @@ off a long-lived feature branch is fine for a cutover, not as a habit.
 
 ---
 
-## 3. Point the deployment at jobquickai.site
+## 3. Point the deployment at jobquick.site
 
 Two files hold the domain. First the compose env:
 
 ```bash
-cd /opt/huntops && sed -i 's/^DOMAIN=.*/DOMAIN=jobquickai.site/' .env && grep '^DOMAIN=' .env
+cd /opt/huntops && sed -i 's/^DOMAIN=.*/DOMAIN=jobquick.site/' .env && grep '^DOMAIN=' .env
 ```
 
 Then the application env:
 
 ```bash
-cd /opt/huntops && sed -i 's|^CORS_ORIGINS=.*|CORS_ORIGINS=https://jobquickai.site|' backend/.env && sed -i 's|^FRONTEND_URL=.*|FRONTEND_URL=https://jobquickai.site|' backend/.env
+cd /opt/huntops && sed -i 's|^CORS_ORIGINS=.*|CORS_ORIGINS=https://jobquick.site|' backend/.env && sed -i 's|^FRONTEND_URL=.*|FRONTEND_URL=https://jobquick.site|' backend/.env
 ```
 
 Check both actually took — `sed` silently does nothing if the key wasn't
@@ -74,7 +74,7 @@ domain. If DNS is not pointing here yet, that request fails and it will keep
 retrying against a rate limit.
 
 ```bash
-echo "A record:  $(dig +short A jobquickai.site)"; echo "This box:  $(curl -4 -s ifconfig.me)"; echo "AAAA:      $(dig +short AAAA jobquickai.site)"
+echo "A record:  $(dig +short A jobquick.site)"; echo "This box:  $(curl -4 -s ifconfig.me)"; echo "AAAA:      $(dig +short AAAA jobquick.site)"
 ```
 
 The first two must match. `curl -4` is not optional: without it curl uses IPv6
@@ -123,7 +123,7 @@ In the Paystack dashboard, **Settings → API Keys & Webhooks**, set the webhook
 URL to:
 
 ```
-https://jobquickai.site/api/billing/webhook
+https://jobquick.site/api/billing/webhook
 ```
 
 There is no separate signing secret — Paystack signs with the same secret key
@@ -137,7 +137,7 @@ tier, so without it subscriptions take payment and never activate.
 Nothing appears in anyone's feed until an admin connects a mailbox.
 
 ```bash
-cd /opt/huntops && docker compose -f docker-compose.prod.yml exec api python -m app.scripts.create_admin you@jobquickai.site --name "Ops Admin"
+cd /opt/huntops && docker compose -f docker-compose.prod.yml exec api python -m app.scripts.create_admin you@jobquick.site --name "Ops Admin"
 ```
 
 It prompts for a password twice. If that email already has an account, it
@@ -147,12 +147,12 @@ promotes it instead.
 
 ## 8. Add a mailbox per market
 
-Open `https://jobquickai.site`, sign in as the admin, go to
+Open `https://jobquick.site`, sign in as the admin, go to
 **Alert mailboxes → Add mailbox**.
 
 For each market you want to serve:
 
-1. **Mailbox address** — e.g. `alerts-canada@jobquickai.site`. Create it on
+1. **Mailbox address** — e.g. `alerts-canada@jobquick.site`. Create it on
    whatever mail host you already use for the domain; it does not have to be
    Google.
 2. **Market** — `Canada`, `Nigeria`, `United Kingdom`. This exact string is
@@ -176,7 +176,7 @@ where it stopped, so nothing is read — or paid for — twice.
 ## 9. Verify
 
 ```bash
-curl -sI https://jobquickai.site | head -3
+curl -sI https://jobquick.site | head -3
 ```
 
 Then, in the browser:

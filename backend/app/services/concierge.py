@@ -221,4 +221,4 @@ def suggest_concierge_email(user: User) -> str:
     """
     first = (user.full_name or "").strip().split(" ")[0]
     cleaned = "".join(ch for ch in first.lower() if ch.isalpha()) or "candidate"
-    return f"{cleaned}@jobquickai.site"
+    return f"{cleaned}@jobquick.site"

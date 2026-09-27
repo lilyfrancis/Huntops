@@ -10,7 +10,7 @@ export function PrivacyPage() {
     <LegalLayout title="Privacy Policy" updated="6 September 2026">
       <p>
         JobQuick AI ("we", "us") runs a job-search service at{" "}
-        <a href="https://jobquickai.site">jobquickai.site</a>. This policy explains what we collect, why,
+        <a href="https://jobquick.site">jobquick.site</a>. This policy explains what we collect, why,
         who we share it with, and how to get it deleted. It is written to be read, not to be
         survived.
       </p>
@@ -18,7 +18,7 @@ export function PrivacyPage() {
       <h2>Who we are</h2>
       <p>
         JobQuick AI is the data controller for the information described below. You can reach us at{" "}
-        <a href="mailto:privacy@jobquickai.site">privacy@jobquickai.site</a> for any question or request
+        <a href="mailto:privacy@jobquick.site">privacy@jobquick.site</a> for any question or request
         in this policy.
       </p>
 
@@ -167,7 +167,7 @@ export function PrivacyPage() {
       <h2>Your rights</h2>
       <p>
         You can ask us to give you a copy of your data, correct it, delete it, or stop a particular
-        use of it. Email <a href="mailto:privacy@jobquickai.site">privacy@jobquickai.site</a> and we will
+        use of it. Email <a href="mailto:privacy@jobquick.site">privacy@jobquick.site</a> and we will
         respond within 30 days. Deleting your account removes your profile, CV, preferences,
         applications, outreach, interviews and offers, and revokes any Gmail connection.
       </p>

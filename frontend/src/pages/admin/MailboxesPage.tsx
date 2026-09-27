@@ -150,7 +150,7 @@ function AddDialog({
             <Input
               id="email_address"
               type="email"
-              placeholder="e.g. alerts-canada@jobquickai.site"
+              placeholder="e.g. alerts-canada@jobquick.site"
               value={form.email_address}
               disabled={!!existing}
               onChange={(e) =>
@@ -352,7 +352,7 @@ function MailboxRow({ mailbox, onEdit }: { mailbox: AlertMailbox; onEdit: () => 
         toast.success(`${result.mailbox}: ${result.inserted} new job${result.inserted === 1 ? "" : "s"}`);
       } else {
         // Belt and braces. Some exceptions stringify to "", and a toast
-        // reading "alerts-canada@jobquickai.site:" with nothing after it tells
+        // reading "alerts-canada@jobquick.site:" with nothing after it tells
         // the reader only that they should be worried.
         toast.error(`${result.mailbox}: ${result.error || "failed with no reported reason — check the API logs"}`, {
           duration: 12000,

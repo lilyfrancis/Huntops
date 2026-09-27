@@ -138,7 +138,7 @@ function QueueRow({ row }: { row: ConciergeQueueItem }) {
               id={`email-${row.id}`}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="e.g. jennifer@jobquickai.site"
+              placeholder="e.g. jennifer@jobquick.site"
             />
             <p className="mt-1 text-xs text-ink-faint">
               {row.concierge_email

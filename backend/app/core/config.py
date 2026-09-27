@@ -211,7 +211,7 @@ class Settings(BaseSettings):
     SMTP_PORT: int = 587
     SMTP_USERNAME: str = ""
     SMTP_PASSWORD: str = ""
-    SMTP_FROM_EMAIL: str = "noreply@jobquickai.site"
+    SMTP_FROM_EMAIL: str = "noreply@jobquick.site"
     SMTP_USE_TLS: bool = True
     # Implicit TLS (the whole session encrypted from the first byte) rather
     # than STARTTLS. Left unset it follows the port, which is right for every

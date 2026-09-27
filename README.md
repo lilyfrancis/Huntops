@@ -338,7 +338,7 @@ to disable the daily 07:00 UTC run and only trigger ingestion manually via
 1. Set a real `TOKEN_ENCRYPTION_KEY` (see `.env.example` for how to generate
    one). It encrypts every stored mailbox password; losing it means
    re-entering them all.
-2. Create a mailbox on whatever host you like — `alerts-canada@jobquickai.site`,
+2. Create a mailbox on whatever host you like — `alerts-canada@jobquick.site`,
    say — and subscribe it to that country's LinkedIn, Indeed or Glassdoor job
    alerts.
 3. As an admin, go to **Alert mailboxes → Add mailbox** and enter the address,

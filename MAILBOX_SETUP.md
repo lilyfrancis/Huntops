@@ -4,7 +4,7 @@ Do **Canada only**, all the way through, before touching UK or Dubai. You will
 learn something from the first real extraction run that changes how you set up
 the other two, and debugging one market is far easier than three.
 
-Assumes you already created `alerts-canada@jobquickai.site` in Hostinger, and
+Assumes you already created `alerts-canada@jobquick.site` in Hostinger, and
 that the release with the mailboxes page is deployed.
 
 ---
@@ -15,7 +15,7 @@ Hostinger sells two mail products and they use different servers, so check
 rather than guess.
 
 1. Log in to **hPanel**
-2. **Emails** → select `jobquickai.site`
+2. **Emails** → select `jobquick.site`
 3. Look for **Configuration settings** (sometimes under "Connect apps &
    devices" → "Other apps")
 
@@ -33,19 +33,19 @@ Also note the **SMTP host** on the same page — you need it in Step 5.
 ## Step 2 — Confirm mail can actually reach the mailbox
 
 Before subscribing to anything, prove the mailbox works. Send an email from
-your personal address to `alerts-canada@jobquickai.site`, then open Hostinger
+your personal address to `alerts-canada@jobquick.site`, then open Hostinger
 webmail and check it arrived.
 
 If it did not arrive, mail is not being routed to Hostinger and nothing else in
 this guide will work. On the server:
 
 ```bash
-dig +short MX jobquickai.site
+dig +short MX jobquick.site
 ```
 
 You want Hostinger's servers (`mx1.hostinger.com` / `mx2.hostinger.com`, or the
 Titan equivalents). If it is empty or points elsewhere, add Hostinger's MX
-records in whichever DNS zone is authoritative for `jobquickai.site`.
+records in whichever DNS zone is authoritative for `jobquick.site`.
 
 **Do not change the A record.** Web and mail are separate; the site stays on
 AWS.
@@ -56,7 +56,7 @@ AWS.
 
 This is the step that actually creates supply. Everything else is plumbing.
 
-For each board below: create an account using `alerts-canada@jobquickai.site`,
+For each board below: create an account using `alerts-canada@jobquick.site`,
 confirm the verification email in Hostinger webmail, then create the alerts.
 
 ### Settings that apply to every board
@@ -103,12 +103,12 @@ first digests arrive. There is nothing to sync before then.
 
 ## Step 4 — Add the mailbox in JobQuick AI
 
-Sign in at `https://jobquickai.site` as your admin, then **Alert mailboxes** →
+Sign in at `https://jobquick.site` as your admin, then **Alert mailboxes** →
 **Add mailbox**.
 
 | Field | What to enter |
 |---|---|
-| Mailbox address | `alerts-canada@jobquickai.site` |
+| Mailbox address | `alerts-canada@jobquick.site` |
 | Market | `Canada` |
 | Mail host | Click the **Hostinger Email** or **Hostinger (Titan)** preset, matching Step 1 |
 | Port | 993 (the preset fills this) |
@@ -128,7 +128,7 @@ each listing speak for itself.
 
 Click **Add and test**. It logs in immediately.
 
-- **"alerts-canada@jobquickai.site connected"** — good, continue.
+- **"alerts-canada@jobquick.site connected"** — good, continue.
 - **"Login failed… use an app password"** — the password is wrong, or
   Hostinger wants an app-specific one. Regenerate it in hPanel.
 - **"Could not connect to …"** — wrong host or port. Recheck Step 1.
@@ -141,7 +141,7 @@ Click **Add and test**. It logs in immediately.
 
 Separate from the mailboxes. This is how digests and outreach get *sent*.
 
-Create `noreply@jobquickai.site` in hPanel, then on the server:
+Create `noreply@jobquick.site` in hPanel, then on the server:
 
 ```bash
 cd /opt/huntops && nano backend/.env
@@ -152,9 +152,9 @@ Set these (matching the SMTP host from Step 1):
 ```
 SMTP_HOST=smtp.hostinger.com
 SMTP_PORT=587
-SMTP_USERNAME=noreply@jobquickai.site
+SMTP_USERNAME=noreply@jobquick.site
 SMTP_PASSWORD=<that mailbox's password>
-SMTP_FROM_EMAIL=noreply@jobquickai.site
+SMTP_FROM_EMAIL=noreply@jobquick.site
 SMTP_USE_TLS=true
 ADMIN_ALERT_EMAIL=<your own address>
 ```
@@ -199,7 +199,7 @@ Login failures usually mean a rotated or mistyped password.
 
 ### Then check the signup form
 
-Open `https://jobquickai.site/register` in a private window and go to the second
+Open `https://jobquick.site/register` in a private window and go to the second
 step. You should now see **Canada** as a market. Job families appear once each
 has five live listings, ordered by how much supply each actually has.
 
@@ -213,8 +213,8 @@ Same steps, with:
 
 | Market string | Mailbox | Boards |
 |---|---|---|
-| `United Kingdom` | alerts-uk@jobquickai.site | LinkedIn, Indeed.co.uk, Reed, Totaljobs |
-| `United Arab Emirates` | alerts-dubai@jobquickai.site | LinkedIn, Bayt, Naukrigulf, Indeed.ae |
+| `United Kingdom` | alerts-uk@jobquick.site | LinkedIn, Indeed.co.uk, Reed, Totaljobs |
+| `United Arab Emirates` | alerts-dubai@jobquick.site | LinkedIn, Bayt, Naukrigulf, Indeed.ae |
 
 On the last one: you named the mailbox "dubai", but the **market** is what
 users choose. `United Arab Emirates` covers the supply your alerts will

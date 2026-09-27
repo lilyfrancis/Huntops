@@ -5,7 +5,7 @@ export function TermsPage() {
     <LegalLayout title="Terms of Service" updated="6 September 2026">
       <p>
         These terms govern your use of JobQuick AI at{" "}
-        <a href="https://jobquickai.site">jobquickai.site</a>. By creating an account you agree to them.
+        <a href="https://jobquick.site">jobquick.site</a>. By creating an account you agree to them.
       </p>
 
       <h2>What JobQuick AI does</h2>
@@ -129,7 +129,7 @@ export function TermsPage() {
 
       <h2>Contact</h2>
       <p>
-        <a href="mailto:support@jobquickai.site">support@jobquickai.site</a>
+        <a href="mailto:support@jobquick.site">support@jobquick.site</a>
       </p>
     </LegalLayout>
   );
