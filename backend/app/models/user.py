@@ -58,6 +58,13 @@ class User(Base):
     )
     ai_credits: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
+    # Exempt from charging entirely: every action is allowed and nothing is
+    # debited. For the operator's own accounts, which have to be able to use
+    # the product without buying from themselves. Deliberately a flag rather
+    # than a very large balance — a balance runs out eventually, at the worst
+    # possible moment, and reads in the ledger as though somebody paid.
+    unlimited_credits: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+
     is_approved: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     is_suspended: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 

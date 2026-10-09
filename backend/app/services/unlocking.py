@@ -18,7 +18,7 @@ from app.models.application import Application
 from app.models.job import Job
 from app.models.job_unlock import JobUnlock
 from app.models.user import User
-from app.services.credits import adjust_credits
+from app.services.credits import adjust_credits, can_afford
 
 settings = get_settings()
 
@@ -58,7 +58,7 @@ def unlock(db: Session, user: User, job: Job) -> bool:
     if job.id in unlocked_ids(db, user, [job.id]):
         return False
 
-    if user.ai_credits < settings.UNLOCK_CREDIT_COST:
+    if not can_afford(user, settings.UNLOCK_CREDIT_COST):
         raise InsufficientCredits(
             f"Seeing this job costs {settings.UNLOCK_CREDIT_COST} credits and you have {user.ai_credits}."
         )

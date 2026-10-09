@@ -34,6 +34,7 @@ from app.services import outreach as outreach_service
 from app.services import tailoring
 from app.services import preferences
 from app.services.ai_client import AIResponseError
+from app.services.credits import can_afford
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -89,7 +90,7 @@ def _tailor(db: Session, user: User, job: Job) -> tuple[str | None, list[str], s
     record says which one the user got, so "why is this one generic" has an
     answer.
     """
-    if user.ai_credits < settings.TAILOR_CREDIT_COST:
+    if not can_afford(user, settings.TAILOR_CREDIT_COST):
         return None, [], "no letter (out of credits for tailoring)"
     try:
         draft = tailoring.generate(db, user, job)

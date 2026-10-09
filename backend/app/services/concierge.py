@@ -26,7 +26,7 @@ from app.models.enums import ConciergeStatus, SubscriptionTier
 from app.models.job import Job
 from app.models.user import User
 from app.services import notifications
-from app.services.credits import adjust_credits
+from app.services.credits import adjust_credits, can_afford
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -75,7 +75,7 @@ def check_can_request(db: Session, user: User) -> None:
             f"You have used all {settings.CONCIERGE_FREE_ALLOWANCE} of your concierge applications. "
             f"Elite removes the limit."
         )
-    if user.ai_credits < settings.CONCIERGE_CREDIT_COST:
+    if not can_afford(user, settings.CONCIERGE_CREDIT_COST):
         raise InsufficientCredits(
             f"Applying for you costs {settings.CONCIERGE_CREDIT_COST} credits "
             f"and you have {user.ai_credits}."

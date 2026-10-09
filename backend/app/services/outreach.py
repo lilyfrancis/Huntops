@@ -20,9 +20,9 @@ from app.models.outreach import Outreach
 from app.models.recruiter_contact import RecruiterContact
 from app.models.resume import Resume
 from app.models.user import User
-from app.services import apollo, gmail_oauth, notifications, outreach_drafting
+from app.services import apollo, gmail_oauth, notifications, outreach_drafting, resume_selection
 from app.services.apollo import ApolloAPIError
-from app.services.credits import adjust_credits
+from app.services.credits import adjust_credits, can_afford
 from app.services.gmail_oauth import GmailAPIError
 from app.services.gmail_tokens import get_valid_access_token
 
@@ -178,10 +178,10 @@ def initiate_outreach(db: Session, user: User, job: Job) -> Outreach:
 
     if user.subscription_tier != SubscriptionTier.elite:
         raise TierRequiredError("Autopilot Outreach is an Elite-tier feature")
-    if user.ai_credits < settings.OUTREACH_CREDIT_COST:
+    if not can_afford(user, settings.OUTREACH_CREDIT_COST):
         raise InsufficientCreditsError(f"Need {settings.OUTREACH_CREDIT_COST} credits, have {user.ai_credits}")
 
-    resume = db.query(Resume).filter(Resume.user_id == user.id).first()
+    resume = resume_selection.for_job(db, user, job)
     if resume is None:
         raise ResumeRequiredError("Upload a résumé before requesting outreach")
     if not job.company_name:

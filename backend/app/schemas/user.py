@@ -46,6 +46,9 @@ class UserOut(BaseModel):
     whatsapp_number: str | None
     subscription_tier: SubscriptionTier
     ai_credits: int
+    # Shown so the UI can say "unlimited" rather than a number that never
+    # moves, which otherwise reads as the balance being stuck.
+    unlimited_credits: bool = False
     is_approved: bool
     created_at: datetime
 

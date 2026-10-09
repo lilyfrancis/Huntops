@@ -26,7 +26,7 @@ from app.models.user import User
 from app.schemas.ai import NegotiationAdvice, validate_or_raise
 from app.services import ai_client, benchmarks
 from app.services.aggregation import infer_lane
-from app.services.credits import adjust_credits
+from app.services.credits import adjust_credits, can_afford
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -128,7 +128,7 @@ def review_offer(
 ) -> NegotiationReview:
     if user.subscription_tier == SubscriptionTier.free:
         raise TierRequiredError("The negotiation coach is available on Pro and Elite")
-    if user.ai_credits < settings.NEGOTIATION_CREDIT_COST:
+    if not can_afford(user, settings.NEGOTIATION_CREDIT_COST):
         raise InsufficientCreditsError(
             f"Need {settings.NEGOTIATION_CREDIT_COST} credits, have {user.ai_credits}"
         )

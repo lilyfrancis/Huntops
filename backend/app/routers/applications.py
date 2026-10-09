@@ -23,6 +23,7 @@ from app.schemas.application import (
 )
 from app.services import concierge, tailoring
 from app.services.ai_client import AIResponseError
+from app.services.credits import can_afford
 
 router = APIRouter(prefix="/api/applications", tags=["applications"])
 settings = get_settings()
@@ -178,7 +179,7 @@ def create_or_get_draft(
         )
 
     if existing is None or regenerate:
-        if current_user.ai_credits < settings.TAILOR_CREDIT_COST:
+        if not can_afford(current_user, settings.TAILOR_CREDIT_COST):
             raise HTTPException(
                 status_code=402,
                 detail=f"Tailoring costs {settings.TAILOR_CREDIT_COST} credits and you have {current_user.ai_credits}.",

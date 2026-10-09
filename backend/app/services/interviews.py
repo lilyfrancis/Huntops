@@ -24,8 +24,8 @@ from app.models.job import Job
 from app.models.resume import Resume
 from app.models.user import User
 from app.schemas.ai import AnswerFeedback, InterviewQuestionSet, InterviewSummary, validate_or_raise
-from app.services import ai_client
-from app.services.credits import adjust_credits
+from app.services import ai_client, resume_selection
+from app.services.credits import adjust_credits, can_afford
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -159,7 +159,7 @@ def start_session(db: Session, user: User, job: Job | None, role_title: str | No
     """Create a session with all questions pre-generated, charging credits once."""
     if user.subscription_tier == SubscriptionTier.free:
         raise TierRequiredError("Mock interviews are available on Pro and Elite")
-    if user.ai_credits < settings.INTERVIEW_CREDIT_COST:
+    if not can_afford(user, settings.INTERVIEW_CREDIT_COST):
         raise InsufficientCreditsError(
             f"Need {settings.INTERVIEW_CREDIT_COST} credits, have {user.ai_credits}"
         )
@@ -169,7 +169,7 @@ def start_session(db: Session, user: User, job: Job | None, role_title: str | No
         raise ValueError("Either job_id or role_title is required")
     company = job.company_name if job else None
 
-    resume = db.query(Resume).filter(Resume.user_id == user.id).first()
+    resume = resume_selection.for_job(db, user, job)
     questions = generate_questions(user, resume, title, company, job)
 
     session = InterviewSession(

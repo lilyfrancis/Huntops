@@ -81,7 +81,7 @@ export function Wallet({ variant = "sidebar" }: WalletProps) {
           aria-label={`${user.ai_credits} credits — open wallet`}
         >
           <WalletIcon className="h-4 w-4" strokeWidth={2} />
-          {user.ai_credits}
+          {user.unlimited_credits ? "∞" : user.ai_credits}
         </button>
       ) : (
         <button
@@ -90,9 +90,13 @@ export function Wallet({ variant = "sidebar" }: WalletProps) {
         >
           <div className="flex items-center justify-between">
             <span className="text-[0.7rem] font-semibold uppercase tracking-wide text-ink-faint">Credits</span>
-            <span className="text-sm font-bold text-violet-dark">{user.ai_credits}</span>
+            <span className="text-sm font-bold text-violet-dark">
+              {user.unlimited_credits ? "Unlimited" : user.ai_credits}
+            </span>
           </div>
-          <p className="mt-0.5 text-[0.7rem] text-ink-faint">Tap to top up</p>
+          <p className="mt-0.5 text-[0.7rem] text-ink-faint">
+            {user.unlimited_credits ? "No charge on this account" : "Tap to top up"}
+          </p>
         </button>
       )}
 
@@ -107,8 +111,14 @@ export function Wallet({ variant = "sidebar" }: WalletProps) {
           <div className="flex items-center gap-3 rounded-xl border border-border bg-surface-2 p-4">
             <WalletIcon className="h-5 w-5 shrink-0 text-violet" />
             <div>
-              <p className="text-2xl font-bold text-ink">{user.ai_credits}</p>
-              <p className="text-xs text-ink-muted">{inApplications(user.ai_credits, applyCost)} left</p>
+              <p className="text-2xl font-bold text-ink">
+                {user.unlimited_credits ? "Unlimited" : user.ai_credits}
+              </p>
+              <p className="text-xs text-ink-muted">
+                {user.unlimited_credits
+                  ? "This account is not charged for anything"
+                  : `${inApplications(user.ai_credits, applyCost)} left`}
+              </p>
             </div>
           </div>
 
