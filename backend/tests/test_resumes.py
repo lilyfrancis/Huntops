@@ -13,11 +13,12 @@ FAKE_PARSED = ParsedResume(
 )
 
 
-def _upload(client, headers, content=b"A" * 200, filename="resume.txt"):
+def _upload(client, headers, content=b"A" * 200, filename="resume.txt", **data):
     return client.post(
         "/api/resumes/upload",
         headers=headers,
         files={"file": (filename, io.BytesIO(content), "text/plain")},
+        data=data or None,
     )
 
 
@@ -35,15 +36,44 @@ def test_upload_resume_parses_and_stores(mock_parse, client):
 
 
 @patch("app.routers.resumes.resumes_service.parse_resume", return_value=FAKE_PARSED)
-def test_reupload_overwrites_previous_resume(mock_parse, client):
+def test_a_second_upload_adds_a_cv_rather_than_replacing_the_first(mock_parse, client):
+    """Uploading used to overwrite the only CV. Now that somebody can keep one
+    per career track, re-uploading the sales CV must not silently destroy the
+    engineering one."""
     data = register_user(client, email="reupload@example.com")
     headers = auth_headers(data["access_token"])
 
-    first = _upload(client, headers, content=b"B" * 200)
-    second = _upload(client, headers, content=b"C" * 200)
-    assert first.status_code == 201
-    assert second.status_code == 201
-    assert first.json()["id"] == second.json()["id"]  # same row, updated in place
+    first = _upload(client, headers, content=b"B" * 200, label="Engineering")
+    second = _upload(client, headers, content=b"C" * 200, label="Sales")
+
+    assert first.json()["id"] != second.json()["id"]
+    listed = client.get("/api/resumes", headers=headers).json()
+    assert {r["label"] for r in listed} == {"Engineering", "Sales"}
+
+
+@patch("app.routers.resumes.resumes_service.parse_resume", return_value=FAKE_PARSED)
+def test_naming_a_cv_to_replace_overwrites_that_one(mock_parse, client):
+    data = register_user(client, email="replace@example.com")
+    headers = auth_headers(data["access_token"])
+
+    first = _upload(client, headers, content=b"B" * 200, label="Engineering")
+    again = _upload(client, headers, content=b"C" * 200, replaces=first.json()["id"])
+
+    assert again.json()["id"] == first.json()["id"]
+    assert len(client.get("/api/resumes", headers=headers).json()) == 1
+
+
+@patch("app.routers.resumes.resumes_service.parse_resume", return_value=FAKE_PARSED)
+def test_the_first_cv_becomes_the_fallback(mock_parse, client):
+    data = register_user(client, email="firstprimary@example.com")
+    headers = auth_headers(data["access_token"])
+
+    first = _upload(client, headers, label="Engineering")
+    second = _upload(client, headers, label="Sales")
+
+    by_id = {r["id"]: r for r in client.get("/api/resumes", headers=headers).json()}
+    assert by_id[first.json()["id"]]["is_primary"] is True
+    assert by_id[second.json()["id"]]["is_primary"] is False
 
 
 def test_upload_rejects_unsupported_extension(client):

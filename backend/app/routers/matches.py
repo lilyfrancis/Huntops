@@ -8,11 +8,10 @@ from app.core.security import require_job_seeker
 from app.db.base import get_db
 from app.models.job import Job
 from app.models.application import Application
-from app.models.resume import Resume
 from app.models.user import User
 from app.schemas.job import JobOut, job_out_for
 from app.schemas.job_match import JobMatchOut, MatchRunOut
-from app.services import matching, preferences, unlocking
+from app.services import matching, preferences, resume_selection, unlocking
 from app.services.ai_client import AIResponseError
 
 router = APIRouter(prefix="/api/ai", tags=["matching"])
@@ -27,8 +26,7 @@ def match_jobs(
     current_user: User = Depends(require_job_seeker),
     db: Session = Depends(get_db),
 ) -> list[JobMatchOut]:
-    resume = db.query(Resume).filter(Resume.user_id == current_user.id).first()
-    if not resume:
+    if not resume_selection.all_for(db, current_user):
         raise HTTPException(status_code=404, detail="Please upload your résumé first")
 
     # Through the user's own filters, like the feed, the digest and autopilot.
@@ -46,12 +44,16 @@ def match_jobs(
     if not jobs:
         return MatchRunOut(matches=[], candidates_scored=0, threshold=matching.MIN_SCORE_THRESHOLD)
 
+    # Each job scored against the CV it calls for, so an engineering role is
+    # never rated on a sales CV — and then applied for with a third one.
+    persisted = []
     try:
-        scored = matching.score_jobs(resume, jobs, current_user.home_market)
+        for resume, group in resume_selection.group_by_resume(db, current_user, jobs):
+            scored = matching.score_jobs(resume, group, current_user.home_market)
+            persisted.extend(matching.persist_matches(db, current_user, scored))
     except AIResponseError as e:
         raise HTTPException(status_code=502, detail=f"Job matching failed: {e}")
 
-    persisted = matching.persist_matches(db, current_user, scored)
     db.commit()
 
     # Paid-for unlocks and applications alike: both are commitments that

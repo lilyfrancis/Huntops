@@ -38,6 +38,9 @@ export interface User {
   whatsapp_number: string | null;
   subscription_tier: SubscriptionTier;
   ai_credits: number;
+  /** Exempt from charging: the wallet says "Unlimited" rather than showing a
+      number that never moves. */
+  unlimited_credits?: boolean;
   is_approved: boolean;
   created_at: string;
 }
@@ -111,6 +114,13 @@ export interface JobMatch {
 
 export interface Resume {
   id: string;
+  /** What the owner calls it — "Engineering", "Sales". */
+  label: string;
+  /** The job families this CV is used for, as JobLane values. A job whose
+      lane is listed here is scored, tailored and pitched from this CV. */
+  lanes: string[];
+  /** The fallback, for a job whose family no CV claims. Exactly one per user. */
+  is_primary: boolean;
   file_name: string | null;
   parsed_skills: string[];
   experience_years: number | null;

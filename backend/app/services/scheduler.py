@@ -13,6 +13,7 @@ from app.services import (
     matching,
     notifications,
     preferences,
+    resume_selection,
     unlocking,
     whatsapp,
 )
@@ -115,7 +116,6 @@ def _run_daily_digest() -> None:
         )
 
         for user in seekers:
-            resume = db.query(Resume).filter(Resume.user_id == user.id).first()
             # Candidates are drawn per user now, not once for everyone: supply
             # is a single pool spanning every market, so a shared candidate set
             # would spend a Canadian marketer's scoring budget on UK engineering
@@ -131,8 +131,13 @@ def _run_daily_digest() -> None:
                 continue
 
             try:
-                scored = matching.score_jobs(resume, candidate_jobs, user.home_market)
-                matching.persist_matches(db, user, scored)
+                # Grouped by the CV each job calls for. One CV is one group
+                # and one call, exactly as before; a user who keeps an
+                # engineering CV and a sales CV gets two, which is the trade
+                # they made by uploading two.
+                for resume, group in resume_selection.group_by_resume(db, user, candidate_jobs):
+                    scored = matching.score_jobs(resume, group, user.home_market)
+                    matching.persist_matches(db, user, scored)
                 db.commit()
             except AIResponseError as e:
                 logger.warning("Digest scoring failed for user=%s: %s", user.id, e)

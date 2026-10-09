@@ -20,7 +20,7 @@ from app.models.job import Job
 from app.models.resume import Resume
 from app.models.user import User
 from app.schemas.ai import TailoredApplication, validate_or_raise
-from app.services import ai_client
+from app.services import ai_client, resume_selection
 from app.services.credits import adjust_credits
 
 logger = logging.getLogger(__name__)
@@ -84,7 +84,10 @@ def generate(db: Session, user: User, job: Job, *, force: bool = False) -> Appli
     if existing is not None and not force:
         return existing
 
-    resume = db.query(Resume).filter(Resume.user_id == user.id).first()
+    # The CV this job calls for, not whichever one happens to be first:
+    # tailoring a sales CV into an engineering application is worse than
+    # sending it untailored.
+    resume = resume_selection.for_job(db, user, job)
     if resume is None:
         raise NoResumeError("Upload a résumé first — there is nothing to tailor from.")
 
