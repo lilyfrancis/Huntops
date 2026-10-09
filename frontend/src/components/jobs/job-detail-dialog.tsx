@@ -60,8 +60,12 @@ export function JobDetailDialog({ job, open, onOpenChange }: { job: Job | null; 
       }
       return applicationsApi.apply(jobId, coverLetter || undefined, bullets);
     },
-    onSuccess: () => {
-      toast.success("Application sent");
+    onSuccess: (application) => {
+      toast.success(
+        application.is_concierge
+          ? "Queued — we'll file this for you and the status will change to filed"
+          : "Application sent"
+      );
       queryClient.invalidateQueries({ queryKey: ["applications", "mine"] });
       queryClient.invalidateQueries({ queryKey: ["concierge", "allowance"] });
       onOpenChange(false);

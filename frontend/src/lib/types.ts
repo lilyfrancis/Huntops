@@ -163,6 +163,9 @@ export interface FeedItem {
   fit_score: number | null;
   fit_reason: string | null;
   applied: boolean;
+  /** How far we have got with filing it, for the ones a person files by hand.
+      Null for an internal listing, which really is submitted on apply. */
+  concierge_status?: ConciergeStatus | null;
   outreach_sent: boolean;
   can_apply_directly: boolean;
 }

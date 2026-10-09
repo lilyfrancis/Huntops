@@ -3,6 +3,7 @@ import {
   Lock,
   Building2,
   Check,
+  Clock,
   Globe2,
   MapPin,
   Radio,
@@ -114,9 +115,23 @@ export function FeedCard({
 
       <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border pt-3">
         {item.applied ? (
-          <span className="inline-flex items-center gap-1.5 text-sm font-medium text-good">
-            <Check className="h-4 w-4" strokeWidth={2.5} /> Applied
-          </span>
+          /* "Applied" the instant the row existed was a promise we had not
+             kept: for a listing somebody files by hand, nothing has been
+             sent until they do it. The word matches the status on the
+             applications page rather than running ahead of it. */
+          item.concierge_status === "queued" ? (
+            <span className="inline-flex items-center gap-1.5 text-sm font-medium text-warning">
+              <Clock className="h-4 w-4" strokeWidth={2.5} /> Queued — we file this for you
+            </span>
+          ) : item.concierge_status === "blocked" ? (
+            <span className="inline-flex items-center gap-1.5 text-sm font-medium text-danger">
+              <Clock className="h-4 w-4" strokeWidth={2.5} /> Couldn't be filed — check Applications
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 text-sm font-medium text-good">
+              <Check className="h-4 w-4" strokeWidth={2.5} /> Applied
+            </span>
+          )
         ) : item.can_apply_directly ? (
           <Button size="sm" onClick={onApply} disabled={isApplying}>
             {isApplying ? "Applying…" : "Apply"}

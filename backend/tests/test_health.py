@@ -36,3 +36,39 @@ def test_detailed_health_reports_all_integrations(client):
     for key in ("database", "paystack", "anthropic", "apollo", "gmail_oauth", "smtp", "scheduler"):
         assert key in body
     assert body["scheduler"]["running"] is False  # scheduler doesn't start in the test environment
+
+
+def test_a_rate_limited_request_says_so_in_the_usual_shape(client, monkeypatch):
+    """slowapi's own handler answers {"error": ...}. Every other error in this
+    API uses `detail`, so the UI read nothing from it and showed a bare
+    "Request failed" — and behind HTTP/2 there is no status line to fall back
+    to either, because HTTP/2 carries no reason phrase."""
+    from slowapi.errors import RateLimitExceeded
+
+    from app.main import app
+
+    handler = app.exception_handlers[RateLimitExceeded]
+
+    class _Limit:
+        error_message = None
+        limit = "10 per 1 hour"
+
+    class _Exc(RateLimitExceeded):
+        def __init__(self):
+            self.detail = "10 per 1 hour"
+            self.limit = _Limit()
+
+    class _Req:
+        method = "POST"
+
+        class url:
+            path = "/api/outreach"
+
+    import asyncio
+
+    resp = asyncio.get_event_loop().run_until_complete(handler(_Req(), _Exc()))
+
+    assert resp.status_code == 429
+    body = resp.body.decode()
+    assert '"detail"' in body
+    assert "too many times" in body

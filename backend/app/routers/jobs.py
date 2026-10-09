@@ -131,9 +131,9 @@ def personalized_feed(
         .filter(JobMatch.user_id == current_user.id, JobMatch.job_id.in_(job_ids))
         .all()
     }
-    applied = {
-        job_id
-        for (job_id,) in db.query(Application.job_id)
+    applications = {
+        app.job_id: app
+        for app in db.query(Application)
         .filter(Application.candidate_id == current_user.id, Application.job_id.in_(job_ids))
         .all()
     }
@@ -156,7 +156,12 @@ def personalized_feed(
             job=job_out_for(job, current_user, unlocked),
             fit_score=matches[job.id].fit_score if job.id in matches else None,
             fit_reason=matches[job.id].reason if job.id in matches else None,
-            applied=job.id in applied,
+            applied=job.id in applications,
+            concierge_status=(
+                applications[job.id].concierge_status.value
+                if job.id in applications and applications[job.id].concierge_status is not None
+                else None
+            ),
             outreach_sent=job.id in outreached,
         )
         for job in jobs

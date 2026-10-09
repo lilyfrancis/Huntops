@@ -76,8 +76,12 @@ export function JobFeedPage() {
 
   const applyMutation = useMutation({
     mutationFn: (jobId: string) => applicationsApi.apply(jobId),
-    onSuccess: () => {
-      toast.success("Application submitted");
+    onSuccess: (application) => {
+      toast.success(
+        application.is_concierge
+          ? "Queued — we'll file this for you and the status will change to filed"
+          : "Application sent"
+      );
       refreshFeed();
       queryClient.invalidateQueries({ queryKey: ["applications"] });
     },

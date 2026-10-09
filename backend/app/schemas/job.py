@@ -83,6 +83,11 @@ class FeedItemOut(BaseModel):
     fit_score: float | None = None
     fit_reason: str | None = None
     applied: bool = False
+    # How far we have got with filing it, for the ones a person files by
+    # hand. The card said a flat "Applied" the moment the row existed, which
+    # promised something that had not happened yet — the user's own
+    # applications page said "queued" at the same moment.
+    concierge_status: str | None = None
     outreach_sent: bool = False
 
     @computed_field  # type: ignore[prop-decorator]

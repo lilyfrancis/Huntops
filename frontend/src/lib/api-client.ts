@@ -20,6 +20,31 @@ export class ApiError extends Error {
  * several inputs on screen, "is not a valid email address" does not say
  * which one.
  */
+/** What to say when the response carried no usable `detail`.
+ *
+ * `res.statusText` used to be the fallback, which is empty on HTTP/2 — and
+ * HTTP/2 is what Caddy serves in production. So every such error reached the
+ * user as the literal words "Request failed", which told them nothing and
+ * told us nothing either. The status code is always included, because it is
+ * the one thing that makes a report actionable.
+ */
+function describeStatus(status: number): string {
+  const known: Record<number, string> = {
+    400: "That request was not accepted.",
+    402: "You do not have enough credits for that.",
+    403: "Your account cannot do that.",
+    404: "That is not there.",
+    409: "That has already been done.",
+    413: "That file is too large.",
+    429: "You have done that too many times — try again a little later.",
+    500: "Something broke on our side.",
+    502: "We could not reach a service we depend on.",
+    503: "That feature is not switched on.",
+    504: "That took too long and was given up on.",
+  };
+  return `${known[status] ?? "Something went wrong."} (error ${status})`;
+}
+
 function readDetail(detail: ApiErrorBody["detail"], fallback: string): string {
   if (typeof detail === "string" && detail.trim()) return detail;
 
@@ -117,7 +142,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 
   if (!res.ok) {
     const detail = (json as ApiErrorBody | null)?.detail;
-    throw new ApiError(res.status, readDetail(detail, res.statusText || "Request failed"));
+    throw new ApiError(res.status, readDetail(detail, describeStatus(res.status)));
   }
 
   return json as T;
