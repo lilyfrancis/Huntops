@@ -57,7 +57,7 @@ const PLANS = [
     cadence: "/ month",
     features: [
       "Everything in Pro",
-      "Unlimited concierge applications — credits are the only limit",
+      "Apply to as many jobs as your available credits allow.",
       "Hiring-manager lookup and direct messages",
       "About 65 applications a month, at the best credit rate",
     ],
@@ -101,8 +101,7 @@ export function Pricing() {
         <span className="eyebrow t-eyebrow-lg">Pricing</span>
         <h2 className="t-h2 mt-4">Pay for reach, not for looking</h2>
         <p className="t-lead mt-5 text-ink-muted">
-          Every action that costs AI — a fit score, an extracted alert, a drafted outreach —
-          spends credits. Upgrade when you need more reach, not because a paywall says so.
+         Take control of your job search with flexible, affordable plans. Use your credits to find matching jobs, tailor your CV, apply automatically, and connect with recruiters. Choose the plan that fits your goals and scale up when you're ready for more opportunities.
         </p>
       </Reveal>
 
