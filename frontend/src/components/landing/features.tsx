@@ -4,23 +4,23 @@ import { Reveal } from "@/components/landing/reveal";
 const FEATURES = [
   {
     icon: Send,
-    title: "We file the application",
-    body: "Tap apply and a person at JobQuick AI fills in the form on the job board for you, under an address we set up in your name. You never open the site.",
+    title: "Your Job Applications, Automated",
+    body: "Stop wasting hours filling out job applications. JobQuick AI finds matching opportunities and automatically submits applications with a CV tailored to each role, while you focus on what matters.",
   },
   {
     icon: FileText,
-    title: "A cover letter per job",
-    body: "Written against that role's actual requirements, with your CV bullets rewritten to match. Read it, change anything, send it.",
+    title: "Every Job Deserves a Winning CV",
+    body: "No more generic applications. HuntOps tailors your CV and writes a compelling cover letter for each job, highlighting the skills and experience employers are looking for.",
   },
   {
     icon: Target,
-    title: "Scored against your CV",
-    body: "Every opening rated on skills, experience and location, with the reason in plain words — so you spend your time on the ten worth having.",
+    title: "Stop Applying Blindly",
+    body: "Know your chances before you apply. HuntOps scores every opportunity against your skills, experience, and preferred location, helping you focus on jobs that truly fit your profile.",
   },
   {
     icon: Radar,
     title: "Jobs the boards don't show you",
-    body: "Sourced from live alert feeds across Nigeria, the UK, the USA, Canada and the UAE, deduped daily. Not a stale scrape from last week.",
+    body: "Discover fresh, relevant opportunities across Nigeria, the UK, USA, Canada, and UAE without spending hours searching multiple job boards.",
   },
   {
     icon: Ghost,
@@ -30,7 +30,7 @@ const FEATURES = [
   {
     icon: MessageSquare,
     title: "Straight to the hiring manager",
-    body: "We find whoever is actually hiring and write to them for you — the thing that works when an application form does not.",
+    body: "Go beyond the Apply button. JobQuick AI finds relevant recruiters and sends personalised pitches highlighting why you're the right candidate for the job.",
   },
 ];
 
@@ -44,14 +44,24 @@ export function Features() {
         <div className="absolute -right-32 bottom-0 h-[24rem] w-[24rem] rounded-full bg-cyan-soft blur-[110px]" />
       </div>
       <div className="shell">
-        <Reveal className="mx-auto max-w-3xl text-center">
-          <span className="eyebrow t-eyebrow-lg">The platform</span>
-          <h2 className="t-h2 mt-4">The part everyone hates, done for you</h2>
-          <p className="t-lead mx-auto mt-5 max-w-2xl text-ink-muted">
-            Six jobs you are doing by hand tonight. Every one of them runs without you
-            from the moment you finish setup.
-          </p>
-        </Reveal>
+   
+<Reveal className="mx-auto max-w-3xl text-center">
+  <span className="eyebrow t-eyebrow-lg">
+    YOUR AI JOB SEARCH AGENT
+  </span>
+
+  <h2 className="t-h2 mt-4">
+    Stop Chasing Jobs. Let Opportunities Find You.
+  </h2>
+
+  <p className="t-lead mx-auto mt-5 max-w-2xl text-ink-muted">
+    Imagine waking up to job applications already submitted.
+    JobQuick AI finds matching roles, tailors your CV, applies on your
+    behalf, and connects you directly with recruiters.
+    You focus on getting hired.
+  </p>
+</Reveal>
+
 
         <div className="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 lg:gap-7">
           {FEATURES.map((f, i) => (
