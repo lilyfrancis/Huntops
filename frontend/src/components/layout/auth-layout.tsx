@@ -4,7 +4,7 @@ import { CheckCircle2 } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 
 const PROMISES = [
-  "We fill in the application forms for you",
+  "JobQuick fills in the application forms for you",
   "Every role scored against your CV, salary shown",
   "Ghost listings flagged before you waste a day",
 ];
@@ -30,9 +30,9 @@ export function AuthLayout({ children }: { children: ReactNode }) {
 
         <div className="relative max-w-md">
           <h1 className="text-4xl leading-tight text-white">
-            You pick.
+           You Focus on Getting Hired.
             <br />
-            We apply.
+          JobQuick Handles the Rest.
           </h1>
           <ul className="mt-8 space-y-3">
             {PROMISES.map((p) => (
