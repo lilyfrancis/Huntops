@@ -10,11 +10,11 @@ import { useParallax } from "@/hooks/use-parallax";
 // that there is a mechanism behind it — and mock interviews and negotiation
 // have nowhere else to appear this high up without crowding it.
 const ARC = [
-  { icon: Target, label: "Matched", body: "Every role scored against your CV, ghosts flagged." },
-  { icon: FileText, label: "CV tailored", body: "Rewritten for the job, with a cover letter to match." },
-  { icon: Send, label: "Applied for you", body: "We fill in the form on the board. You never open it." },
-  { icon: MessageSquare, label: "Manager messaged", body: "We find whoever is hiring and write to them." },
-  { icon: Mic, label: "Interview ready", body: "Mock screens and offer coaching when it lands." },
+  { icon: Target, label: "Smart Job Matching", body: "Finds opportunities that match your skills, experience, and career goals, scores each role against your CV, and flags suspicious or potentially fake job postings." },
+  { icon: FileText, label: "Tailored CV & Cover Letter", body: "Rewritten for the job, with a cover letter to match." },
+  { icon: Send, label: "Automated Job Applications", body: "Automatically applies to multiple relevant jobs across job boards using a tailored CV and cover letter for each opportunity, saving you hours of work while you focus on what matters." },
+  { icon: MessageSquare, label: "Message Recruiters Directly", body: "Identifies the recruiter responsible for each job opening and sends a personalized, compelling pitch highlighting your skills, experience, and why you're the ideal candidate." },
+  { icon: Mic, label: "Interview ready", body: "Prepares you for success with realistic mock interviews, personalized feedback, and expert coaching to help you confidently secure the job offer." },
 ];
 
 export function Hero() {
@@ -69,10 +69,10 @@ export function Hero() {
 
           <Reveal delay={2}>
             <p className="t-lead mt-7 max-w-2xl text-white/70">
-              JobQuick AI reads every opening across five markets, scores it against your CV,
+              JobQuick AI reads every opening across multiple job markets both local and international, scores it against your CV,
               rewrites the CV for the ones you want, and{" "}
-              <strong className="font-semibold text-white">files the application for you</strong> —
-              then messages the hiring manager directly. You just say yes.
+              <strong className="font-semibold text-white">applies for you</strong> —
+              then messages the hiring manager directly.
             </p>
           </Reveal>
 
