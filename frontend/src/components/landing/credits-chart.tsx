@@ -100,11 +100,9 @@ export function CreditsChart() {
         <div className="grid gap-12 lg:grid-cols-[0.85fr_1.15fr] lg:items-start lg:gap-20">
           <Reveal>
             <span className="eyebrow t-eyebrow-lg">Credits</span>
-            <h2 className="t-h2 mt-4">One month of credits, counted out</h2>
+            <h2 className="t-h2 mt-4">Less Job Hunting. More Opportunities.</h2>
             <p className="t-lead mt-5 text-ink-muted">
-              Credits are the only thing you spend. No action is locked behind a tier — a
-              free account and an Elite account can do exactly the same things, and the
-              plan decides only how much of it fits in a month.
+              Let JobQuick AI do the heavy lifting. Use your credits to discover opportunities, tailor your CV, and apply for jobs automatically. Choose a monthly plan that matches your ambition and spend less time applying, more time getting hired.
             </p>
             <dl className="mt-9 space-y-4">
               {ACTIONS.map((a) => (
@@ -230,8 +228,7 @@ export function CreditsChart() {
               </div>
 
               <p id="credits-chart-caption" className="mt-8 text-sm leading-relaxed text-ink-muted">
-                Each bar is a whole month spent on that one action. In practice you mix
-                them, and unspent credits are gone at the end of the month.
+                See how far your monthly credits can take you. Use them across applications, CV tailoring, and job unlocks. Credits reset monthly, so make every opportunity count.
               </p>
 
               {/* The numbers are never gated behind a hover. */}
