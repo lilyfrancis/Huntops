@@ -114,7 +114,7 @@ export function JobFeedPage() {
       <PageHeader
         eyebrow="Your feed"
         title="Job feed"
-        description="Drawn from the markets you picked — our alert mailboxes plus six live job-board sources."
+        description="Drawn from the markets you picked "
         action={
           <Button variant="outline" size="sm" asChild>
             <Link to="/app/autopilot">
