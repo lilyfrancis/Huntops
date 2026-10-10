@@ -123,17 +123,30 @@ export function JobMarquee() {
         <Row roles={ROW_TWO} reverse />
       </div>
 
-      <div className="shell mt-12">
-        <p className="text-center text-xs font-semibold uppercase tracking-widest text-ink-faint">
-          Sourced continuously from
-        </p>
-        <p className="mx-auto mt-3 max-w-4xl text-center text-sm text-ink-muted">
-          {SOURCES.join(" · ")}
-        </p>
-        <p className="mx-auto mt-6 max-w-2xl text-center text-xs text-ink-faint">
-          Cards above are examples of the shape of the feed, not live listings.
-        </p>
-      </div>
+    
+<div className="shell mt-12">
+  <div className="mx-auto max-w-3xl text-center">
+    <p className="text-xs font-semibold uppercase tracking-widest text-ink-faint">
+      YOUR CAREER, ON AUTOPILOT
+    </p>
+
+    <h3 className="mt-4 text-2xl font-bold tracking-tight text-ink">
+      Your Next Job Is Closer Than You Think
+    </h3>
+
+    <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-ink-muted">
+      Stop spending hours searching, rewriting CVs, and applying
+      manually. JobQuick AI finds opportunities that match your skills,
+      tailors your applications, and helps you connect directly
+      with recruiters.
+    </p>
+
+    <p className="mt-5 text-sm font-semibold text-ink">
+      Less searching. Smarter applications. More opportunities.
+    </p>
+  </div>
+</div>
+
     </section>
   );
 }
