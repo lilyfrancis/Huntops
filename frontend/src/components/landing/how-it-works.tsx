@@ -20,8 +20,8 @@ const STEPS = [
   },
   {
     n: "03",
-    title: "Tap apply. We file it.",
-    body: "We write the cover letter, fill in the form on the job board, and send it under your name. You watch the status change from queued to filed — and never open a job site.",
+    title: "Tap apply. JobQuick applies for you.",
+    body: "Jobquick writes the cover letter,optimizes your cv amd matches the job keywords, fill in the form on the job board, and send it under your name. You watch the status change from queued to filed - and never open a job site.",
     image: "/brand/feature-offer.webp",
     alt: "A candidate celebrating a call from a recruiter",
   },
