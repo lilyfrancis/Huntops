@@ -7,7 +7,7 @@ import {
   Flame,
   Inbox,
   Menu,
-  Radio,
+  SlidersHorizontal,
   LayoutDashboard,
   LogOut,
   MessageSquare,
@@ -40,7 +40,7 @@ const NAV_BY_ROLE: Record<string, NavItem[]> = {
   job_seeker: [
     { to: "/app", label: "Job feed", icon: Briefcase, end: true },
     { to: "/app/matches", label: "Matches", icon: Sparkles },
-    { to: "/app/autopilot", label: "Autopilot", icon: Radio },
+    { to: "/app/autopilot", label: "Preferences", icon: SlidersHorizontal },
     { to: "/app/momentum", label: "Momentum", icon: Flame },
     { to: "/app/resume", label: "Résumé", icon: FileText },
     { to: "/app/applications", label: "Applications", icon: Inbox },

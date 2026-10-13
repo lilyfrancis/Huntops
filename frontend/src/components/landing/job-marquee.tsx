@@ -94,11 +94,6 @@ function Row({ roles, reverse }: { roles: Role[]; reverse?: boolean }) {
   );
 }
 
-const SOURCES = [
-  "LinkedIn alerts", "Indeed", "Greenhouse", "Lever", "RemoteOK",
-  "We Work Remotely", "Remotive", "Jobicy", "Arbeitnow", "Adzuna",
-];
-
 export function JobMarquee() {
   return (
     <section className="relative isolate overflow-hidden bg-bg-tint py-20 lg:py-24">
