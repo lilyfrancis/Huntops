@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta, timezone
 import logging
 
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -71,6 +72,22 @@ def _run_email_sync() -> None:
         db.close()
 
 
+def _is_dormant(user) -> bool:
+    """Whether to leave this account alone this morning.
+
+    A null `last_seen_at` counts as active: the column arrived after some
+    accounts did, and skipping somebody because of when a migration ran would
+    be the wrong kind of saving.
+    """
+    days = settings.DIGEST_DORMANT_AFTER_DAYS
+    if days <= 0 or user.last_seen_at is None:
+        return False
+    last = user.last_seen_at
+    if last.tzinfo is None:
+        last = last.replace(tzinfo=timezone.utc)
+    return (datetime.now(timezone.utc) - last) > timedelta(days=days)
+
+
 def _deliver_email(user, matches, unlocked=None) -> bool:
     subject, body = digest.format_digest_email(matches, unlocked)
     return notifications.send_email(user.email, subject, body)
@@ -107,6 +124,7 @@ def _run_daily_digest() -> None:
 
     db = SessionLocal()
     sent_count = 0
+    skipped_dormant = 0
     try:
         seekers = (
             db.query(User)
@@ -116,19 +134,28 @@ def _run_daily_digest() -> None:
         )
 
         for user in seekers:
+            if _is_dormant(user):
+                # Not reading the digest, and the morning run spends real
+                # money telling them so. Signing in resumes it next morning —
+                # nothing is deleted and no setting of theirs changes.
+                skipped_dormant += 1
+                continue
+
             # Candidates are drawn per user now, not once for everyone: supply
             # is a single pool spanning every market, so a shared candidate set
             # would spend a Canadian marketer's scoring budget on UK engineering
             # roles they asked not to see.
             prefs = preferences.get_or_create(db, user)
-            candidate_jobs = (
-                preferences.feed_query(db, prefs)
-                .order_by(desc(Job.created_at))
-                .limit(settings.MAX_MATCH_CANDIDATES)
-                .all()
+            # Only what this user has never been scored against. A job sits in
+            # the newest-forty window for days, so the old query paid to score
+            # — and to reject — the same jobs every morning.
+            candidate_jobs = matching.unscored_for(
+                db, user, preferences.feed_query(db, prefs), settings.MAX_MATCH_CANDIDATES
             )
             if not candidate_jobs:
-                continue
+                # Nothing new today. The digest still goes out from what was
+                # already scored, so a quiet supply day is not a silent one.
+                candidate_jobs = []
 
             try:
                 # Grouped by the CV each job calls for. One CV is one group
@@ -172,7 +199,10 @@ def _run_daily_digest() -> None:
             if delivered:
                 sent_count += 1
 
-        logger.info("Daily digest sent to %d/%d job seekers", sent_count, len(seekers))
+        logger.info(
+            "Daily digest sent to %d/%d job seekers (%d skipped as dormant)",
+            sent_count, len(seekers), skipped_dormant,
+        )
     except Exception as e:
         logger.error("Scheduled digest failed: %s", e)
         notifications.alert_admin("Daily digest job crashed", str(e))

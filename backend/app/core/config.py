@@ -119,6 +119,25 @@ class Settings(BaseSettings):
     # Steady-state syncs are UID-incremental and ignore this.
     EMAIL_SYNC_LOOKBACK_DAYS: int = 3
 
+    # How much of an alert email is sent to the model.
+    #
+    # It used to be all of it, with no limit at all. A LinkedIn or Indeed
+    # digest, HTML stripped, routinely runs to 10,000–30,000 characters, and
+    # almost all of the tail is footer, unsubscribe text and legal boilerplate
+    # — paid for on every email, every day, whether or not anybody reads the
+    # jobs it produced. The listings are at the top, so the cut is cheap.
+    #
+    # 14,000 characters is roughly 3,500 tokens and comfortably holds the
+    # 25-role digests these senders produce. Raise it if a real alert turns
+    # out to be longer; the log line from a truncated email says which.
+    MAX_EXTRACTION_CHARS: int = 14000
+
+    # Stop scoring for an account that has not signed in for this long. They
+    # are not reading the digest, and every morning spends real money telling
+    # them so. Signing in again resumes it the next morning — nothing is
+    # deleted and no setting changes. 0 disables the check.
+    DIGEST_DORMANT_AFTER_DAYS: int = 21
+
     # Apollo (recruiter discovery) + outreach drafting — Autopilot Outreach,
     # gated to the elite tier and metered in credits since both an Apollo
     # reveal and a Sonnet-tier draft cost real money per call.

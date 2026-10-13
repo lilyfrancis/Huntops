@@ -1,3 +1,4 @@
+from sqlalchemy import desc
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
@@ -85,6 +86,7 @@ def score_jobs(resume: Resume, jobs: list[Job], home_market: str | None) -> list
         return []
 
     raw = ai_client.complete_json(
+        feature="scoring",
         system=SYSTEM_PROMPT,
         prompt=_build_prompt(resume, jobs, home_market),
         model=settings.ANTHROPIC_SCORING_MODEL,
@@ -109,21 +111,50 @@ def score_jobs(resume: Resume, jobs: list[Job], home_market: str | None) -> list
     return results
 
 
+def unscored_for(db: Session, user: User, query, limit: int) -> list[Job]:
+    """The newest jobs from `query` that this user has no score for yet.
+
+    Scoring used to take the newest N from the feed and send all of them. A
+    job sits in that window for days, so the same job was scored for the same
+    person again every morning — and because a rejected job left no trace, it
+    was rejected again, and again, at full price. In a steady state this is
+    the difference between paying for forty jobs a day and paying for the few
+    that actually arrived.
+    """
+    already = {
+        job_id
+        for (job_id,) in db.query(JobMatch.job_id).filter(JobMatch.user_id == user.id).all()
+    }
+    out: list[Job] = []
+    # Walked rather than filtered in SQL: the exclusion set is per user and
+    # small, and this keeps one query shape shared with the feed.
+    for job in query.order_by(desc(Job.created_at)).limit(limit * 4).all():
+        if job.id in already:
+            continue
+        out.append(job)
+        if len(out) >= limit:
+            break
+    return out
+
+
 def persist_matches(
     db: Session, user: User, scored: list[tuple[Job, JobFitScore, bool]], min_score: float = MIN_SCORE_THRESHOLD
 ) -> list[tuple[JobMatch, Job]]:
-    """Upsert JobMatch rows for whatever cleared the score threshold, returned
-    paired with their Job so callers never need a second lookup.
+    """Record every score, and return the ones that cleared the threshold.
+
+    Everything is written, including the scores that did not make the cut.
+    That row is the only memory the system has that this job was already
+    considered for this person; without it the job comes back through the
+    candidate list tomorrow and is paid for again. Readers that mean "good
+    matches" — the digest, the matches list, the momentum count — apply the
+    threshold themselves.
 
     Shared by the interactive /api/ai/match-jobs endpoint and the scheduled
-    daily digest, so both write through the exact same persistence rule
-    instead of two copies drifting apart.
+    daily digest, so both write through the exact same rule instead of two
+    copies drifting apart.
     """
     persisted = []
     for job, score, geo_boost_applied in scored:
-        if score.overall_score < min_score:
-            continue
-
         match = db.query(JobMatch).filter(JobMatch.user_id == user.id, JobMatch.job_id == job.id).first()
         if match is None:
             match = JobMatch(user_id=user.id, job_id=job.id, fit_score=0)
@@ -135,6 +166,7 @@ def persist_matches(
         match.geo_score = score.location_score
         match.geo_boost_applied = geo_boost_applied
         match.reason = score.reason
-        persisted.append((match, job))
+        if score.overall_score >= min_score:
+            persisted.append((match, job))
 
     return persisted

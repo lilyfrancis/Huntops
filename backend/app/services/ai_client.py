@@ -40,8 +40,16 @@ def _strip_json_fence(text: str) -> str:
     return text.strip()
 
 
-def complete_json(system: str, prompt: str, model: str, max_tokens: int = 1024) -> dict | list:
-    """Call Claude and parse its reply as JSON. Raises AIResponseError on any failure."""
+def complete_json(
+    system: str, prompt: str, model: str, max_tokens: int = 1024, *, feature: str = "unknown"
+) -> dict | list:
+    """Call Claude and parse its reply as JSON. Raises AIResponseError on any failure.
+
+    `feature` names the caller in the usage log. Without it the only record of
+    where the bill goes is one total in the provider's console, and the
+    difference between "scoring is expensive" and "reading the alert emails is
+    expensive" decides which change is worth making. It costs one log line.
+    """
     client = _get_client()
 
     try:
@@ -53,9 +61,19 @@ def complete_json(system: str, prompt: str, model: str, max_tokens: int = 1024) 
         )
         raw_text = response.content[0].text
         stop_reason = response.stop_reason
+        usage = getattr(response, "usage", None)
     except Exception as e:  # network/API errors from the SDK
-        logger.error("Anthropic API call failed: %s", e)
+        logger.error("Anthropic API call failed (feature=%s): %s", feature, e)
         raise AIResponseError(f"AI provider call failed: {e}") from e
+
+    if usage is not None:
+        # One line per call, greppable. `in` dominates the bill for anything
+        # that sends a document — reading a job-alert email sends the whole
+        # thing, and scoring sends forty job summaries.
+        logger.info(
+            "ai.usage feature=%s model=%s in=%s out=%s",
+            feature, model, getattr(usage, "input_tokens", "?"), getattr(usage, "output_tokens", "?"),
+        )
 
     # Checked before parsing, because a truncated reply is invalid JSON and
     # would otherwise be reported as a malformed model response — which sends

@@ -30,6 +30,7 @@ Respond ONLY with valid JSON in this exact format:
 
 def parse_resume(resume_text: str) -> ParsedResume:
     raw = ai_client.complete_json(
+        feature="resume_parse",
         system=SYSTEM_PROMPT,
         prompt=_build_prompt(resume_text),
         model=settings.ANTHROPIC_SCORING_MODEL,

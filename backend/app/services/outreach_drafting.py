@@ -61,6 +61,7 @@ Respond ONLY with valid minified JSON in this exact format:
 
 def draft_outreach(user: User, resume: Resume, job: Job, recruiter_name: str | None, recruiter_title: str | None) -> OutreachDraft:
     raw = ai_client.complete_json(
+        feature="outreach_draft",
         system=SYSTEM_PROMPT,
         prompt=_build_prompt(user, resume, job, recruiter_name, recruiter_title),
         model=settings.ANTHROPIC_DRAFTING_MODEL,
