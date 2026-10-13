@@ -192,15 +192,31 @@ def test_match_jobs_endpoint_filters_below_threshold_and_persists(mock_score_job
     assert results[0]["job"]["title"] == "High Fit Role"
     assert results[0]["fit_score"] == 80
 
-    # A second call should reuse/update the same JobMatch row, not duplicate it.
-    resp2 = client.get("/api/ai/match-jobs", headers=headers)
-    assert resp2.status_code == 200
-
+    # Both scores are recorded, not just the survivor. The rejected one is
+    # the only memory that this job was already considered for this person;
+    # without it the job returns through the candidate list tomorrow and is
+    # paid for again.
     from app.models.job_match import JobMatch
+
     session = SessionLocal()
     match_count = session.query(JobMatch).filter(JobMatch.job_id.in_(job_ids)).count()
     session.close()
-    assert match_count == 1
+    assert match_count == 2
+
+    # A second call scores nothing, because nothing is new — that is the
+    # saving. It still returns the match that is already stored, or the page
+    # would empty itself on a quiet day.
+    mock_score_jobs.reset_mock()
+    resp2 = client.get("/api/ai/match-jobs", headers=headers)
+
+    assert resp2.status_code == 200
+    assert resp2.json()["candidates_scored"] == 0
+    mock_score_jobs.assert_not_called()
+    assert [m["job"]["title"] for m in resp2.json()["matches"]] == ["High Fit Role"]
+
+    session = SessionLocal()
+    assert session.query(JobMatch).filter(JobMatch.job_id.in_(job_ids)).count() == 2
+    session.close()
 
 
 def test_match_jobs_requires_resume_first(client):

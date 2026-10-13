@@ -17,6 +17,7 @@ from app.models.application import Application
 from app.models.enums import ApplicationStatus, InterviewStatus, OutreachStatus
 from app.models.interview import InterviewSession
 from app.models.job_match import JobMatch
+from app.services import matching
 from app.models.outreach import Outreach
 from app.models.user import User
 
@@ -103,7 +104,12 @@ def build_stats(db: Session, user: User) -> dict:
             {"stage": "offered", "label": "Offered", "count": offered},
         ],
         "totals": {
-            "matches_scored": db.query(JobMatch).filter(JobMatch.user_id == user.id).count(),
+            # Only the ones that cleared the bar: sub-threshold scores are kept
+            # now so they are never re-scored, and counting those here would
+            # inflate the number against what it meant last week.
+            "matches_scored": db.query(JobMatch)
+            .filter(JobMatch.user_id == user.id, JobMatch.fit_score >= matching.MIN_SCORE_THRESHOLD)
+            .count(),
             "applications": applied,
             "outreach_sent": db.query(Outreach)
             .filter(Outreach.user_id == user.id, Outreach.status == OutreachStatus.sent)

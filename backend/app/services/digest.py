@@ -10,7 +10,7 @@ from app.models.enums import JobStatus
 from app.models.job import Job
 from app.models.job_match import JobMatch
 from app.models.user import User
-from app.services import visibility
+from app.services import matching, visibility
 
 settings = get_settings()
 
@@ -22,7 +22,14 @@ def get_top_matches(db: Session, user: User) -> list[tuple[JobMatch, Job]]:
     rows = (
         db.query(JobMatch, Job)
         .join(Job, JobMatch.job_id == Job.id)
-        .filter(JobMatch.user_id == user.id, Job.status == JobStatus.active)
+        # The threshold moved here from persistence: every score is kept now,
+        # so that a job already considered is never paid for twice, and the
+        # places that mean "worth your morning" filter for themselves.
+        .filter(
+            JobMatch.user_id == user.id,
+            Job.status == JobStatus.active,
+            JobMatch.fit_score >= matching.MIN_SCORE_THRESHOLD,
+        )
         .order_by(desc(JobMatch.geo_boost_applied), desc(JobMatch.fit_score))
         .limit(settings.DIGEST_MAX_JOBS)
         .all()

@@ -65,6 +65,15 @@ class User(Base):
     # possible moment, and reads in the ledger as though somebody paid.
     unlimited_credits: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
+    # When this account last signed in or refreshed a session.
+    #
+    # The morning run used to score for every job seeker who had ever
+    # registered. A dormant account costs exactly as much as the best
+    # customer and reads nothing, so this is what lets the scheduler leave it
+    # alone. Null means "never recorded" — those are treated as active, so
+    # nobody is skipped because this column arrived after they signed up.
+    last_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
     is_approved: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     is_suspended: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 

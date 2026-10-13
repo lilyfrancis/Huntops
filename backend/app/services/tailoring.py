@@ -93,6 +93,7 @@ def generate(db: Session, user: User, job: Job, *, force: bool = False) -> Appli
 
     # Raised, not caught: no draft row and no charge for a failed generation.
     raw = ai_client.complete_json(
+        feature="tailoring",
         system=SYSTEM_PROMPT,
         prompt=_build_prompt(user, resume, job),
         model=settings.ANTHROPIC_DRAFTING_MODEL,

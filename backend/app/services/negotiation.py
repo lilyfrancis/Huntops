@@ -151,6 +151,7 @@ def review_offer(
     )
 
     raw = ai_client.complete_json(
+        feature="negotiation",
         system=SYSTEM_PROMPT,
         prompt=prompt,
         model=settings.ANTHROPIC_DRAFTING_MODEL,

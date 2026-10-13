@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
@@ -25,6 +25,23 @@ from app.services.credits import adjust_credits
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 settings = get_settings()
+
+
+def _touch(db: Session, user: User) -> None:
+    """Record that this account is in use.
+
+    Written at most once a day. Every refresh writing a row would turn a
+    read-mostly table into a write on every page load, for a field whose
+    whole job is answering "has this person been here in the last three
+    weeks".
+    """
+    now = datetime.now(timezone.utc)
+    last = user.last_seen_at
+    if last is not None and last.tzinfo is None:
+        last = last.replace(tzinfo=timezone.utc)
+    if last is None or (now - last) > timedelta(hours=20):
+        user.last_seen_at = now
+        db.commit()
 
 
 def _issue_tokens(user: User) -> TokenPair:
@@ -90,6 +107,7 @@ def login(request: Request, payload: UserLogin, db: Session = Depends(get_db)) -
     if user.is_suspended:
         raise HTTPException(status_code=403, detail="Account suspended")
 
+    _touch(db, user)
     return _issue_tokens(user)
 
 
@@ -105,6 +123,10 @@ def refresh(payload: RefreshRequest, db: Session = Depends(get_db)) -> AccessTok
     if user.is_suspended:
         raise HTTPException(status_code=403, detail="Account suspended")
 
+    # Stamped on refresh as well as login: somebody who keeps the app open for
+    # weeks signs in once, and counting only logins would call them dormant
+    # while they are using it daily.
+    _touch(db, user)
     return AccessTokenOut(access_token=create_access_token(user.id))
 
 

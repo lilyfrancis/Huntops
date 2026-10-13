@@ -97,6 +97,7 @@ Respond ONLY with valid minified JSON:
 {{"questions": ["...", "..."]}}"""
 
     raw = ai_client.complete_json(
+        feature="interview",
         system=QUESTION_SYSTEM_PROMPT,
         prompt=prompt,
         model=settings.ANTHROPIC_DRAFTING_MODEL,
@@ -124,6 +125,7 @@ Respond ONLY with valid minified JSON:
 {{"score": 0, "strengths": ["..."], "improvements": ["..."], "model_answer": "..."}}"""
 
     raw = ai_client.complete_json(
+        feature="interview",
         system=GRADING_SYSTEM_PROMPT,
         prompt=prompt,
         model=settings.ANTHROPIC_DRAFTING_MODEL,
@@ -147,6 +149,7 @@ Respond ONLY with valid minified JSON:
 {{"summary": "2-4 sentences on overall performance", "next_steps": ["concrete thing to practise", "..."]}}"""
 
     raw = ai_client.complete_json(
+        feature="interview",
         system=SUMMARY_SYSTEM_PROMPT,
         prompt=prompt,
         model=settings.ANTHROPIC_DRAFTING_MODEL,
