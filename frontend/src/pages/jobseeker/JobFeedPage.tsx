@@ -108,6 +108,9 @@ export function JobFeedPage() {
     ...(prefs?.lanes ?? []).map(humanize),
   ];
   const hasFilters = filterSummary.length > 0;
+  // Distinct from hasFilters: somebody can have picked a market and still
+  // have no field chosen, which is the case that floods the feed.
+  const noLanesPicked = !!prefs && (prefs.lanes ?? []).length === 0;
 
   return (
     <div>
@@ -167,7 +170,7 @@ export function JobFeedPage() {
         )}
       </div>
 
-      <p className="mb-6 text-sm text-ink-muted">
+      <p className="mb-4 text-sm text-ink-muted">
         {hasFilters && !ignorePreferences ? (
           <>
             Showing <span className="font-semibold text-ink">{filterSummary.join(", ")}</span>
@@ -179,6 +182,23 @@ export function JobFeedPage() {
             were saved. */}
         {(remoteOnly || debouncedSearch.trim()) && " — narrowed for this visit only"}
       </p>
+
+      {/* An empty preference set means "show me everything", and the feed
+          looked identical to one somebody had deliberately set that way.
+          Backend and React roles arriving for a marketing candidate reads as
+          the matching being broken, when nothing has been asked of it — and
+          every one of those is scored at our expense. */}
+      {!noLanesPicked ? null : (
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-warning/30 bg-warning-soft px-4 py-3">
+          <p className="text-sm text-warning">
+            <strong className="font-semibold">You have not picked a field yet</strong>, so this
+            shows every kind of role — engineering, sales, finance and the rest.
+          </p>
+          <Button size="sm" asChild>
+            <Link to="/app/autopilot">Choose your fields</Link>
+          </Button>
+        </div>
+      )}
 
       {isLoading ? (
         <PageSpinner />
