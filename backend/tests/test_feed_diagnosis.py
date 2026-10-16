@@ -162,3 +162,46 @@ def test_an_unknown_source_is_refused(client):
 
     assert client.put("/api/users/preferences", headers=headers,
                       json={"sources": ["telepathy"]}).status_code == 422
+
+
+# ---------- noticing that nothing has run ----------
+
+def test_a_pool_that_stopped_filling_says_so(db_session, capsys):
+    """The failure mode is an absence. Every scheduled job lives in one
+    container, so they stop together and none of them reports it: a pool at
+    its daily cap looks healthy long after the last thing was added, and a
+    mailbox unread for a fortnight still shows its last sync as "success"."""
+    from datetime import datetime, timedelta, timezone
+
+    from app.models.email_sync_run import EmailSyncRun
+    from app.models.ingestion_run import IngestionRun
+    from app.scripts.diagnose_feed import _freshness
+
+    long_ago = datetime.now(timezone.utc) - timedelta(days=13)
+    db_session.add(IngestionRun(source="remotive", status="success", started_at=long_ago))
+    db_session.add(EmailSyncRun(status="success", started_at=long_ago))
+    db_session.commit()
+
+    _freshness(db_session)
+    out = capsys.readouterr().out
+
+    assert "13 day(s) ago" in out
+    assert "STALE" in out
+    assert "scheduler" in out
+
+
+def test_a_healthy_pool_raises_no_alarm(db_session, capsys):
+    from datetime import datetime, timezone
+
+    from app.models.email_sync_run import EmailSyncRun
+    from app.models.ingestion_run import IngestionRun
+    from app.scripts.diagnose_feed import _freshness
+
+    now = datetime.now(timezone.utc)
+    db_session.add(IngestionRun(source="remotive", status="success", started_at=now))
+    db_session.add(EmailSyncRun(status="success", started_at=now))
+    db_session.commit()
+
+    _freshness(db_session)
+
+    assert "STALE" not in capsys.readouterr().out
