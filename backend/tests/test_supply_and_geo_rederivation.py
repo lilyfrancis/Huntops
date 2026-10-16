@@ -181,3 +181,87 @@ def test_employer_side_mail_on_an_allowed_domain_is_still_refused():
     from app.services.alert_senders import detect_provider
 
     assert detect_provider("Indeed <employers-noreply@indeed.com>") is None
+
+
+# ---------- not erasing the evidence ----------
+
+def test_a_quiet_run_does_not_wipe_the_last_diagnosis(db_session):
+    """A mailbox reads nine emails and recognises none, which records the
+    sender domains that were skipped. An hour later it reads nothing at all.
+    That second run used to clear the note, leaving a mailbox that looks
+    healthy, ingests nothing, and no longer says why."""
+    from unittest.mock import patch
+
+    from app.core.crypto import encrypt
+    from app.models.alert_mailbox import AlertMailbox
+    from app.services import alert_mailboxes
+
+    box = AlertMailbox(
+        email_address="alerts@example.test", label="Test", market="Nigeria",
+        imap_host="imap.example.test", imap_username="alerts@example.test",
+        imap_password_encrypted=encrypt("x"), imap_folder="INBOX",
+    )
+    db_session.add(box)
+    db_session.commit()
+
+    unknown = alert_mailboxes.imap_client.FetchedMessage(
+        uid=1, sender="Someone <jobs@a-board-we-do-not-know.test>", body="Roles",
+    )
+    with patch.object(alert_mailboxes.imap_client, "fetch_messages", return_value=([unknown], 1)):
+        alert_mailboxes.sync_mailbox(db_session, box)
+    assert "a-board-we-do-not-know.test" in (box.last_error or "")
+
+    with patch.object(alert_mailboxes.imap_client, "fetch_messages", return_value=([], 1)):
+        alert_mailboxes.sync_mailbox(db_session, box)
+
+    assert "a-board-we-do-not-know.test" in (box.last_error or "")
+
+
+def test_a_run_that_recognises_something_does_clear_it(db_session):
+    from unittest.mock import patch
+
+    from app.core.crypto import encrypt
+    from app.models.alert_mailbox import AlertMailbox
+    from app.services import alert_mailboxes
+
+    box = AlertMailbox(
+        email_address="alerts2@example.test", label="Test", market="Nigeria",
+        imap_host="imap.example.test", imap_username="alerts2@example.test",
+        imap_password_encrypted=encrypt("x"), imap_folder="INBOX",
+        last_error=f"{alert_mailboxes.UNRECOGNISED_NOTE} Read 9 message(s).",
+    )
+    db_session.add(box)
+    db_session.commit()
+
+    known = alert_mailboxes.imap_client.FetchedMessage(
+        uid=2, sender="LinkedIn <jobalerts-noreply@linkedin.com>", body="Roles",
+    )
+    with patch.object(alert_mailboxes.imap_client, "fetch_messages", return_value=([known], 1)):
+        with patch.object(alert_mailboxes, "extract_jobs_from_email", return_value=[]):
+            alert_mailboxes.sync_mailbox(db_session, box)
+
+    assert box.last_error is None
+
+
+def test_a_quiet_run_still_clears_a_login_failure(db_session):
+    """Opposite lifetime to the sender note: reaching the server at all is
+    proof the password works, whether or not there was mail to read."""
+    from unittest.mock import patch
+
+    from app.core.crypto import encrypt
+    from app.models.alert_mailbox import AlertMailbox
+    from app.services import alert_mailboxes
+
+    box = AlertMailbox(
+        email_address="alerts3@example.test", label="Test", market="Nigeria",
+        imap_host="imap.example.test", imap_username="alerts3@example.test",
+        imap_password_encrypted=encrypt("x"), imap_folder="INBOX",
+        last_error="Login failed for alerts3@example.test",
+    )
+    db_session.add(box)
+    db_session.commit()
+
+    with patch.object(alert_mailboxes.imap_client, "fetch_messages", return_value=([], 1)):
+        alert_mailboxes.sync_mailbox(db_session, box)
+
+    assert box.last_error is None

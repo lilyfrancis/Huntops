@@ -55,6 +55,15 @@ def fallback_url(provider: str, title: str, company: str) -> str:
     return template.format(q=query)
 
 
+# Marks the "read mail, recognised nobody" note so a later run can tell it
+# apart from a connection failure. The two have opposite lifetimes: a login
+# error is disproved by any successful connection, including one that reads
+# no mail, while an unrecognised-sender note is not disproved by a quiet
+# hour. Clearing both on any success wiped the only record of which domains
+# were skipped, leaving a healthy-looking mailbox that ingested nothing.
+UNRECOGNISED_NOTE = "No recognised job-alert senders."
+
+
 def _sender_domain(sender: str) -> str:
     """The domain out of a From header, for reporting what was skipped."""
     match = re.search(r"[\w.+-]+@([\w-]+\.[\w.-]+)", sender or "")
@@ -297,12 +306,16 @@ def sync_mailbox(db: Session, mailbox: AlertMailbox) -> dict:
             # as a permanently empty feed with a green "success" beside it.
             top = sorted(skipped_senders.items(), key=lambda kv: -kv[1])[:5]
             mailbox.last_error = (
-                f"Read {fetched} message(s) but recognised no job-alert senders. "
+                f"{UNRECOGNISED_NOTE} Read {fetched} message(s). "
                 f"Saw: {', '.join(f'{d} ({n})' for d, n in top)}. "
                 f"Add the missing domains under Alert senders, or check that forwarding "
                 f"preserves the original From header."
             )
-        else:
+        elif recognised or not (mailbox.last_error or "").startswith(UNRECOGNISED_NOTE):
+            # A run that recognised something clears anything. A run that read
+            # no mail clears a connection error — it just connected — but
+            # leaves the sender note standing, because reading nothing is not
+            # evidence that the senders are now recognised.
             mailbox.last_error = None
     except ImapError as e:
         status, error = "error", _describe_failure(mailbox, e)
