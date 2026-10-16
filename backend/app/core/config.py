@@ -97,8 +97,13 @@ class Settings(BaseSettings):
         "workopolis.com,jobbank.gc.ca,eluta.ca,jobillico.com,"
         # Gulf / UAE
         "bayt.com,gulftalent.com,naukrigulf.com,dubizzle.com,"
-        # Nigeria
-        "jobberman.com,myjobmag.com,hotnigerianjobs.com"
+        # Nigeria and the rest of Africa
+        "jobberman.com,myjobmag.com,hotnigerianjobs.com,jobzilla.ng,"
+        "joblistghana.com,brightermonday.co.ke,brightermonday.co.ug,"
+        "fuzu.com,careers24.com,"
+        # Indeed sends a good deal of its alert mail from here, and
+        # indeed.com being listed does nothing for it.
+        "indeedemail.com"
     )
 
     # Addresses on an allowed domain that are never job alerts. Job boards use

@@ -557,3 +557,21 @@ export interface CurrencyCoverage {
   currency: string;
   listings: number;
 }
+
+/* Where the live pool actually came from.
+   "It is not pulling from my alerts" is not answerable from the sync runs
+   alone: a run reports what it read, not what survived into the pool, and a
+   mailbox that reads forty messages and recognises none of them still
+   reports success. */
+export interface SupplyCount {
+  name: string;
+  active: number;
+}
+
+export interface SupplyBreakdown {
+  by_source: SupplyCount[];
+  by_market: SupplyCount[];
+  totals: { active: number; from_alert_mailboxes: number; from_job_boards: number };
+  eligibility: { restricted: number; remote_unrestricted: number; no_geography: number };
+  mailboxes: { configured: number; active: number };
+}
