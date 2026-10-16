@@ -119,6 +119,11 @@ class Settings(BaseSettings):
         "noreply@monster.com,employer@monster.com,noreply@dice.com"
     )
     ENABLE_SCHEDULED_EMAIL_SYNC: bool = True
+    # On startup, run aggregation and mailbox sync immediately if they have
+    # not run in this many hours. APScheduler keeps its jobs in memory, so a
+    # missed cron slot is simply gone — which is survivable for a lunchtime
+    # restart and not for a fortnight of downtime. 0 disables the catch-up.
+    CATCH_UP_AFTER_HOURS: int = 30
     # How far back a mailbox reads on its very first sync, or after a server
     # renumbers a folder and the stored UID cursor becomes meaningless.
     # Steady-state syncs are UID-incremental and ignore this.

@@ -205,3 +205,68 @@ def test_a_healthy_pool_raises_no_alarm(db_session, capsys):
     _freshness(db_session)
 
     assert "STALE" not in capsys.readouterr().out
+
+
+# ---------- recovering from downtime without being asked ----------
+
+def test_catch_up_runs_a_job_that_has_not_run_in_too_long(db_session, monkeypatch):
+    """APScheduler holds its jobs in memory, so a missed cron slot is simply
+    gone and the next one is tomorrow. Survivable for a lunchtime restart;
+    not for the fortnight of downtime that emptied the pool here."""
+    from datetime import datetime, timedelta, timezone
+
+    from app.core.config import get_settings
+    from app.models.email_sync_run import EmailSyncRun
+    from app.models.ingestion_run import IngestionRun
+    from app.services import scheduler
+
+    settings = get_settings()
+    monkeypatch.setattr(settings, "CATCH_UP_AFTER_HOURS", 30)
+    monkeypatch.setattr(scheduler.notifications, "alert_admin", lambda *a, **k: None)
+
+    long_ago = datetime.now(timezone.utc) - timedelta(days=13)
+    db_session.add(IngestionRun(source="remotive", status="success", started_at=long_ago))
+    db_session.add(EmailSyncRun(status="success", started_at=long_ago))
+    db_session.commit()
+
+    ran = []
+    assert scheduler.catch_up(run_now=lambda fn: ran.append(fn.__name__)) == ["aggregation", "email sync"]
+    assert len(ran) == 2
+
+
+def test_an_ordinary_restart_catches_up_on_nothing(db_session, monkeypatch):
+    """A container restarted during a deploy must not re-run anything. The
+    last run is hours old, not days, and that is the normal rhythm."""
+    from datetime import datetime, timezone
+
+    from app.core.config import get_settings
+    from app.models.email_sync_run import EmailSyncRun
+    from app.models.ingestion_run import IngestionRun
+    from app.services import scheduler
+
+    monkeypatch.setattr(get_settings(), "CATCH_UP_AFTER_HOURS", 30)
+    now = datetime.now(timezone.utc)
+    db_session.add(IngestionRun(source="remotive", status="success", started_at=now))
+    db_session.add(EmailSyncRun(status="success", started_at=now))
+    db_session.commit()
+
+    assert scheduler.catch_up(run_now=lambda fn: None) == []
+
+
+def test_a_fresh_install_catches_up_so_the_pool_is_not_empty_until_morning(db_session, monkeypatch):
+    from app.core.config import get_settings
+    from app.services import scheduler
+
+    monkeypatch.setattr(get_settings(), "CATCH_UP_AFTER_HOURS", 30)
+    monkeypatch.setattr(scheduler.notifications, "alert_admin", lambda *a, **k: None)
+
+    assert scheduler.catch_up(run_now=lambda fn: None) == ["aggregation", "email sync"]
+
+
+def test_the_catch_up_can_be_switched_off(db_session, monkeypatch):
+    from app.core.config import get_settings
+    from app.services import scheduler
+
+    monkeypatch.setattr(get_settings(), "CATCH_UP_AFTER_HOURS", 0)
+
+    assert scheduler.catch_up(run_now=lambda fn: None) == []

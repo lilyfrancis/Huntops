@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 import logging
 
 from apscheduler.schedulers.background import BackgroundScheduler
-from sqlalchemy import desc
+from sqlalchemy import desc, func
 
 from app.core.config import get_settings
 from app.db.base import SessionLocal
@@ -20,6 +20,8 @@ from app.services import (
 )
 from app.services.aggregation import ingest_all
 from app.services.ai_client import AIResponseError
+from app.models.email_sync_run import EmailSyncRun
+from app.models.ingestion_run import IngestionRun
 from app.services.alert_mailboxes import sync_all_mailboxes
 
 logger = logging.getLogger(__name__)
@@ -285,7 +287,81 @@ def start_scheduler() -> BackgroundScheduler | None:
     if _scheduler.get_jobs():
         _scheduler.start()
         logger.info("Scheduler started with %d job(s)", len(_scheduler.get_jobs()))
+        # Queued rather than called inline: this runs during application
+        # startup, and a slow mailbox would hold the container in "starting"
+        # long enough for an orchestrator to decide it had failed.
+        _scheduler.add_job(catch_up, id="startup_catch_up")
     return _scheduler
+
+
+def _hours_since_last(model, column) -> float | None:
+    """Hours since the newest row, or None if there has never been one."""
+    db = SessionLocal()
+    try:
+        newest = db.query(func.max(column)).scalar()
+    finally:
+        db.close()
+    if newest is None:
+        return None
+    if newest.tzinfo is None:
+        newest = newest.replace(tzinfo=timezone.utc)
+    return (datetime.now(timezone.utc) - newest).total_seconds() / 3600
+
+
+def catch_up(run_now=None) -> list[str]:
+    """Run the daily jobs immediately if they have not run in too long.
+
+    APScheduler holds its jobs in memory, so a restart does not carry a
+    missed run with it: the cron slot simply passes unobserved and the next
+    one is tomorrow. That is fine for a container that restarts at noon and
+    harmless for one that restarts at midnight — and catastrophic for one
+    that was down for a fortnight, which is what happened here. Thirteen days
+    with no aggregation and no mailbox sync, every surface reporting success,
+    because the failure was an absence and nothing was watching for one.
+
+    So on boot: if the last run is older than the threshold, do it now rather
+    than waiting for 07:00. A restart inside the normal daily rhythm triggers
+    nothing, because the last run is only hours old.
+
+    Deliberately not the digest or autopilot. Those send mail and act in
+    somebody's name, and a container that restarts six times during a deploy
+    must not mail everyone six times. Aggregation and mailbox sync are
+    idempotent — both dedupe on source_url, and the mailbox resumes from a
+    stored UID — so the worst case of running them twice is two wasted HTTP
+    calls.
+    """
+    threshold = settings.CATCH_UP_AFTER_HOURS
+    if threshold <= 0:
+        return []
+
+    due = []
+    if settings.ENABLE_SCHEDULED_AGGREGATION:
+        age = _hours_since_last(IngestionRun, IngestionRun.started_at)
+        if age is None or age >= threshold:
+            due.append(("aggregation", _run_daily_aggregation, age))
+    if settings.ENABLE_SCHEDULED_EMAIL_SYNC:
+        age = _hours_since_last(EmailSyncRun, EmailSyncRun.started_at)
+        if age is None or age >= threshold:
+            due.append(("email sync", _run_email_sync, age))
+
+    ran = []
+    for name, job, age in due:
+        logger.warning(
+            "Catch-up: %s last ran %s — running now rather than waiting for the next cron slot",
+            name, f"{age:.0f}h ago" if age is not None else "never",
+        )
+        (run_now or (lambda fn: fn()))(job)
+        ran.append(name)
+
+    if ran:
+        notifications.alert_admin(
+            "Scheduled jobs had stopped",
+            "On startup, these had not run in "
+            f"{threshold} hours and were run immediately: {', '.join(ran)}.\n\n"
+            "Nothing reports an absence on its own, so if this message is a surprise, "
+            "the scheduler container was down and the job pool stopped filling.",
+        )
+    return ran
 
 
 def get_scheduler() -> BackgroundScheduler | None:
