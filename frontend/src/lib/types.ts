@@ -170,6 +170,8 @@ export interface FeedItem {
   can_apply_directly: boolean;
 }
 
+export type JobSource = "alerts" | "boards";
+
 export type WorkMode = "remote" | "hybrid" | "onsite";
 
 export interface Preferences {
@@ -189,6 +191,11 @@ export interface Preferences {
      something to read off a title keyword: "engineer" matches both "Engineer"
      and "Senior Engineer", which are the same role at two levels. */
   experience_levels: ExperienceLevel[];
+  /* "alerts" | "boards". Which supply pipeline to draw from. The global
+     boards are remote-first and hire mostly out of the US and Europe; the
+     alert mailboxes carry one country's Indeed, LinkedIn and Jobberman mail.
+     Empty means both. */
+  sources: JobSource[];
   /* The exact role in the user's own words. Lanes are broad on purpose —
      `engineering` covers QA and SRE — so this is how somebody says "React
      developer" and means it. */
@@ -219,6 +226,7 @@ export interface PreferenceOptions {
   eligibility: string[];
   work_modes: WorkMode[];
   experience_levels: ExperienceLevel[];
+  sources: JobSource[];
   recency_choices: number[];
 }
 

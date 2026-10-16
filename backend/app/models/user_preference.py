@@ -70,6 +70,19 @@ class UserPreference(Base):
     # a few hundred a day, so most people want the lot.
     posted_within_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
+    # "alerts" | "boards". Which supply pipeline to draw from.
+    #
+    # The two are not interchangeable. The global boards are remote-first and
+    # mostly hire out of the US and Europe; the alert mailboxes carry Indeed,
+    # LinkedIn, Jobberman and MyJobMag mail for one country. On a pool of
+    # 9,204 jobs where 7 came from email, a Nigerian user's own market is
+    # statistically invisible however well the other filters work, and no
+    # amount of eligibility filtering surfaces supply that is outnumbered
+    # 1,300 to one.
+    #
+    # Empty means both, like every other list here.
+    sources: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
+
     # entry | mid | senior | lead | executive, inferred from each listing's
     # title at ingest. Its own filter rather than something to read off the
     # title keywords, because "Engineer" and "Senior Engineer" are the same

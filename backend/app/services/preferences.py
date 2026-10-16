@@ -21,6 +21,11 @@ from app.services.ghost_detection import GHOST_THRESHOLD
 # The work modes a job can be in, and the only values the API accepts.
 WORK_MODES = ("remote", "hybrid", "onsite")
 
+# The two supply pipelines. "alerts" is everything the operator's mailboxes
+# read out of Indeed, LinkedIn, Jobberman and the rest; "boards" is the six
+# global job-board APIs.
+SOURCE_KINDS = ("alerts", "boards")
+
 # What "how recent" is allowed to mean. A free-form number would let somebody
 # ask for the last 0 days and then report the feed as broken.
 RECENCY_CHOICES = (1, 3, 7, 14, 30)
@@ -54,6 +59,15 @@ def filter_stages(prefs: UserPreference) -> list[tuple[str, object]]:
     picked only a country still sees every lane there rather than nothing.
     """
     stages: list[tuple[str, object]] = []
+
+    chosen_sources = set(prefs.sources or [])
+    # Only narrowing when exactly one is picked: both, or neither, is the
+    # whole pool, and emitting a clause for that would report a drop of zero
+    # on a line the user cannot act on.
+    if chosen_sources == {"alerts"}:
+        stages.append(("from alert mailboxes only", Job.source.like("email-%")))
+    elif chosen_sources == {"boards"}:
+        stages.append(("from job boards only", ~Job.source.like("email-%")))
 
     if prefs.target_markets:
         # Jobs with no market are the global API sources: remote-first listings

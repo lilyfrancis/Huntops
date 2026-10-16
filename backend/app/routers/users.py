@@ -60,6 +60,7 @@ def preference_options(db: Session = Depends(get_db)) -> PreferenceOptions:
         eligibility=list(geo.ELIGIBILITY_OPTIONS),
         work_modes=list(preferences.WORK_MODES),
         experience_levels=[level.value for level in ExperienceLevel],
+        sources=list(preferences.SOURCE_KINDS),
         recency_choices=list(preferences.RECENCY_CHOICES),
     )
 

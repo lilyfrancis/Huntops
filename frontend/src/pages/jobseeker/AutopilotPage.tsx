@@ -24,6 +24,7 @@ import type {
   AutopilotAction,
   ExperienceLevel,
   JobLane,
+  JobSource,
   JobType,
   PreferencesUpdate,
   WorkMode,
@@ -47,6 +48,11 @@ const WORK_MODE_LABEL: Record<WorkMode, string> = {
    system — so offering a currency nothing is priced in would be a filter that
    silently matches nothing. */
 const CURRENCIES = ["NGN", "USD", "GBP", "EUR", "CAD", "ZAR", "KES", "GHS", "AED", "INR"] as const;
+
+const SOURCE_LABEL: Record<JobSource, string> = {
+  alerts: "Job-alert emails",
+  boards: "Global job boards",
+};
 
 const LEVEL_LABEL: Record<ExperienceLevel, string> = {
   entry: "Entry / graduate",
@@ -321,6 +327,26 @@ export function AutopilotPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
+            <div className="space-y-2">
+              <Label>Where listings come from</Label>
+              <ChipGroup
+                aria-label="Supply source"
+                options={(options?.sources ?? []).map((kind) => ({
+                  value: kind,
+                  label: SOURCE_LABEL[kind] ?? humanize(kind),
+                }))}
+                value={draft.sources ?? []}
+                onChange={(v) => set({ sources: v as JobSource[] })}
+              />
+              <p className="text-xs text-ink-faint">
+                Empty means both. The global boards are remote-first and hire mostly out of
+                the US and Europe; the alert emails are Indeed, LinkedIn, Jobberman and the
+                rest for one country. If your market is thin on the boards, picking
+                job-alert emails is the only thing that surfaces it — the other filters
+                narrow a pool, they cannot reorder which pool you are looking at.
+              </p>
+            </div>
+
             <div className="space-y-2">
               <Label>You can apply from</Label>
               <ChipGroup
