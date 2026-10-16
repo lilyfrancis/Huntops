@@ -11,3 +11,15 @@ htmlcov/
 node_modules/
 *.tsbuildinfo
 dist/
+
+# Every variant of the env file, not only the canonical name.
+#
+# `.env` alone was ignored, so the backups `set-secrets.sh` and a dozen manual
+# edits leave behind — .env.bak.20260913-015342 and its siblings — showed up
+# as untracked files on the production box. Each one holds the JWT secret, the
+# token encryption key, the Anthropic key and a live Paystack secret in
+# plaintext, and a single `git add -A` on that server would have committed all
+# of them. A secret in git history is a secret that has to be rotated, not
+# deleted.
+.env.*
+!.env.example
