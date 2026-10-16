@@ -18,12 +18,14 @@ Read-only. Nothing is fetched, written, or sent to a model.
 """
 
 import argparse
+from datetime import datetime, timezone
 
 from sqlalchemy import desc, func
 
 from app.db.base import SessionLocal
 from app.models.alert_mailbox import AlertMailbox
 from app.models.email_sync_run import EmailSyncRun
+from app.models.ingestion_run import IngestionRun
 from app.models.enums import JobStatus
 from app.models.job import Job
 from app.models.user import User
@@ -69,12 +71,57 @@ def _sync_runs(db) -> None:
     if newest.fetched_count and not newest.extracted_count:
         print("\n  Mail arrived and none of it was recognised as a job alert.")
         print("  The sender domain is not on the allowlist, or a forwarder rewrote the From")
-        print("  header. The error line above names the domains that were skipped; add the")
-        print("  real ones in Admin -> Integrations.")
+        print("  header. The skipped domains are on the mailbox, under LAST ERROR in the")
+        print("  first section above — not on the run, which is why it still says success.")
+        print("  Add the real ones in Admin -> Integrations.")
     elif not newest.fetched_count:
         print("\n  No mail was fetched. Either the folder is wrong, or every message in it")
         print("  is already behind the stored UID cursor, or the alerts are older than")
         print("  EMAIL_SYNC_LOOKBACK_DAYS on a first sync.")
+
+
+def _freshness(db) -> None:
+    """Whether anything has run lately.
+
+    Every scheduled job lives in one container, so they stop together and
+    none of them says so. A pool at its daily cap looks healthy long after
+    the last thing was added to it, and a mailbox that has not been read for
+    a fortnight still shows its last sync as "success" — the failure mode is
+    an absence, and nothing in the product was reporting absences.
+    """
+    _rule("Freshness")
+    now = datetime.now(timezone.utc)
+
+    def _age(when) -> str | None:
+        if when is None:
+            return None
+        if when.tzinfo is None:
+            when = when.replace(tzinfo=timezone.utc)
+        days = (now - when).days
+        return f"{when:%Y-%m-%d %H:%M} ({days} day(s) ago)"
+
+    newest_job = db.query(func.max(Job.created_at)).scalar()
+    newest_sync = db.query(func.max(EmailSyncRun.started_at)).scalar()
+    newest_ingest = db.query(func.max(IngestionRun.started_at)).scalar()
+
+    print(f"  newest job in the pool   {_age(newest_job) or 'never'}")
+    print(f"  last board aggregation   {_age(newest_ingest) or 'never'}")
+    print(f"  last mailbox sync        {_age(newest_sync) or 'never'}")
+
+    stale = [
+        name for name, when in (
+            ("board aggregation", newest_ingest), ("mailbox sync", newest_sync),
+        )
+        if when is None or (now - (when if when.tzinfo else when.replace(tzinfo=timezone.utc))).days >= 2
+    ]
+    if stale:
+        print(f"\n  STALE: {' and '.join(stale)} has not run in days.")
+        print("  Every scheduled job runs in the `scheduler` container, so they stop")
+        print("  together. Check it:")
+        print("    docker compose -f docker-compose.prod.yml ps scheduler")
+        print("    docker compose -f docker-compose.prod.yml logs --tail=100 scheduler")
+        print("  It needs RUN_SCHEDULER=true, and it registers its jobs at startup —")
+        print("  a container that crashed on boot registers nothing and reports nothing.")
 
 
 def _supply(db) -> None:
@@ -156,6 +203,7 @@ def main() -> int:
 
     db = SessionLocal()
     try:
+        _freshness(db)
         _mailboxes(db)
         _sync_runs(db)
         _supply(db)
