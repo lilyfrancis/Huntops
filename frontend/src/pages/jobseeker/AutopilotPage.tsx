@@ -11,20 +11,42 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { PageSpinner } from "@/components/ui/spinner";
 import { EmptyState } from "@/components/ui/empty-state";
-import { ChipGroup } from "@/components/ui/chip-group";
+import { ChipGroup, RadioChips } from "@/components/ui/chip-group";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TagInput } from "@/components/ui/tag-input";
 import { humanize } from "@/lib/labels";
 import { autopilotApi, preferencesApi, whatsappApi } from "@/lib/api";
 import { ApiError } from "@/lib/api-client";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
-import type { AutopilotAction, JobLane, JobType, PreferencesUpdate } from "@/lib/types";
+import type { AutopilotAction, JobLane, JobType, PreferencesUpdate, WorkMode } from "@/lib/types";
 
 const JOB_TYPE_LABEL: Record<JobType, string> = {
   full_time: "Full-time",
   part_time: "Part-time",
   contract: "Contract",
   internship: "Internship",
+};
+
+const WORK_MODE_LABEL: Record<WorkMode, string> = {
+  remote: "Fully remote",
+  hybrid: "Hybrid",
+  onsite: "On site",
+};
+
+/* The currencies our sources actually quote in. A salary floor is compared to
+   a listing character for character — there is no FX rate anywhere in this
+   system — so offering a currency nothing is priced in would be a filter that
+   silently matches nothing. */
+const CURRENCIES = ["NGN", "USD", "GBP", "EUR", "CAD", "ZAR", "KES", "GHS", "AED", "INR"] as const;
+
+const RECENCY_LABEL: Record<number, string> = {
+  1: "Last 24 hours",
+  3: "Last 3 days",
+  7: "Last week",
+  14: "Last 2 weeks",
+  30: "Last month",
 };
 
 function Switch({
@@ -152,7 +174,18 @@ export function AutopilotPage() {
      slider would otherwise fire fifty of them. */
   const [draft, setDraft] = useState<PreferencesUpdate | null>(null);
   useEffect(() => {
-    if (prefs && draft === null) setDraft({ ...prefs });
+    if (prefs === undefined || draft !== null) return;
+    /* `remote_only` predates work modes and says the same thing less well: a
+       boolean cannot express hybrid, which is the distinction that matters
+       most to somebody who cannot commute. Anyone who had it switched on
+       starts with the remote chip lit instead, and their first save retires
+       the boolean. The feed's own per-visit Remote toggle is a query
+       parameter and is untouched by this. */
+    const retireRemoteOnly =
+      prefs.remote_only && (prefs.work_modes ?? []).length === 0
+        ? { work_modes: ["remote"] as WorkMode[], remote_only: false }
+        : {};
+    setDraft({ ...prefs, ...retireRemoteOnly });
   }, [prefs, draft]);
 
   const saveMutation = useMutation({
@@ -209,25 +242,18 @@ export function AutopilotPage() {
           </CardHeader>
           <CardContent className="space-y-5">
             <div className="space-y-2">
-              <Label>Markets</Label>
-              <ChipGroup
-                aria-label="Target markets"
-                options={(options?.markets ?? []).map((m) => ({ value: m, label: m }))}
-                value={draft.target_markets ?? []}
-                onChange={(v) => set({ target_markets: v })}
-                emptyHint="No markets are live yet — you're seeing every job we have."
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Cities</Label>
+              <Label>The exact role</Label>
               <TagInput
-                aria-label="Cities"
-                value={draft.locations ?? []}
-                onChange={(locations) => set({ locations })}
-                placeholder="Type a city and press Enter"
+                aria-label="Role titles"
+                value={draft.title_keywords ?? []}
+                onChange={(title_keywords) => set({ title_keywords })}
+                placeholder="e.g. React developer — type and press Enter"
+                max={10}
               />
               <p className="text-xs text-ink-faint">
-                Narrows within your markets. Remote roles always show regardless.
+                Matched against the job title. Job families below are broad on purpose —
+                "engineering" covers QA, SRE and mobile alike — so this is how you say
+                "React developer" and get only that.
               </p>
             </div>
 
@@ -249,58 +275,192 @@ export function AutopilotPage() {
                 onChange={(v) => set({ job_types: v as JobType[] })}
               />
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Where you can work</CardTitle>
+            <CardDescription>
+              Who may apply, not where the listing was posted. Pick Nigeria and you get
+              roles open to applicants in Nigeria — remote roles anywhere that have not
+              ruled Nigerians out, and onsite roles in Nigeria. A US-only role is excluded
+              however remote it is.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5">
             <div className="space-y-2">
-              <Label>Where to send your daily digest</Label>
+              <Label>You can apply from</Label>
               <ChipGroup
-                aria-label="Digest channel"
-                options={[
-                  { value: "email", label: "Email" },
-                  { value: "whatsapp", label: "WhatsApp" },
-                  { value: "both", label: "Both" },
-                  { value: "none", label: "Don't send it" },
-                ]}
-                /* Single-select dressed as chips: ChipGroup toggles, so the
-                   last click wins and an empty click keeps the current value —
-                   a channel of "nothing" is spelled "Don't send it", not
-                   reached by deselecting. */
-                value={[draft.digest_channel ?? "email"]}
-                onChange={(next) => {
-                  const picked = next.find((v) => v !== (draft.digest_channel ?? "email"));
-                  if (picked) set({ digest_channel: picked as typeof draft.digest_channel });
-                }}
+                aria-label="Where you can apply from"
+                options={(options?.eligibility ?? []).map((place) => ({ value: place, label: place }))}
+                value={draft.eligibility ?? []}
+                onChange={(eligibility) => set({ eligibility })}
               />
-              {(draft.digest_channel === "whatsapp" || draft.digest_channel === "both") &&
-                whatsapp?.configured &&
-                !whatsapp.opted_in && (
-                  <p className="rounded-lg border border-warning/30 bg-warning-soft px-3 py-2 text-sm text-warning">
-                    {whatsapp.number_on_file ? (
-                      <>
-                        Your number is saved, but WhatsApp will not deliver until you have messaged
-                        us once — connect it on your{" "}
-                        <Link to="/app/profile" className="underline">
-                          profile
-                        </Link>
-                        .
-                      </>
-                    ) : (
-                      <>
-                        Add a WhatsApp number on your{" "}
-                        <Link to="/app/profile" className="underline">
-                          profile
-                        </Link>{" "}
-                        or nothing will be sent.
-                      </>
-                    )}
-                  </p>
-                )}
+              <p className="text-xs text-ink-faint">
+                Pick more than one if you hold more than one right to work. Empty means
+                every job in the pool, including ones you could not be hired for.
+              </p>
             </div>
 
-            <Switch
-              checked={draft.remote_only ?? false}
-              onChange={(v) => set({ remote_only: v })}
-              label="Remote only"
-              description="Hide anything that isn't explicitly remote."
+            <div className="space-y-2">
+              <Label>How the work is done</Label>
+              <ChipGroup
+                aria-label="Work mode"
+                options={(options?.work_modes ?? []).map((m) => ({
+                  value: m,
+                  label: WORK_MODE_LABEL[m] ?? humanize(m),
+                }))}
+                value={draft.work_modes ?? []}
+                onChange={(v) => set({ work_modes: v as WorkMode[] })}
+              />
+              <p className="text-xs text-ink-faint">
+                Hybrid is kept apart from remote on purpose: a listing that says both means
+                two or three days in an office.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Markets</Label>
+              <ChipGroup
+                aria-label="Target markets"
+                options={(options?.markets ?? []).map((m) => ({ value: m, label: m }))}
+                value={draft.target_markets ?? []}
+                onChange={(v) => set({ target_markets: v })}
+                emptyHint="No markets are live yet — you're seeing every job we have."
+              />
+              <p className="text-xs text-ink-faint">
+                Which of our job-alert mailboxes a listing arrived through. Most of the pool
+                comes from global boards and belongs to no market, so this narrows the
+                email-sourced supply only.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Cities</Label>
+              <TagInput
+                aria-label="Cities"
+                value={draft.locations ?? []}
+                onChange={(locations) => set({ locations })}
+                placeholder="Type a city and press Enter"
+              />
+              <p className="text-xs text-ink-faint">
+                Narrows within your markets. Remote roles always show regardless.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Pay and freshness</CardTitle>
+            <CardDescription>
+              Most boards publish no salary at all, so a floor hides only the listings that
+              name a figure and fall short — never the silent ones, and never one quoted in
+              another currency, which we have no rate to convert.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <div className="space-y-2">
+              <Label htmlFor="salary-floor">Minimum salary, per year</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="salary-floor"
+                  type="number"
+                  min={0}
+                  step={1000}
+                  inputMode="numeric"
+                  placeholder="No minimum"
+                  value={draft.salary_min_annual ?? ""}
+                  onChange={(e) => {
+                    const raw = e.target.value.trim();
+                    set({ salary_min_annual: raw === "" ? null : Number(raw) });
+                  }}
+                  className="flex-1"
+                />
+                <Select
+                  value={draft.salary_currency ?? undefined}
+                  onValueChange={(code) => set({ salary_currency: code })}
+                >
+                  <SelectTrigger aria-label="Salary currency" className="w-28 shrink-0">
+                    <SelectValue placeholder="Currency" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CURRENCIES.map((code) => (
+                      <SelectItem key={code} value={code}>
+                        {code}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {!!draft.salary_min_annual && !draft.salary_currency && (
+                <p className="rounded-lg border border-warning/30 bg-warning-soft px-3 py-2 text-sm text-warning">
+                  Pick the currency too, or this is ignored — ₦8,000,000 and $8,000,000 are
+                  not the same floor, and we won't guess which you meant.
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label>Posted within</Label>
+              <RadioChips
+                aria-label="How recently posted"
+                options={[
+                  { value: "any", label: "Any time" },
+                  ...(options?.recency_choices ?? []).map((days) => ({
+                    value: String(days),
+                    label: RECENCY_LABEL[days] ?? `Last ${days} days`,
+                  })),
+                ]}
+                value={draft.posted_within_days ? String(draft.posted_within_days) : "any"}
+                onChange={(v) => set({ posted_within_days: v === "any" ? null : Number(v) })}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Daily digest</CardTitle>
+            <CardDescription>Where the morning summary of your matches goes.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <RadioChips
+              aria-label="Digest channel"
+              options={[
+                { value: "email", label: "Email" },
+                { value: "whatsapp", label: "WhatsApp" },
+                { value: "both", label: "Both" },
+                { value: "none", label: "Don't send it" },
+              ]}
+              value={draft.digest_channel ?? "email"}
+              onChange={(v) => set({ digest_channel: v as typeof draft.digest_channel })}
             />
+            {(draft.digest_channel === "whatsapp" || draft.digest_channel === "both") &&
+              whatsapp?.configured &&
+              !whatsapp.opted_in && (
+                <p className="rounded-lg border border-warning/30 bg-warning-soft px-3 py-2 text-sm text-warning">
+                  {whatsapp.number_on_file ? (
+                    <>
+                      Your number is saved, but WhatsApp will not deliver until you have
+                      messaged us once — connect it on your{" "}
+                      <Link to="/app/profile" className="underline">
+                        profile
+                      </Link>
+                      .
+                    </>
+                  ) : (
+                    <>
+                      Add a WhatsApp number on your{" "}
+                      <Link to="/app/profile" className="underline">
+                        profile
+                      </Link>{" "}
+                      or nothing will be sent.
+                    </>
+                  )}
+                </p>
+              )}
           </CardContent>
         </Card>
 

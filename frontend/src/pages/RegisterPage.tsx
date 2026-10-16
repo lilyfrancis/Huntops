@@ -17,7 +17,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { api } from "@/lib/api-client";
 import { ApiError } from "@/lib/api-client";
 import { homePathForRole } from "@/lib/routes";
-import type { JobLane, JobType, PreferenceOptions } from "@/lib/types";
+import type { JobLane, JobType, PreferenceOptions, WorkMode } from "@/lib/types";
 
 const schema = z
   .object({
@@ -45,12 +45,24 @@ const JOB_TYPE_LABEL: Record<JobType, string> = {
   internship: "Internship",
 };
 
+const WORK_MODE_LABEL: Record<WorkMode, string> = {
+  remote: "Fully remote",
+  hybrid: "Hybrid",
+  onsite: "On site",
+};
+
 export function RegisterPage() {
   const { register: registerUser } = useAuth();
   const navigate = useNavigate();
   const [serverError, setServerError] = useState<string | null>(null);
   const [step, setStep] = useState<"account" | "hunt">("account");
 
+  /* Asked first, and asked at signup rather than later, because it is the
+     only preference that decides whether a listing is applicable at all. A
+     feed full of US-only roles on day one reads as the matching being broken,
+     and there is no second chance at a first impression. */
+  const [eligibility, setEligibility] = useState<string[]>([]);
+  const [workModes, setWorkModes] = useState<string[]>([]);
   const [markets, setMarkets] = useState<string[]>([]);
   const [locations, setLocations] = useState<string[]>([]);
   const [lanes, setLanes] = useState<string[]>([]);
@@ -129,7 +141,35 @@ export function RegisterPage() {
 
         <div className="space-y-6">
           <div className="space-y-2">
-            <Label>Where do you want to work?</Label>
+            <Label>Where can you legally work?</Label>
+            <ChipGroup
+              aria-label="Where you can apply from"
+              options={(options?.eligibility ?? []).map((place) => ({ value: place, label: place }))}
+              value={eligibility}
+              onChange={setEligibility}
+            />
+            <p className="text-xs text-ink-faint">
+              Not where the job is — where you are allowed to apply from. Pick Nigeria and
+              you'll get remote roles anywhere that accept Nigerians, plus roles in Nigeria.
+              Pick more than one if you hold more than one right to work.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label>How do you want to work?</Label>
+            <ChipGroup
+              aria-label="Work mode"
+              options={(options?.work_modes ?? []).map((m) => ({
+                value: m,
+                label: WORK_MODE_LABEL[m] ?? humanize(m),
+              }))}
+              value={workModes}
+              onChange={setWorkModes}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Any of our markets in particular? (optional)</Label>
             <ChipGroup
               aria-label="Target markets"
               options={(options?.markets ?? []).map((m) => ({ value: m, label: m }))}

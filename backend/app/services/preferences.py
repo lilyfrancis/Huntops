@@ -6,6 +6,8 @@ the same thing in all three — a user can't see a job on their dashboard that
 autopilot considers out of scope, or vice versa.
 """
 
+from datetime import datetime, timedelta, timezone
+
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Query, Session
 
@@ -13,7 +15,15 @@ from app.models.enums import JobLane, JobStatus
 from app.models.job import Job
 from app.models.user import User
 from app.models.user_preference import UserPreference
+from app.services import geo
 from app.services.ghost_detection import GHOST_THRESHOLD
+
+# The work modes a job can be in, and the only values the API accepts.
+WORK_MODES = ("remote", "hybrid", "onsite")
+
+# What "how recent" is allowed to mean. A free-form number would let somebody
+# ask for the last 0 days and then report the feed as broken.
+RECENCY_CHOICES = (1, 3, 7, 14, 30)
 
 
 def get_or_create(db: Session, user: User) -> UserPreference:
@@ -64,6 +74,50 @@ def apply_to_query(query: Query, prefs: UserPreference | None) -> Query:
         query = query.filter(Job.job_type.in_(prefs.job_types))
     if prefs.remote_only:
         query = query.filter(Job.is_remote.is_(True))
+
+    # Eligibility: who may apply, which is a different question from
+    # `target_markets` above. See services/geo.py — picking Nigeria admits a
+    # remote role anywhere that has not shut Nigerians out, and rejects a
+    # US-only one however remote it is.
+    eligibility = geo.eligibility_clause(prefs.eligibility or [])
+    if eligibility is not None:
+        query = query.filter(eligibility)
+
+    if prefs.work_modes:
+        # Jobs ingested before work_mode existed have none, and a null is not
+        # evidence of anything. Hiding them would empty the feed of everything
+        # older than this release for anybody who touches this filter.
+        query = query.filter(or_(Job.work_mode.in_(prefs.work_modes), Job.work_mode.is_(None)))
+
+    if prefs.salary_min_annual and prefs.salary_currency:
+        # Only listings we can actually compare are judged. Most boards
+        # publish no salary at all, and a floor that also hid every unpriced
+        # listing would throw away the majority of the pool to enforce a
+        # number nobody stated. A listing in another currency is unknowable
+        # without an FX rate, so it is kept for the same reason.
+        query = query.filter(
+            or_(
+                Job.salary_annual_max.is_(None),
+                Job.salary_currency != prefs.salary_currency,
+                Job.salary_annual_max >= prefs.salary_min_annual,
+            )
+        )
+
+    if prefs.posted_within_days:
+        cutoff = datetime.now(timezone.utc) - timedelta(days=prefs.posted_within_days)
+        query = query.filter(Job.created_at >= cutoff)
+
+    if prefs.title_keywords:
+        # Title only. Matching the description would return roles whose
+        # connection to "backend engineer" is invisible on the card, which
+        # reads as the filter being ignored.
+        clauses = [
+            Job.title.ilike(f"%{word.strip()}%")
+            for word in prefs.title_keywords
+            if word.strip()
+        ]
+        if clauses:
+            query = query.filter(or_(*clauses))
 
     return query
 

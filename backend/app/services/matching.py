@@ -7,7 +7,7 @@ from app.models.job_match import JobMatch
 from app.models.resume import Resume
 from app.models.user import User
 from app.schemas.ai import JobFitScore, validate_or_raise
-from app.services import ai_client
+from app.services import ai_client, geo
 
 settings = get_settings()
 
@@ -100,7 +100,12 @@ def score_jobs(resume: Resume, jobs: list[Job], home_market: str | None) -> list
             continue
         job = jobs[score.job_index]
 
-        geo_eligible = job.is_remote and (not job.restricted_to or job.restricted_to == home_market)
+        # `geo.admits` rather than an equality test: restrictions are no longer
+        # only country names. A remote role advertised for EMEA is open to
+        # somebody whose home market is Nigeria, and string equality called
+        # that ineligible and withheld the boost from exactly the listings
+        # this boost exists to surface.
+        geo_eligible = job.is_remote and bool(home_market) and geo.admits(job.restricted_to, home_market)
         boost_applied = bool(home_market and geo_eligible)
         if boost_applied:
             score.overall_score = min(100, score.overall_score + settings.GEO_MATCH_BOOST)

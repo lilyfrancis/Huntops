@@ -170,6 +170,8 @@ export interface FeedItem {
   can_apply_directly: boolean;
 }
 
+export type WorkMode = "remote" | "hybrid" | "onsite";
+
 export interface Preferences {
   target_markets: string[];
   locations: string[];
@@ -177,6 +179,21 @@ export interface Preferences {
   job_types: JobType[];
   remote_only: boolean;
   digest_channel: "email" | "whatsapp" | "both" | "none";
+  /* Where this person may apply from — not where the listing came from.
+     Picking Nigeria admits a remote role anywhere that hasn't shut Nigerians
+     out, and rejects a US-only one however remote it is. `target_markets`
+     above is the other question: which alert mailbox a job arrived through. */
+  eligibility: string[];
+  work_modes: WorkMode[];
+  /* The exact role in the user's own words. Lanes are broad on purpose —
+     `engineering` covers QA and SRE — so this is how somebody says "React
+     developer" and means it. */
+  title_keywords: string[];
+  /* Both or neither: a number without a currency can't be compared to a
+     listing, and guessing would be worse than not filtering. */
+  salary_min_annual: number | null;
+  salary_currency: string | null;
+  posted_within_days: number | null;
   autopilot_apply_enabled: boolean;
   autopilot_apply_threshold: number;
   autopilot_outreach_enabled: boolean;
@@ -193,6 +210,11 @@ export interface PreferenceOptions {
   markets: string[];
   lanes: JobLane[];
   job_types: JobType[];
+  /* Eligibility is a fact about the person, not about our stock, so this is a
+     curated list rather than a query against supply. */
+  eligibility: string[];
+  work_modes: WorkMode[];
+  recency_choices: number[];
 }
 
 export type AutopilotActionKind = "apply" | "outreach";
