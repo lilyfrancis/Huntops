@@ -3,7 +3,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from app.models.enums import JobLane, JobType
+from app.models.enums import ExperienceLevel, JobLane, JobType
 from app.services import geo
 from app.services.preferences import RECENCY_CHOICES, WORK_MODES
 
@@ -31,6 +31,7 @@ class PreferenceUpdate(BaseModel):
 
     eligibility: list[str] | None = None
     work_modes: list[str] | None = None
+    experience_levels: list[str] | None = None
     title_keywords: list[str] | None = None
     # No upper bound on the floor: a number too high simply returns nothing,
     # and it is the user's own ceiling to set. Negative is refused because it
@@ -74,6 +75,11 @@ class PreferenceUpdate(BaseModel):
     @classmethod
     def job_types_are_known(cls, v: list[str] | None) -> list[str] | None:
         return None if v is None else _known(v, JobType, "job type")
+
+    @field_validator("experience_levels")
+    @classmethod
+    def levels_are_known(cls, v: list[str] | None) -> list[str] | None:
+        return None if v is None else _known(v, ExperienceLevel, "experience level")
 
     @field_validator("eligibility")
     @classmethod
@@ -161,6 +167,7 @@ class PreferenceOut(BaseModel):
 
     eligibility: list[str]
     work_modes: list[str]
+    experience_levels: list[str]
     title_keywords: list[str]
     salary_min_annual: float | None
     salary_currency: str | None
@@ -190,4 +197,5 @@ class PreferenceOptions(BaseModel):
     # which must never offer a country with no mailbox behind it.
     eligibility: list[str]
     work_modes: list[str]
+    experience_levels: list[str]
     recency_choices: list[int]

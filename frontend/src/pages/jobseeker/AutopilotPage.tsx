@@ -20,7 +20,14 @@ import { autopilotApi, preferencesApi, whatsappApi } from "@/lib/api";
 import { ApiError } from "@/lib/api-client";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
-import type { AutopilotAction, JobLane, JobType, PreferencesUpdate, WorkMode } from "@/lib/types";
+import type {
+  AutopilotAction,
+  ExperienceLevel,
+  JobLane,
+  JobType,
+  PreferencesUpdate,
+  WorkMode,
+} from "@/lib/types";
 
 const JOB_TYPE_LABEL: Record<JobType, string> = {
   full_time: "Full-time",
@@ -40,6 +47,14 @@ const WORK_MODE_LABEL: Record<WorkMode, string> = {
    system — so offering a currency nothing is priced in would be a filter that
    silently matches nothing. */
 const CURRENCIES = ["NGN", "USD", "GBP", "EUR", "CAD", "ZAR", "KES", "GHS", "AED", "INR"] as const;
+
+const LEVEL_LABEL: Record<ExperienceLevel, string> = {
+  entry: "Entry / graduate",
+  mid: "Mid-level",
+  senior: "Senior",
+  lead: "Lead / principal",
+  executive: "Executive",
+};
 
 const RECENCY_LABEL: Record<number, string> = {
   1: "Last 24 hours",
@@ -266,6 +281,23 @@ export function AutopilotPage() {
                 onChange={(v) => set({ lanes: v as JobLane[] })}
               />
             </div>
+            <div className="space-y-2">
+              <Label>Seniority</Label>
+              <ChipGroup
+                aria-label="Seniority"
+                options={(options?.experience_levels ?? []).map((l) => ({
+                  value: l,
+                  label: LEVEL_LABEL[l] ?? humanize(l),
+                }))}
+                value={draft.experience_levels ?? []}
+                onChange={(v) => set({ experience_levels: v as ExperienceLevel[] })}
+              />
+              <p className="text-xs text-ink-faint">
+                Read from each listing's title, so it is as good as the title is — a role
+                advertised with no level lands in mid.
+              </p>
+            </div>
+
             <div className="space-y-2">
               <Label>Employment type</Label>
               <ChipGroup

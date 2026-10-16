@@ -119,6 +119,7 @@ export function JobFeedPage() {
   const filterSummary = [
     ...(prefs?.title_keywords ?? []),
     ...(prefs?.lanes ?? []).map(humanize),
+    ...(prefs?.experience_levels ?? []).map(humanize),
     ...(prefs?.eligibility ?? []),
     ...(prefs?.work_modes ?? []),
     ...(prefs?.target_markets ?? []),

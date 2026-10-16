@@ -279,7 +279,7 @@ def infer_restriction(location: str, description: str) -> str | None:
 def normalize_common(
     *, title: str, company: str | None, url: str, location: str, description: str,
     requirements: list[str], salary_range: str | None, source: str,
-    remote: bool | None = None,
+    remote: bool | None = None, work_mode: str | None = None,
 ) -> dict | None:
     """`remote` is passed explicitly by the remote-only boards.
 
@@ -298,6 +298,14 @@ def normalize_common(
     clean_description = strip_html(description)[:4000]
     parsed_salary = parse_salary(salary_range)
     is_remote = infer_is_remote(location) if remote is None else remote
+    # A caller that knows the mode says so. The email bridge does: the alerts
+    # print "Hybrid" on the card, while the description it synthesises says
+    # nothing about how the work is done — so inferring from that text would
+    # read every email-sourced job as onsite.
+    if work_mode is None:
+        work_mode = infer_work_mode(location, clean_description, is_remote)
+    elif work_mode == "remote":
+        is_remote = True
     return {
         "salary_annual_min": parsed_salary["annual_min"] if parsed_salary else None,
         "salary_annual_max": parsed_salary["annual_max"] if parsed_salary else None,
@@ -318,7 +326,7 @@ def normalize_common(
         "source_url": url,
         "lane": infer_lane(title, clean_description),
         "is_remote": is_remote,
-        "work_mode": infer_work_mode(location, clean_description, is_remote),
+        "work_mode": work_mode,
         "restricted_to": infer_restriction(location, clean_description),
     }
 

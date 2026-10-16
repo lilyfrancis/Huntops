@@ -185,6 +185,10 @@ export interface Preferences {
      above is the other question: which alert mailbox a job arrived through. */
   eligibility: string[];
   work_modes: WorkMode[];
+  /* entry | mid | senior | lead | executive. Its own filter rather than
+     something to read off a title keyword: "engineer" matches both "Engineer"
+     and "Senior Engineer", which are the same role at two levels. */
+  experience_levels: ExperienceLevel[];
   /* The exact role in the user's own words. Lanes are broad on purpose —
      `engineering` covers QA and SRE — so this is how somebody says "React
      developer" and means it. */
@@ -214,6 +218,7 @@ export interface PreferenceOptions {
      curated list rather than a query against supply. */
   eligibility: string[];
   work_modes: WorkMode[];
+  experience_levels: ExperienceLevel[];
   recency_choices: number[];
 }
 

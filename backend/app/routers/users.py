@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.core.security import get_current_user, require_job_seeker
 from app.db.base import get_db
-from app.models.enums import JobType
+from app.models.enums import ExperienceLevel, JobType
 from app.models.user import User
 from app.schemas.preference import PreferenceOptions, PreferenceOut, PreferenceUpdate
 from app.schemas.user import UserOut, UserProfileUpdate
@@ -59,6 +59,7 @@ def preference_options(db: Session = Depends(get_db)) -> PreferenceOptions:
         job_types=[job_type.value for job_type in JobType],
         eligibility=list(geo.ELIGIBILITY_OPTIONS),
         work_modes=list(preferences.WORK_MODES),
+        experience_levels=[level.value for level in ExperienceLevel],
         recency_choices=list(preferences.RECENCY_CHOICES),
     )
 

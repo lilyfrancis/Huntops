@@ -107,6 +107,9 @@ def apply_to_query(query: Query, prefs: UserPreference | None) -> Query:
         cutoff = datetime.now(timezone.utc) - timedelta(days=prefs.posted_within_days)
         query = query.filter(Job.created_at >= cutoff)
 
+    if prefs.experience_levels:
+        query = query.filter(Job.experience_level.in_(prefs.experience_levels))
+
     if prefs.title_keywords:
         # Title only. Matching the description would return roles whose
         # connection to "backend engineer" is invisible on the card, which

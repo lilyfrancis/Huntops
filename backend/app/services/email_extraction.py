@@ -28,20 +28,33 @@ Format:
     "title": "Senior Software Engineer",
     "company": "Acme Corp",
     "url": "https://example.com/job/123",
-    "location": "Remote"
+    "location": "Lagos, Nigeria",
+    "salary": "₦400,000 - ₦600,000 a month",
+    "work_mode": "hybrid"
   }}
 ]
 
-If a job has no visible direct URL in the email, set "url" to null — do not
-invent one."""
+Rules for the fields that are allowed to be null:
+
+- "url": null if the email shows no direct link for that job. Do not invent one.
+- "salary": copy the pay exactly as the email prints it, including the
+  currency symbol and the period ("a month", "per year"). Null if the email
+  shows no pay for that job. Never estimate, and never carry a figure over
+  from a different job in the same email.
+- "work_mode": one of "remote", "hybrid", "onsite", or null if the listing
+  does not say. Null is a real answer here — do not default to "onsite"."""
 
 
-# A daily digest from LinkedIn or Indeed routinely lists 25 roles, and each
-# extracted posting is a title, company, URL and location — about 60 tokens.
-# The flat 1500 here had the same fault as scoring: enough for a short alert,
-# silently cut off on a long one, and reported as malformed JSON.
+# A daily digest from LinkedIn or Indeed routinely lists 25 roles. The flat
+# 1500 here had the same fault as scoring: enough for a short alert, silently
+# cut off on a long one, and reported as malformed JSON.
+#
+# Raised from 80 with the salary and work_mode fields, which add a short
+# string and a one-word enum per job. That is output tokens on an email we
+# were already paying to read — a few cents a month across every mailbox —
+# and it buys the only salary data the email-sourced supply has.
 MAX_EXTRACTED_JOBS = 40
-TOKENS_PER_EXTRACTED_JOB = 80
+TOKENS_PER_EXTRACTED_JOB = 110
 
 
 def extract_jobs_from_email(email_text: str) -> list[ExtractedJobPosting]:
