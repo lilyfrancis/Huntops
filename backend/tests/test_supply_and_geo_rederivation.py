@@ -144,3 +144,40 @@ def test_the_supply_report_separates_the_two_pipelines(client, db_session):
         "email-jobberman", "email-linkedin", "remotive"
     }
     assert {row["name"] for row in body["by_market"]} == {"Nigeria", "(none)"}
+
+
+# ---------- which board an alert came from ----------
+
+def test_a_board_that_sends_from_two_domains_is_still_one_board():
+    """The slug picks the search URL used for an alert with no direct link,
+    and that URL doubles as the dedupe key — so "indeedemail" would have
+    given an Indeed job a LinkedIn search URL and the source
+    "email-indeedemail"."""
+    from app.services.alert_senders import detect_provider
+
+    assert detect_provider("Indeed <donotreply@indeedemail.com>") == "indeed"
+    assert detect_provider("Indeed <alert@indeed.com>") == "indeed"
+
+
+def test_the_mailbox_s_own_address_is_not_what_is_checked():
+    """The allowlist reads the From header, never the recipient. An operator
+    mailbox on any domain works; mail *from* that domain is not a job alert."""
+    from app.services.alert_senders import detect_provider
+
+    assert detect_provider("Alerts <alerts@huntops.site>") is None
+    assert detect_provider("LinkedIn <jobalerts-noreply@linkedin.com>") == "linkedin"
+
+
+def test_a_subdomain_still_resolves_to_its_board():
+    from app.services.alert_senders import detect_provider
+
+    assert detect_provider("Jobberman <info@mail.jobberman.com>") == "jobberman"
+
+
+def test_employer_side_mail_on_an_allowed_domain_is_still_refused():
+    """These are notifications to a company that somebody applied to *their*
+    posting. They match the allowlist, cost an AI call, and can be read as a
+    vacancy that does not exist."""
+    from app.services.alert_senders import detect_provider
+
+    assert detect_provider("Indeed <employers-noreply@indeed.com>") is None

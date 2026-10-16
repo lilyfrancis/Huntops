@@ -15,6 +15,19 @@ settings = get_settings()
 
 _EMAIL_RE = re.compile(r"([\w.+-]+@([\w-]+\.[\w.-]+))")
 
+# A board that sends from more than one domain is still one board.
+#
+# The slug is not cosmetic: it picks the search URL used for an alert that
+# gave us no direct link, and that URL doubles as the dedupe key. Without
+# this, mail from indeedemail.com became the provider "indeedemail", which no
+# fallback template knows, so an Indeed job with no link was given a LinkedIn
+# search URL and stored as source "email-indeedemail".
+#
+# Only safe to add for a domain with no rows behind it yet. Re-slugging a
+# board that has already ingested link-less jobs would change their dedupe
+# key, and every one of them would insert again under the new URL.
+_PROVIDER_ALIASES = {"indeedemail": "indeed"}
+
 
 def load_domains(db) -> list[str]:
     """The allowlist, from the database.
@@ -57,7 +70,8 @@ def detect_provider(sender: str, domains: list[str] | None = None) -> str | None
         # endswith guards the subdomain case (jobalerts.linkedin.com) without
         # matching a lookalike domain that merely ends in the same letters.
         if domain == known_domain or domain.endswith(f".{known_domain}"):
-            return known_domain.split(".")[0]
+            slug = known_domain.split(".")[0]
+            return _PROVIDER_ALIASES.get(slug, slug)
     return None
 
 
