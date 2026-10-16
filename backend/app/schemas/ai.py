@@ -14,10 +14,31 @@ class ParsedResume(BaseModel):
 
 
 class ExtractedJobPosting(BaseModel):
+    """One job read out of a job-alert email.
+
+    Salary and work mode are here because the alerts show them and we were
+    throwing them away. Indeed and Jobberman print "₦400,000 - ₦600,000 a
+    month" and "Hybrid" right on the card; the extraction asked for four
+    fields and got four, so every email-sourced job in the database had no
+    salary and no work mode — which made a salary filter useless on exactly
+    the supply a Nigerian user has most of.
+
+    Both optional and both default to None, because an alert that shows
+    neither must produce a job with neither rather than an invented figure.
+    """
+
     title: str
     company: str = "Unknown"
     url: str | None = None
     location: str | None = None
+    # Free text, copied from the email verbatim — "₦400,000 - ₦600,000 a
+    # month". Parsed into comparable annual numbers downstream by
+    # services/salary_parsing, which is conservative and yields nothing rather
+    # than a guess, so a garbled string costs a filter and never a wrong one.
+    salary: str | None = None
+    # "remote" | "hybrid" | "onsite". Null where the listing does not say,
+    # which is different from onsite and must not be flattened into it.
+    work_mode: Literal["remote", "hybrid", "onsite"] | None = None
 
 
 class OutreachDraft(BaseModel):

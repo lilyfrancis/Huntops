@@ -70,6 +70,12 @@ class UserPreference(Base):
     # a few hundred a day, so most people want the lot.
     posted_within_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
+    # entry | mid | senior | lead | executive, inferred from each listing's
+    # title at ingest. Its own filter rather than something to read off the
+    # title keywords, because "Engineer" and "Senior Engineer" are the same
+    # role at two levels and somebody who wants one does not want the other.
+    experience_levels: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
+
     # The exact role, in the user's own words: "backend engineer", "product
     # designer". Lanes are deliberately broad — `engineering` covers QA and
     # SRE and mobile — and somebody who wants one specific title had no way to

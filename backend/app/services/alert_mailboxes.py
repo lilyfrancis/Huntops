@@ -256,8 +256,16 @@ def sync_mailbox(db: Session, mailbox: AlertMailbox) -> dict:
                     location=posting.location or mailbox.market,
                     description=f"Sourced from a {provider} job-alert email for the {mailbox.market} market.",
                     requirements=[],
-                    salary_range=None,
+                    # Whatever the alert printed, verbatim. normalize_common
+                    # parses it into comparable annual figures, and declines
+                    # rather than guesses on anything it cannot read.
+                    salary_range=posting.salary,
                     source=f"email-{provider}",
+                    # The synthetic description below says nothing about how
+                    # the work is done, so inferring the mode from it would
+                    # read every email-sourced job as onsite. The listing's own
+                    # answer wins; None leaves it to the location text.
+                    work_mode=posting.work_mode,
                 )
                 if not normalized:
                     continue
