@@ -412,7 +412,9 @@ def test_a_mailbox_that_recognised_no_senders_says_what_it_saw(db_session):
     assert summary["skipped_senders"] == {"some-board.example": 2, "forwarder.example": 1}
 
     db_session.refresh(mailbox)
-    assert "recognised no job-alert senders" in mailbox.last_error
+    # The constant, not the prose: a later run reads this prefix to tell the
+    # note apart from a connection failure, so that is the contract.
+    assert mailbox.last_error.startswith(alert_mailboxes.UNRECOGNISED_NOTE)
     assert "some-board.example (2)" in mailbox.last_error
     assert "From header" in mailbox.last_error  # names the forwarding cause too
 
