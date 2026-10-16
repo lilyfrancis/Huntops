@@ -5,7 +5,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.models.enums import ExperienceLevel, JobLane, JobType
 from app.services import geo
-from app.services.preferences import RECENCY_CHOICES, WORK_MODES
+from app.services.preferences import RECENCY_CHOICES, SOURCE_KINDS, WORK_MODES
 
 
 def _known(values: list[str], enum_cls, kind: str) -> list[str]:
@@ -32,6 +32,7 @@ class PreferenceUpdate(BaseModel):
     eligibility: list[str] | None = None
     work_modes: list[str] | None = None
     experience_levels: list[str] | None = None
+    sources: list[str] | None = None
     title_keywords: list[str] | None = None
     # No upper bound on the floor: a number too high simply returns nothing,
     # and it is the user's own ceiling to set. Negative is refused because it
@@ -104,6 +105,16 @@ class PreferenceUpdate(BaseModel):
             raise ValueError("At most 10 places")
         return cleaned
 
+    @field_validator("sources")
+    @classmethod
+    def sources_are_known(cls, v: list[str] | None) -> list[str] | None:
+        if v is None:
+            return None
+        for value in v:
+            if value not in SOURCE_KINDS:
+                raise ValueError(f"Unknown source: {value}")
+        return list(dict.fromkeys(v))
+
     @field_validator("work_modes")
     @classmethod
     def work_modes_are_known(cls, v: list[str] | None) -> list[str] | None:
@@ -168,6 +179,7 @@ class PreferenceOut(BaseModel):
     eligibility: list[str]
     work_modes: list[str]
     experience_levels: list[str]
+    sources: list[str]
     title_keywords: list[str]
     salary_min_annual: float | None
     salary_currency: str | None
@@ -198,4 +210,5 @@ class PreferenceOptions(BaseModel):
     eligibility: list[str]
     work_modes: list[str]
     experience_levels: list[str]
+    sources: list[str]
     recency_choices: list[int]

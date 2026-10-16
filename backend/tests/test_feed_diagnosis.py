@@ -110,3 +110,55 @@ def test_an_unknown_account_says_so_rather_than_crashing(db_session, capsys):
     _funnel(db_session, "nobody@example.com")
 
     assert "No account for nobody@example.com." in capsys.readouterr().out
+
+
+# ---------- choosing a supply pipeline ----------
+
+def test_alerts_only_shows_only_what_the_mailboxes_read(db_session):
+    """Measured on the live pool: 9,204 active jobs, 7 from the mailboxes. At
+    that ratio no amount of filtering surfaces the Nigerian supply — it is
+    outnumbered a thousand to one and sorted below higher-scoring board jobs.
+    Filtering narrows a pool; only this chooses which pool."""
+    user = _user(db_session, f"{uuid.uuid4()}@example.com")
+    prefs = UserPreference(user_id=user.id, sources=["alerts"])
+    db_session.add(prefs)
+    _job(db_session, "From Jobberman", source="email-jobberman")
+    _job(db_session, "From LinkedIn alert", source="email-linkedin")
+    _job(db_session, "From Remotive", source="remotive")
+    db_session.flush()
+
+    titles = {j.title for j in preferences.feed_query(db_session, prefs).all()}
+    assert titles == {"From Jobberman", "From LinkedIn alert"}
+
+
+def test_boards_only_is_the_other_half(db_session):
+    user = _user(db_session, f"{uuid.uuid4()}@example.com")
+    prefs = UserPreference(user_id=user.id, sources=["boards"])
+    db_session.add(prefs)
+    _job(db_session, "From Jobberman", source="email-jobberman")
+    _job(db_session, "From Remotive", source="remotive")
+    db_session.flush()
+
+    titles = {j.title for j in preferences.feed_query(db_session, prefs).all()}
+    assert titles == {"From Remotive"}
+
+
+def test_picking_both_is_the_same_as_picking_neither(db_session):
+    """And emits no stage either way: a line reporting a drop of zero is a
+    line the reader cannot act on."""
+    user = _user(db_session, f"{uuid.uuid4()}@example.com")
+    both = UserPreference(user_id=user.id, sources=["alerts", "boards"])
+    db_session.add(both)
+    db_session.flush()
+
+    assert preferences.filter_stages(both) == []
+
+
+def test_an_unknown_source_is_refused(client):
+    from tests.conftest import register_user
+
+    data = register_user(client, email="sources@example.com")
+    headers = {"Authorization": f"Bearer {data['access_token']}"}
+
+    assert client.put("/api/users/preferences", headers=headers,
+                      json={"sources": ["telepathy"]}).status_code == 422
