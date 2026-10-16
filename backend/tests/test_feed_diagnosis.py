@@ -1,0 +1,112 @@
+"""The funnel that says which setting emptied a feed.
+
+"It is still not showing the email jobs" has a dozen causes spread across
+four subsystems — the mailbox never connected, the sender was not recognised,
+the extractor returned nothing, the jobs are there but a preference excludes
+them — and from the outside every one of them looks the same. Guessing at it
+from a description costs a deploy cycle per guess.
+"""
+
+import uuid
+
+from app.models.enums import ExperienceLevel, JobLane, JobStatus, JobType
+from app.models.job import Job
+from app.models.user import User
+from app.models.user_preference import UserPreference
+from app.scripts.diagnose_feed import _funnel
+from app.services import preferences
+
+
+def _user(db, email):
+    user = User(email=email, password_hash="x", full_name="Amara Obi", role="job_seeker")
+    db.add(user)
+    db.flush()
+    return user
+
+
+def _job(db, title, **kw):
+    defaults = dict(
+        description="A description.", requirements=[], location="Lagos, Nigeria",
+        job_type=JobType.full_time, experience_level=ExperienceLevel.mid,
+        source="email-jobberman", source_url=f"https://x.test/{uuid.uuid4()}",
+        status=JobStatus.active, restricted_to="Nigeria", lane=JobLane.engineering,
+        work_mode="onsite",
+    )
+    job = Job(title=title, **{**defaults, **kw})
+    db.add(job)
+    db.flush()
+    return job
+
+
+def test_every_stage_is_labelled_with_the_setting_that_caused_it(db_session):
+    """The labels are the whole product of this. A clause with no name tells
+    an operator a number and nothing they can act on."""
+    user = _user(db_session, f"{uuid.uuid4()}@example.com")
+    prefs = UserPreference(
+        user_id=user.id, eligibility=["Nigeria"], work_modes=["remote"],
+        lanes=["engineering"], posted_within_days=7,
+    )
+    db_session.add(prefs)
+    db_session.flush()
+
+    labels = [label for label, _clause in preferences.filter_stages(prefs)]
+
+    assert any("job families" in l for l in labels)
+    assert any("can apply from" in l for l in labels)
+    assert any("work mode" in l for l in labels)
+    assert any("posted within 7 days" in l for l in labels)
+
+
+def test_an_unset_preference_contributes_no_stage(db_session):
+    """Empty means no filter, everywhere. A stage for a setting nobody chose
+    would report a drop the user cannot undo."""
+    user = _user(db_session, f"{uuid.uuid4()}@example.com")
+    prefs = UserPreference(user_id=user.id)
+    db_session.add(prefs)
+    db_session.flush()
+
+    assert preferences.filter_stages(prefs) == []
+
+
+def test_the_funnel_names_the_filter_that_empties_the_feed(db_session, capsys):
+    """The case this exists for: Nigerian jobs are in the pool, the
+    eligibility filter admits them, and a work-mode of "remote" removes every
+    one — because an onsite Lagos role is not remote and never will be."""
+    email = f"{uuid.uuid4()}@example.com"
+    user = _user(db_session, email)
+    db_session.add(UserPreference(
+        user_id=user.id, eligibility=["Nigeria"], work_modes=["remote"],
+    ))
+    _job(db_session, "Backend Engineer, Lagos")
+    _job(db_session, "Data Analyst, Abuja", location="Abuja, Nigeria")
+    db_session.commit()
+
+    _funnel(db_session, email)
+    out = capsys.readouterr().out
+
+    assert "after can apply from ['Nigeria']" in out
+    assert "this is what empties it" in out
+    # Named on the line that actually did it, not on the one before.
+    culprit = next(line for line in out.splitlines() if "empties it" in line)
+    assert "work mode" in culprit
+
+
+def test_the_funnel_reports_how_much_of_the_feed_came_from_email(db_session, capsys):
+    email = f"{uuid.uuid4()}@example.com"
+    user = _user(db_session, email)
+    db_session.add(UserPreference(user_id=user.id, eligibility=["Nigeria"]))
+    _job(db_session, "From Jobberman")
+    _job(db_session, "From a board", source="remotive", restricted_to=None,
+         is_remote=True, work_mode="remote", location="Worldwide")
+    db_session.commit()
+
+    _funnel(db_session, email)
+    out = capsys.readouterr().out
+
+    assert "2 job(s) in this feed, 1 of them from email alerts." in out
+
+
+def test_an_unknown_account_says_so_rather_than_crashing(db_session, capsys):
+    _funnel(db_session, "nobody@example.com")
+
+    assert "No account for nobody@example.com." in capsys.readouterr().out

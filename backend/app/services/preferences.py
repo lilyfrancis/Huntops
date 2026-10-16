@@ -41,22 +41,30 @@ def get_or_create(db: Session, user: User) -> UserPreference:
     return prefs
 
 
-def apply_to_query(query: Query, prefs: UserPreference | None) -> Query:
-    """Narrow a Job query to what this user asked for.
+def filter_stages(prefs: UserPreference) -> list[tuple[str, object]]:
+    """Every narrowing clause this user's settings produce, in order, each
+    labelled with the setting that caused it.
 
-    Each clause is skipped when its list is empty, so a user who only picked a
-    country still sees every lane there rather than nothing at all. Absent
-    preferences mean no narrowing — never an empty feed.
+    `apply_to_query` consumes this, and so does the diagnostic that counts how
+    many jobs survive each step. Sharing one list is the point: an explanation
+    of why a feed is empty is worthless if it can drift from the filter it
+    claims to explain.
+
+    A clause is omitted entirely when its setting is unset, so a user who
+    picked only a country still sees every lane there rather than nothing.
     """
-    if prefs is None:
-        return query
+    stages: list[tuple[str, object]] = []
 
     if prefs.target_markets:
         # Jobs with no market are the global API sources: remote-first listings
         # that belong to every market rather than none, so they stay visible.
         # Filtering them out would leave a new market with an empty feed until
         # its mailbox has run.
-        query = query.filter(or_(Job.market.in_(prefs.target_markets), Job.market.is_(None)))
+        stages.append((
+            f"markets {prefs.target_markets}",
+            or_(Job.market.in_(prefs.target_markets), Job.market.is_(None)),
+        ))
+
     if prefs.locations:
         # Substring, case-insensitive, because a board writes the same city a
         # dozen ways: "Toronto", "Toronto, ON", "Downtown Toronto (Hybrid)".
@@ -67,13 +75,19 @@ def apply_to_query(query: Query, prefs: UserPreference | None) -> Query:
         # most people are hoping for.
         clauses = [Job.location.ilike(f"%{name.strip()}%") for name in prefs.locations if name.strip()]
         if clauses:
-            query = query.filter(or_(*clauses, Job.is_remote.is_(True)))
+            stages.append((f"cities {prefs.locations}", or_(*clauses, Job.is_remote.is_(True))))
+
     if prefs.lanes:
-        query = query.filter(Job.lane.in_(prefs.lanes))
+        stages.append((f"job families {prefs.lanes}", Job.lane.in_(prefs.lanes)))
+
+    if prefs.experience_levels:
+        stages.append((f"seniority {prefs.experience_levels}", Job.experience_level.in_(prefs.experience_levels)))
+
     if prefs.job_types:
-        query = query.filter(Job.job_type.in_(prefs.job_types))
+        stages.append((f"employment type {prefs.job_types}", Job.job_type.in_(prefs.job_types)))
+
     if prefs.remote_only:
-        query = query.filter(Job.is_remote.is_(True))
+        stages.append(("remote only", Job.is_remote.is_(True)))
 
     # Eligibility: who may apply, which is a different question from
     # `target_markets` above. See services/geo.py — picking Nigeria admits a
@@ -81,13 +95,16 @@ def apply_to_query(query: Query, prefs: UserPreference | None) -> Query:
     # US-only one however remote it is.
     eligibility = geo.eligibility_clause(prefs.eligibility or [])
     if eligibility is not None:
-        query = query.filter(eligibility)
+        stages.append((f"can apply from {prefs.eligibility}", eligibility))
 
     if prefs.work_modes:
         # Jobs ingested before work_mode existed have none, and a null is not
         # evidence of anything. Hiding them would empty the feed of everything
         # older than this release for anybody who touches this filter.
-        query = query.filter(or_(Job.work_mode.in_(prefs.work_modes), Job.work_mode.is_(None)))
+        stages.append((
+            f"work mode {prefs.work_modes}",
+            or_(Job.work_mode.in_(prefs.work_modes), Job.work_mode.is_(None)),
+        ))
 
     if prefs.salary_min_annual and prefs.salary_currency:
         # Only listings we can actually compare are judged. Most boards
@@ -95,20 +112,18 @@ def apply_to_query(query: Query, prefs: UserPreference | None) -> Query:
         # listing would throw away the majority of the pool to enforce a
         # number nobody stated. A listing in another currency is unknowable
         # without an FX rate, so it is kept for the same reason.
-        query = query.filter(
+        stages.append((
+            f"salary at least {prefs.salary_min_annual:,.0f} {prefs.salary_currency}",
             or_(
                 Job.salary_annual_max.is_(None),
                 Job.salary_currency != prefs.salary_currency,
                 Job.salary_annual_max >= prefs.salary_min_annual,
-            )
-        )
+            ),
+        ))
 
     if prefs.posted_within_days:
         cutoff = datetime.now(timezone.utc) - timedelta(days=prefs.posted_within_days)
-        query = query.filter(Job.created_at >= cutoff)
-
-    if prefs.experience_levels:
-        query = query.filter(Job.experience_level.in_(prefs.experience_levels))
+        stages.append((f"posted within {prefs.posted_within_days} days", Job.created_at >= cutoff))
 
     if prefs.title_keywords:
         # Title only. Matching the description would return roles whose
@@ -120,8 +135,20 @@ def apply_to_query(query: Query, prefs: UserPreference | None) -> Query:
             if word.strip()
         ]
         if clauses:
-            query = query.filter(or_(*clauses))
+            stages.append((f"role title {prefs.title_keywords}", or_(*clauses)))
 
+    return stages
+
+
+def apply_to_query(query: Query, prefs: UserPreference | None) -> Query:
+    """Narrow a Job query to what this user asked for.
+
+    Absent preferences mean no narrowing — never an empty feed.
+    """
+    if prefs is None:
+        return query
+    for _label, clause in filter_stages(prefs):
+        query = query.filter(clause)
     return query
 
 
