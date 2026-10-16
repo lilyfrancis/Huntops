@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, JSON, String
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, JSON, String
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.types import Uuid
 
@@ -41,6 +41,40 @@ class UserPreference(Base):
     lanes: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
     job_types: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
     remote_only: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+
+    # Countries whose residents this user counts as — "where can I apply
+    # from", not "where did the listing come from". `target_markets` above is
+    # the second question: it filters on which alert mailbox a job arrived
+    # through, which is a fact about our supply chain and says nothing about
+    # whether this person is allowed to take the job.
+    #
+    # Picking Nigeria here means roles open to applicants in Nigeria: onsite
+    # roles in Nigeria, remote roles with no stated restriction, and remote
+    # roles advertised for a region Nigeria sits inside. It does not mean
+    # roles that happen to have a Nigerian office and hire only Americans.
+    eligibility: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
+
+    # Subset of {"remote", "hybrid", "onsite"}. Separate from `remote_only`,
+    # which this supersedes but cannot replace: the boolean is still what the
+    # feed's per-visit toggle writes, and thousands of rows already have it set.
+    work_modes: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
+
+    # A salary floor, annualised, with the currency it was named in. Both or
+    # neither: "80000" is meaningless without knowing whether that is dollars
+    # or naira, and comparing across the two without an FX rate would be a
+    # worse answer than no filter at all.
+    salary_min_annual: Mapped[float | None] = mapped_column(Float, nullable=True)
+    salary_currency: Mapped[str | None] = mapped_column(String(3), nullable=True)
+
+    # "posted in the last N days". Null means no limit — the pool is capped at
+    # a few hundred a day, so most people want the lot.
+    posted_within_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    # The exact role, in the user's own words: "backend engineer", "product
+    # designer". Lanes are deliberately broad — `engineering` covers QA and
+    # SRE and mobile — and somebody who wants one specific title had no way to
+    # say so, which is why a feed of "senior backend manager" looked broken.
+    title_keywords: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
 
     # Autopilot. Thresholds are fit scores (0-100) from JobMatch; an action only
     # fires at or above its threshold, so turning a switch on with the default

@@ -9,7 +9,7 @@ from app.models.enums import JobType
 from app.models.user import User
 from app.schemas.preference import PreferenceOptions, PreferenceOut, PreferenceUpdate
 from app.schemas.user import UserOut, UserProfileUpdate
-from app.services import alert_mailboxes, preferences, whatsapp
+from app.services import alert_mailboxes, geo, preferences, whatsapp
 
 router = APIRouter(prefix="/api/users", tags=["users"])
 
@@ -57,6 +57,9 @@ def preference_options(db: Session = Depends(get_db)) -> PreferenceOptions:
         markets=alert_mailboxes.known_markets(db),
         lanes=preferences.lanes_with_supply(db),
         job_types=[job_type.value for job_type in JobType],
+        eligibility=list(geo.ELIGIBILITY_OPTIONS),
+        work_modes=list(preferences.WORK_MODES),
+        recency_choices=list(preferences.RECENCY_CHOICES),
     )
 
 

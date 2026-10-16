@@ -24,6 +24,7 @@ from app.core.config import get_settings
 from app.models.enums import ExperienceLevel, JobLane, JobStatus, JobType
 from app.models.ingestion_run import IngestionRun
 from app.models.job import Job
+from app.services import geo
 from app.services.ghost_detection import apply_score
 from app.services.salary_parsing import parse_salary
 
@@ -218,10 +219,24 @@ def infer_job_type(title: str, description: str) -> JobType:
 # ---------- geo heuristics — generic restriction detection, not one hardcoded country ----------
 
 _REMOTE_PATTERN = re.compile(r"\b(remote|worldwide|anywhere|global)\b", re.I)
+_HYBRID_PATTERN = re.compile(r"\bhybrid\b", re.I)
+
+# Only the explicit "you must be here" phrasings. A description that merely
+# mentions a country is not a restriction — half of all listings name the
+# head office — so these all require an exclusivity word next to the place.
 _RESTRICTION_PATTERNS: list[tuple[re.Pattern, str]] = [
-    (re.compile(r"\b(us[- ]?only|united states only|us[- ]?based|us citizens? only|must be based in the us)\b", re.I), "US"),
-    (re.compile(r"\b(uk[- ]?only|united kingdom only|uk[- ]?based)\b", re.I), "UK"),
-    (re.compile(r"\b(eu[- ]?only|european union only|eu[- ]?based)\b", re.I), "EU"),
+    (re.compile(r"\b(us[- ]?only|usa[- ]?only|united states only|us[- ]?based|"
+                r"us citizens? only|authori[sz]ed to work in the us|must be based in the us)\b", re.I), "US"),
+    (re.compile(r"\b(uk[- ]?only|united kingdom only|uk[- ]?based|right to work in the uk)\b", re.I), "UK"),
+    (re.compile(r"\b(canada[- ]?only|canadian[- ]?only|canada[- ]?based|must be based in canada)\b", re.I), "Canada"),
+    (re.compile(r"\b(nigeria[- ]?only|nigerian[- ]?only|based in nigeria)\b", re.I), "Nigeria"),
+    (re.compile(r"\b(india[- ]?only|based in india)\b", re.I), "India"),
+    (re.compile(r"\b(eu[- ]?only|european union only|eu[- ]?based|eligible to work in the eu)\b", re.I), "EU"),
+    (re.compile(r"\b(europe[- ]?only|europe[- ]?based)\b", re.I), "Europe"),
+    (re.compile(r"\b(emea[- ]?only|emea[- ]?based)\b", re.I), "EMEA"),
+    (re.compile(r"\b(latam[- ]?only|latin america only)\b", re.I), "LATAM"),
+    (re.compile(r"\b(apac[- ]?only|apac[- ]?based)\b", re.I), "APAC"),
+    (re.compile(r"\b(africa[- ]?only|africa[- ]?based)\b", re.I), "Africa"),
 ]
 
 
@@ -229,7 +244,29 @@ def infer_is_remote(location: str) -> bool:
     return bool(_REMOTE_PATTERN.search(location or ""))
 
 
+def infer_work_mode(location: str, description: str, is_remote: bool) -> str:
+    """Remote, hybrid or onsite, in that order of precedence.
+
+    Hybrid beats remote because a listing that says both means two or three
+    days in an office, and somebody filtering for remote work cannot take it.
+    """
+    if _HYBRID_PATTERN.search(f"{location} {description}"):
+        return "hybrid"
+    return "remote" if is_remote else "onsite"
+
+
 def infer_restriction(location: str, description: str) -> str | None:
+    """The place a listing says you must be in, or None for no restriction.
+
+    The location field is read first and read as eligibility, because that is
+    what the remote boards put there: Remotive's `candidate_required_location`
+    and Jobicy's `jobGeo` are statements about who may apply, not about where
+    a desk is. "Worldwide" and its synonyms come back as None — the absence
+    of a restriction, which is a different thing from an unknown one.
+    """
+    place = geo.canonical(location)
+    if place is not None:
+        return place
     text = f"{location} {description}"
     for pattern, code in _RESTRICTION_PATTERNS:
         if pattern.search(text):
@@ -242,7 +279,17 @@ def infer_restriction(location: str, description: str) -> str | None:
 def normalize_common(
     *, title: str, company: str | None, url: str, location: str, description: str,
     requirements: list[str], salary_range: str | None, source: str,
+    remote: bool | None = None,
 ) -> dict | None:
+    """`remote` is passed explicitly by the remote-only boards.
+
+    Inferring it from the location text alone got those boards wrong in the
+    one direction that matters: Remotive puts the *eligible* country in its
+    location field, so a fully remote role open to Canadians arrives as
+    "Canada" with no mention of remote work anywhere, and was being stored as
+    an onsite Toronto job. Eligibility filtering is built on `is_remote`, so
+    that single mistake decided whether somebody abroad ever saw it.
+    """
     title = (title or "").strip()
     url = (url or "").strip()
     if not title or not url:
@@ -250,6 +297,7 @@ def normalize_common(
 
     clean_description = strip_html(description)[:4000]
     parsed_salary = parse_salary(salary_range)
+    is_remote = infer_is_remote(location) if remote is None else remote
     return {
         "salary_annual_min": parsed_salary["annual_min"] if parsed_salary else None,
         "salary_annual_max": parsed_salary["annual_max"] if parsed_salary else None,
@@ -269,7 +317,8 @@ def normalize_common(
         "source": source,
         "source_url": url,
         "lane": infer_lane(title, clean_description),
-        "is_remote": infer_is_remote(location),
+        "is_remote": is_remote,
+        "work_mode": infer_work_mode(location, clean_description, is_remote),
         "restricted_to": infer_restriction(location, clean_description),
     }
 
@@ -284,6 +333,7 @@ def normalize_remotive(raw: dict) -> dict | None:
         requirements=raw.get("tags", []) or [],
         salary_range=raw.get("salary") or None,
         source="remotive",
+        remote=True,  # a remote-only board; its location field states eligibility
     )
 
 
@@ -299,6 +349,7 @@ def normalize_remoteok(raw: dict) -> dict | None:
         requirements=raw.get("tags", []) or [],
         salary_range=salary_range,
         source="remoteok",
+        remote=True,  # a remote-only board; its location field states eligibility
     )
 
 
@@ -314,6 +365,7 @@ def normalize_arbeitnow(raw: dict) -> dict | None:
         requirements=(raw.get("tags", []) or []) + job_types,
         salary_range=None,
         source="arbeitnow",
+        remote=bool(raw.get("remote")),
     )
 
 
@@ -330,6 +382,7 @@ def normalize_jobicy(raw: dict) -> dict | None:
         requirements=industries if isinstance(industries, list) else [str(industries)],
         salary_range=salary_range,
         source="jobicy",
+        remote=True,  # a remote-only board; its location field states eligibility
     )
 
 
@@ -343,6 +396,7 @@ def normalize_weworkremotely(raw: dict) -> dict | None:
         requirements=[],
         salary_range=None,
         source="weworkremotely",
+        remote=True,  # a remote-only board; its location field states eligibility
     )
 
 

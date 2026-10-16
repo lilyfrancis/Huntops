@@ -59,3 +59,53 @@ export function ChipGroup({ options, value, onChange, emptyHint, disabled, ...re
     </div>
   );
 }
+
+/**
+ * The same chips, for a question with exactly one answer.
+ *
+ * ChipGroup toggles, which is right for markets and wrong here: deselecting
+ * leaves no value at all, and "don't send me a digest" and "hasn't answered
+ * yet" are different states that looked identical. The call sites that needed
+ * this were each faking it by diffing the incoming array against the current
+ * value and hoping the user clicked a new chip rather than the lit one.
+ *
+ * "No limit" is spelled as an option here rather than reached by deselecting,
+ * for the same reason.
+ */
+export function RadioChips({
+  options,
+  value,
+  onChange,
+  ...rest
+}: {
+  options: ChipOption[];
+  value: string;
+  onChange: (next: string) => void;
+  "aria-label": string;
+}) {
+  return (
+    <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={rest["aria-label"]}>
+      {options.map((option) => {
+        const selected = option.value === value;
+        return (
+          <button
+            key={option.value}
+            type="button"
+            role="radio"
+            aria-checked={selected}
+            onClick={() => onChange(option.value)}
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors",
+              selected
+                ? "border-violet bg-violet-soft text-violet-dark"
+                : "border-border-strong bg-surface text-ink-muted hover:border-ink-faint hover:text-ink"
+            )}
+          >
+            {selected && <Check className="h-3.5 w-3.5" strokeWidth={2.5} />}
+            {option.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}

@@ -51,6 +51,15 @@ class Job(Base):
     # about where the job came from, so the feed filter can trust it.
     market: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
     is_remote: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+
+    # "remote" | "hybrid" | "onsite". A string rather than an enum because the
+    # three values are a presentation detail of one heuristic, and adding a
+    # fourth ("remote-first", say) must not need a Postgres type migration.
+    # Hybrid is the reason this exists alongside `is_remote`: a boolean cannot
+    # say "three days in the office", which is exactly the answer somebody
+    # filtering for remote work needs before they read any further.
+    work_mode: Mapped[str | None] = mapped_column(String(10), nullable=True, index=True)
+
     # Heuristic geographic restriction extracted at ingest time, e.g. "US", "UK".
     # Null means no restriction detected (open to apply from anywhere).
     restricted_to: Mapped[str | None] = mapped_column(String(100), nullable=True)
