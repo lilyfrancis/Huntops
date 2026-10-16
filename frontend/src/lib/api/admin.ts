@@ -14,6 +14,7 @@ import type {
   JobLane,
   MailboxSyncResult,
   MailboxTestResult,
+  SupplyBreakdown,
   User,
 } from "../types";
 
@@ -69,6 +70,7 @@ export const adminApi = {
   aggregationRuns: () => api.get<IngestionRun[]>("/api/admin/jobs/aggregation-runs"),
   emailSyncRuns: () => api.get<EmailSyncRun[]>("/api/admin/email-sync-runs"),
   analytics: () => api.get<AdminAnalytics>("/api/admin/analytics"),
+  supply: () => api.get<SupplyBreakdown>("/api/admin/supply"),
 
   mailboxes: () => api.get<AlertMailbox[]>("/api/admin/mailboxes"),
   upsertMailbox: (payload: MailboxUpsertPayload) => api.put<AlertMailbox>("/api/admin/mailboxes", payload),

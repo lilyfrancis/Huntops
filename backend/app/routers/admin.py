@@ -1,7 +1,7 @@
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import desc
+from sqlalchemy import desc, func
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
@@ -181,6 +181,64 @@ def get_analytics(db: Session = Depends(get_db)) -> dict:
             "monthly_recurring_estimate": round(pro_count * settings.PRO_PRICE + elite_count * settings.ELITE_PRICE, 2),
             "currency": settings.BILLING_CURRENCY,
             "pro_subs": pro_count, "elite_subs": elite_count,
+        },
+    }
+
+
+@router.get("/supply")
+def supply_breakdown(db: Session = Depends(get_db)) -> dict:
+    """Where the live pool actually came from, and how much of it is placeable.
+
+    "It is not pulling from my alerts" is not answerable from the sync runs
+    alone: a run reports what it read, not what survived into the pool, and a
+    mailbox that reads forty messages and recognises none of them reports
+    success. This counts the jobs themselves, grouped by the source that
+    produced them — `email-linkedin`, `email-jobberman`, `remotive` — so the
+    email bridge's contribution is a number rather than an inference.
+
+    The eligibility block is the other half of the same question. A job with
+    no `restricted_to` is treated by the feed as open to everybody, so a large
+    `remote_unrestricted` count next to a small `restricted` one means the
+    geography has not been derived properly and the filter is being fed
+    nulls — which looks exactly like the filter not working.
+    """
+    def _counts(column):
+        return [
+            {"name": value or "(none)", "active": count}
+            for value, count in db.query(column, func.count(Job.id))
+            .filter(Job.status == JobStatus.active)
+            .group_by(column)
+            .order_by(desc(func.count(Job.id)))
+            .all()
+        ]
+
+    active = db.query(Job).filter(Job.status == JobStatus.active)
+    from_email = active.filter(Job.source.like("email-%")).count()
+
+    return {
+        "by_source": _counts(Job.source),
+        "by_market": _counts(Job.market),
+        "totals": {
+            "active": active.count(),
+            "from_alert_mailboxes": from_email,
+            "from_job_boards": active.filter(~Job.source.like("email-%")).count(),
+        },
+        "eligibility": {
+            "restricted": active.filter(Job.restricted_to.isnot(None)).count(),
+            # Open to anybody, anywhere — the only listings a user with no
+            # right to work in the job's country can actually take.
+            "remote_unrestricted": active.filter(
+                Job.restricted_to.is_(None), Job.is_remote.is_(True)
+            ).count(),
+            # Neither remote nor placed: invisible to every eligibility filter
+            # except a location match, and usually a sign of missing geography.
+            "no_geography": active.filter(
+                Job.restricted_to.is_(None), Job.is_remote.is_(False)
+            ).count(),
+        },
+        "mailboxes": {
+            "configured": db.query(AlertMailbox).count(),
+            "active": db.query(AlertMailbox).filter(AlertMailbox.is_active.is_(True)).count(),
         },
     }
 
