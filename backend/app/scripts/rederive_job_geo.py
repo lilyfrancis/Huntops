@@ -33,16 +33,10 @@ import logging
 
 from app.db.base import SessionLocal
 from app.models.job import Job
-from app.services.aggregation import infer_is_remote, infer_restriction, infer_work_mode
+from app.services.aggregation import derive_geography
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-# Boards that only ever carry remote work. Their location field is a statement
-# about who may apply, not about where a desk is, which is why inferring
-# `is_remote` from that text got them backwards.
-REMOTE_ONLY_SOURCES = {"remotive", "remoteok", "jobicy", "weworkremotely"}
-
 
 def rederive(dry_run: bool = False) -> dict:
     db = SessionLocal()
@@ -53,18 +47,9 @@ def rederive(dry_run: bool = False) -> dict:
     try:
         jobs = db.query(Job).all()
         for job in jobs:
-            source = (job.source or "").split("-")[0]
-            # An email-sourced job has a synthetic description that says
-            # nothing about how the work is done, so only its location can
-            # speak. A board job has the real listing text.
-            is_remote = True if source in REMOTE_ONLY_SOURCES else infer_is_remote(job.location)
-            # Keep a job somebody already marked remote: the newer ingest path
-            # records the board's own flag, and re-inferring from text would
-            # throw that away.
-            is_remote = is_remote or job.is_remote
-
-            restricted_to = infer_restriction(job.location, job.description or "")
-            work_mode = infer_work_mode(job.location, job.description or "", is_remote)
+            is_remote, restricted_to, work_mode = derive_geography(
+                job.source, job.location, job.description, job.is_remote
+            )
 
             if (
                 job.is_remote == is_remote

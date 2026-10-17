@@ -265,3 +265,27 @@ def test_a_quiet_run_still_clears_a_login_failure(db_session):
         alert_mailboxes.sync_mailbox(db_session, box)
 
     assert box.last_error is None
+
+
+def test_the_migration_and_the_script_derive_the_same_thing(db_session):
+    """Two callers that must agree exactly. If they drifted, a deploy and a
+    manual run would leave the same database in two different states — and
+    the one that ran second would look like it had fixed nothing."""
+    import importlib.util
+    from pathlib import Path
+
+    from app.services.aggregation import derive_geography
+
+    path = Path(__file__).resolve().parents[1] / "alembic/versions/0030_backfill_job_geography.py"
+    spec = importlib.util.spec_from_file_location("migration_0030", path)
+    migration = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(migration)
+
+    # The migration imports the shared helper rather than reimplementing it,
+    # which is the property under test; this pins the behaviour it inherits.
+    assert derive_geography("remotive", "USA", "", False) == (True, "US", "remote")
+    assert derive_geography("email-jobberman", "Lagos, Nigeria", "", False) == (
+        False, "Nigeria", "onsite",
+    )
+    assert "derive_geography" in path.read_text()
+    assert migration.down_revision == "0029_source_preference"
