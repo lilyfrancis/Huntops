@@ -25,6 +25,7 @@ settings = get_settings()
 def match_jobs(
     request: Request,
     limit: int = Query(10, ge=1, le=50),
+    skip: int = Query(0, ge=0),
     current_user: User = Depends(require_job_seeker),
     db: Session = Depends(get_db),
 ) -> list[JobMatchOut]:
@@ -39,8 +40,17 @@ def match_jobs(
     prefs = preferences.get_or_create(db, current_user)
     # Only the jobs this user has no score for yet. Pressing Refresh twice in
     # a row used to re-score and re-charge for the identical forty jobs.
-    jobs = matching.unscored_for(
-        db, current_user, preferences.feed_query(db, prefs), settings.MAX_MATCH_CANDIDATES
+    #
+    # And only on the first page. Paging through results that are already
+    # scored must not trigger a scoring pass — it would spend credit to
+    # produce a list the user has already been shown, and burn the 20/hour
+    # limit on navigation.
+    jobs = (
+        matching.unscored_for(
+            db, current_user, preferences.feed_query(db, prefs), settings.MAX_MATCH_CANDIDATES
+        )
+        if skip == 0
+        else []
     )
     # Each job scored against the CV it calls for, so an engineering role is
     # never rated on a sales CV — and then applied for with a third one.
@@ -56,7 +66,7 @@ def match_jobs(
     # Everything this user has, not only what was scored a moment ago. Now
     # that a job is scored once and remembered, a quiet day scores nothing —
     # and returning just this run's work would empty a page that is full.
-    stored = (
+    above_threshold = (
         db.query(JobMatch, Job)
         .join(Job, JobMatch.job_id == Job.id)
         .filter(
@@ -64,7 +74,15 @@ def match_jobs(
             Job.status == JobStatus.active,
             JobMatch.fit_score >= matching.MIN_SCORE_THRESHOLD,
         )
-        .order_by(desc(JobMatch.fit_score))
+    )
+    total = above_threshold.count()
+    stored = (
+        # Tie-broken by job id. Ordering on score alone is not a total order —
+        # dozens of jobs share a score — and Postgres may return a tied group
+        # in a different arrangement per query, which pages that overlap and
+        # skip. A stable second key is what makes "next" mean next.
+        above_threshold.order_by(desc(JobMatch.fit_score), Job.id)
+        .offset(skip)
         .limit(limit)
         .all()
     )
@@ -89,4 +107,5 @@ def match_jobs(
         ],
         candidates_scored=len(jobs),
         threshold=matching.MIN_SCORE_THRESHOLD,
+        total=total,
     )

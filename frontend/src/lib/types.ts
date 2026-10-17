@@ -452,6 +452,8 @@ export interface MatchRun {
   candidates_scored: number;
   /** The score they had to clear. */
   threshold: number;
+  /** Every stored match above the bar, not just this page of them. */
+  total: number;
 }
 
 export interface ApiValidationItem {
