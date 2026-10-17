@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from sqlalchemy import desc
+from sqlalchemy import desc, or_
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
@@ -15,6 +15,7 @@ from app.schemas.job import JobOut, job_out_for
 from app.schemas.job_match import JobMatchOut, MatchRunOut
 from app.services import matching, preferences, resume_selection, unlocking
 from app.services.ai_client import AIResponseError
+from app.services.ghost_detection import GHOST_THRESHOLD
 
 router = APIRouter(prefix="/api/ai", tags=["matching"])
 settings = get_settings()
@@ -66,14 +67,26 @@ def match_jobs(
     # Everything this user has, not only what was scored a moment ago. Now
     # that a job is scored once and remembered, a quiet day scores nothing —
     # and returning just this run's work would empty a page that is full.
-    above_threshold = (
+    # Through the user's own filters, like the feed, the digest and autopilot.
+    #
+    # It read every score this user had ever been given, and a score is kept
+    # forever so that nothing is paid for twice. So a job scored last month,
+    # when no job family had been chosen, stayed on this page permanently —
+    # somebody who had picked design and sales was still being shown React
+    # roles, with no setting anywhere that would remove them.
+    above_threshold = preferences.apply_to_query(
         db.query(JobMatch, Job)
         .join(Job, JobMatch.job_id == Job.id)
         .filter(
             JobMatch.user_id == current_user.id,
             Job.status == JobStatus.active,
             JobMatch.fit_score >= matching.MIN_SCORE_THRESHOLD,
-        )
+            # Hidden here as in the feed: these are the jobs autopilot acts
+            # on, and applying to a listing we flagged as probably fake is
+            # the one outcome nobody wants.
+            or_(Job.ghost_score.is_(None), Job.ghost_score < GHOST_THRESHOLD),
+        ),
+        prefs,
     )
     total = above_threshold.count()
     stored = (

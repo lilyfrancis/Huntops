@@ -1,9 +1,16 @@
 """What each user asked for, and how that becomes a query.
 
 The one place that turns a UserPreference row into a filter. The feed, the
-digest and autopilot all call `apply_to_query`, so "jobs for me" means exactly
-the same thing in all three — a user can't see a job on their dashboard that
-autopilot considers out of scope, or vice versa.
+matches page, the digest and autopilot all run through `apply_to_query`, so
+"jobs for me" means exactly the same thing in all four — a user can't see a
+job on their dashboard that autopilot considers out of scope, or vice versa.
+
+That claim used to be false for two of them, and silently. The matches page
+and the digest read stored scores directly, and a score is kept forever so
+that no job is ever paid for twice — so anything scored before a user
+narrowed their preferences stayed on their page and in their morning mail
+permanently, with no setting anywhere that would remove it. Scoring respected
+the filters; display did not.
 """
 
 from datetime import datetime, timedelta, timezone
