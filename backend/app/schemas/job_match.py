@@ -29,3 +29,8 @@ class MatchRunOut(BaseModel):
     candidates_scored: int
     # The bar they had to clear, so the page can name the number.
     threshold: float
+    # Every stored match above the bar, not just this page of them. Without
+    # it the page cannot say "20 of 143", and a list that is identical every
+    # visit reads as nothing having happened rather than as the top of a
+    # stable ranking.
+    total: int = 0

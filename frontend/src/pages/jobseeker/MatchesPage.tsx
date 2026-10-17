@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { AlertTriangle, Sparkles } from "lucide-react";
+import { AlertTriangle, ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { PageHeader } from "@/components/layout/page-header";
 import { MatchCard } from "@/components/matches/match-card";
@@ -13,6 +13,12 @@ import { matchesApi, outreachApi, resumesApi } from "@/lib/api";
 import { ApiError } from "@/lib/api-client";
 import { useAuth } from "@/hooks/use-auth";
 import type { Job, MatchRun } from "@/lib/types";
+
+/* Matches are a stable ranking, not a stream: nothing is re-scored once it
+   has a score, so the top of the list is the same every visit by design.
+   Without paging that reads as the page being broken — which is exactly how
+   it was reported. */
+const PAGE_SIZE = 20;
 
 /** Why there is nothing here, in the words that fit the actual reason.
  *
@@ -47,6 +53,7 @@ export function MatchesPage() {
   const queryClient = useQueryClient();
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [outreachTargetId, setOutreachTargetId] = useState<string | null>(null);
+  const [page, setPage] = useState(0);
 
   const { data: resume } = useQuery({ queryKey: ["resume", "me"], queryFn: resumesApi.me, retry: false });
 
@@ -57,8 +64,8 @@ export function MatchesPage() {
     error,
     refetch,
   } = useQuery({
-    queryKey: ["matches"],
-    queryFn: () => matchesApi.list(20),
+    queryKey: ["matches", page],
+    queryFn: () => matchesApi.list(PAGE_SIZE, page * PAGE_SIZE),
     enabled: !!resume,
     // Scoring is an AI call behind a 20/hour limit. Retrying a 429 or a
     // provider failure spends the remaining budget to fail three more times.
@@ -115,7 +122,14 @@ export function MatchesPage() {
         title="Matches"
         description="Scored against your résumé, boosted if a role is open to where you live."
         action={
-          <Button onClick={() => refetch()} disabled={isFetching} variant="outline" size="sm">
+          <Button
+            onClick={() => (page === 0 ? refetch() : setPage(0))}
+            disabled={isFetching}
+            variant="outline"
+            size="sm"
+          >
+            {/* Back to page one, because scoring only runs there — refreshing
+                from page three would spend nothing and change nothing. */}
             {isFetching ? "Scoring…" : "Refresh matches"}
           </Button>
         }
@@ -141,18 +155,52 @@ export function MatchesPage() {
       ) : !matches || matches.length === 0 ? (
         <EmptyState icon={Sparkles} {...emptyCopy(run)} />
       ) : (
-        <div className="space-y-4">
-          {matches.map((match) => (
-            <MatchCard
-              key={match.job.id}
-              match={match}
-              onViewJob={() => setSelectedJob(match.job)}
-              onRequestOutreach={() => outreachMutation.mutate(match.job.id)}
-              outreachPending={outreachMutation.isPending && outreachTargetId === match.job.id}
-              outreachDisabled={user?.subscription_tier !== "elite"}
-            />
-          ))}
-        </div>
+        <>
+          {/* Says out loud that this is the top of a longer ranking. A list
+              that is identical every visit reads as nothing having happened,
+              and the count is the cheapest way to show that it did. */}
+          <p className="mb-4 text-sm text-ink-muted">
+            Showing <span className="font-semibold text-ink">{page * PAGE_SIZE + 1}–
+            {page * PAGE_SIZE + matches.length}</span> of {run?.total ?? matches.length}, best fit
+            first. Scored once and kept — a job you have already been scored against will not
+            change place.
+          </p>
+
+          <div className="space-y-4">
+            {matches.map((match) => (
+              <MatchCard
+                key={match.job.id}
+                match={match}
+                onViewJob={() => setSelectedJob(match.job)}
+                onRequestOutreach={() => outreachMutation.mutate(match.job.id)}
+                outreachPending={outreachMutation.isPending && outreachTargetId === match.job.id}
+                outreachDisabled={user?.subscription_tier !== "elite"}
+              />
+            ))}
+          </div>
+
+          {(page > 0 || (run?.total ?? 0) > (page + 1) * PAGE_SIZE) && (
+            <div className="mt-6 flex items-center justify-between gap-3 border-t border-border pt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage((p) => Math.max(0, p - 1))}
+                disabled={page === 0 || isFetching}
+              >
+                <ChevronLeft className="h-3.5 w-3.5" /> Previous
+              </Button>
+              <span className="font-mono text-xs tabular-nums text-ink-faint">Page {page + 1}</span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage((p) => p + 1)}
+                disabled={(run?.total ?? 0) <= (page + 1) * PAGE_SIZE || isFetching}
+              >
+                Next <ChevronRight className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          )}
+        </>
       )}
 
       <JobDetailDialog job={selectedJob} open={!!selectedJob} onOpenChange={(v) => !v && setSelectedJob(null)} />
