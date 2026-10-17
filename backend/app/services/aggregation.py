@@ -274,6 +274,33 @@ def infer_restriction(location: str, description: str) -> str | None:
     return None
 
 
+# Boards that only ever carry remote work. Their location field states who
+# may apply, not where a desk is, which is why inferring remoteness from that
+# text got them backwards.
+REMOTE_ONLY_SOURCES = frozenset({"remotive", "remoteok", "jobicy", "weworkremotely"})
+
+
+def derive_geography(
+    source: str | None, location: str | None, description: str | None, is_remote: bool
+) -> tuple[bool, str | None, str]:
+    """The three columns the eligibility filter reads, from what a row holds.
+
+    One function because two callers have to agree exactly: the migration
+    that backfills existing rows and the script that can be re-run by hand.
+    If they drifted, a deploy and a manual run would leave the same database
+    in two different states.
+
+    `is_remote` is the value already stored, and it is never downgraded —
+    the newer ingest path records the board's own flag, and re-inferring from
+    text would throw that away.
+    """
+    board = (source or "").split("-")[0]
+    remote = is_remote or board in REMOTE_ONLY_SOURCES or infer_is_remote(location or "")
+    restricted_to = infer_restriction(location or "", description or "")
+    work_mode = infer_work_mode(location or "", description or "", remote)
+    return remote, restricted_to, work_mode
+
+
 # ---------- normalization — one source-specific mapper each, into the Job column shape ----------
 
 def normalize_common(
