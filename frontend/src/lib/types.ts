@@ -454,6 +454,10 @@ export interface MatchRun {
   threshold: number;
   /** Every stored match above the bar, not just this page of them. */
   total: number;
+  /** Jobs matching the user's filters that have never been scored. */
+  unscored_remaining: number;
+  /** Scored, and did not clear the bar. */
+  below_threshold: number;
 }
 
 export interface ApiValidationItem {

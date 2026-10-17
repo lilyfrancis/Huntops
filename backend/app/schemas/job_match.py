@@ -34,3 +34,12 @@ class MatchRunOut(BaseModel):
     # visit reads as nothing having happened rather than as the top of a
     # stable ranking.
     total: int = 0
+    # Jobs that match this user's filters and have never been scored. The
+    # number behind "why is it only showing one" — a page reading "1 of 1"
+    # while three hundred eligible jobs wait is telling the truth about the
+    # wrong thing.
+    unscored_remaining: int = 0
+    # Scored, and did not clear the bar. Distinguishes "we have not looked at
+    # these yet" from "we looked and they were not for you", which have
+    # opposite fixes: press Refresh, or widen the filters.
+    below_threshold: int = 0

@@ -47,6 +47,37 @@ function emptyCopy(run: MatchRun | undefined): { title: string; description: str
   };
 }
 
+/** What is left to look at, and what has already been ruled out.
+ *
+ * Nothing scored yet and nothing good enough are different facts with
+ * opposite fixes — press Refresh, or widen the filters — and a bare count of
+ * survivors cannot tell them apart.
+ */
+function ScoringProgress({
+  run,
+  onRefresh,
+  busy,
+}: {
+  run: MatchRun | undefined;
+  onRefresh: () => void;
+  busy: boolean;
+}) {
+  if (!run || run.unscored_remaining === 0) return null;
+  return (
+    <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface-2 px-4 py-3">
+      <p className="text-sm text-ink-muted">
+        <span className="font-semibold text-ink">{run.unscored_remaining}</span> more job
+        {run.unscored_remaining === 1 ? "" : "s"} match your filters and have not been scored yet
+        {run.below_threshold > 0 && <> — {run.below_threshold} were scored and came in under {run.threshold}</>}
+        . Each refresh scores the next batch.
+      </p>
+      <Button size="sm" variant="outline" onClick={onRefresh} disabled={busy}>
+        {busy ? "Scoring…" : "Score more"}
+      </Button>
+    </div>
+  );
+}
+
 export function MatchesPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -153,18 +184,27 @@ export function MatchesPage() {
           }
         />
       ) : !matches || matches.length === 0 ? (
-        <EmptyState icon={Sparkles} {...emptyCopy(run)} />
+        <>
+          <EmptyState icon={Sparkles} {...emptyCopy(run)} />
+          <ScoringProgress run={run} onRefresh={() => refetch()} busy={isFetching} />
+        </>
       ) : (
         <>
           {/* Says out loud that this is the top of a longer ranking. A list
               that is identical every visit reads as nothing having happened,
               and the count is the cheapest way to show that it did. */}
-          <p className="mb-4 text-sm text-ink-muted">
+          <p className="mb-2 text-sm text-ink-muted">
             Showing <span className="font-semibold text-ink">{page * PAGE_SIZE + 1}–
             {page * PAGE_SIZE + matches.length}</span> of {run?.total ?? matches.length}, best fit
             first. Scored once and kept — a job you have already been scored against will not
             change place.
           </p>
+
+          {/* "1 of 1" is true and useless on its own. Three hundred jobs can
+              match the filters and be waiting unscored, which looks identical
+              to there being nothing for you — and the two have opposite
+              fixes: press Refresh, or widen the filters. */}
+          <ScoringProgress run={run} onRefresh={() => (page === 0 ? refetch() : setPage(0))} busy={isFetching} />
 
           <div className="space-y-4">
             {matches.map((match) => (

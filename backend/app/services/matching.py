@@ -126,20 +126,43 @@ def unscored_for(db: Session, user: User, query, limit: int) -> list[Job]:
     the difference between paying for forty jobs a day and paying for the few
     that actually arrived.
     """
-    already = {
-        job_id
-        for (job_id,) in db.query(JobMatch.job_id).filter(JobMatch.user_id == user.id).all()
-    }
-    out: list[Job] = []
-    # Walked rather than filtered in SQL: the exclusion set is per user and
-    # small, and this keeps one query shape shared with the feed.
-    for job in query.order_by(desc(Job.created_at)).limit(limit * 4).all():
-        if job.id in already:
-            continue
-        out.append(job)
-        if len(out) >= limit:
-            break
-    return out
+    return (
+        _unscored_query(db, user, query)
+        .order_by(desc(Job.created_at))
+        .limit(limit)
+        .all()
+    )
+
+
+def _unscored_query(db: Session, user: User, query):
+    """`query`, minus every job this user already has a score for.
+
+    Excluded in SQL rather than by walking a page of results. The walk took
+    the newest `limit * 4` rows and then dropped the scored ones, which works
+    until those rows are all scored — and then it returns nothing, for ever,
+    while hundreds of older jobs that match the user's filters sit unscored
+    and unreachable. Pressing Refresh did nothing and said nothing.
+
+    NOT EXISTS rather than NOT IN: a user with thousands of scores would
+    otherwise inline thousands of ids into every query, and NOT IN against a
+    nullable column has the wrong semantics if a null ever appears.
+    """
+    scored = (
+        db.query(JobMatch.id)
+        .filter(JobMatch.user_id == user.id, JobMatch.job_id == Job.id)
+        .exists()
+    )
+    return query.filter(~scored)
+
+
+def count_unscored(db: Session, user: User, query) -> int:
+    """How many jobs match this user's filters and have never been scored.
+
+    The number behind "why is it only showing one". A page that says
+    "1 of 1" when 300 eligible jobs are waiting is telling the truth about
+    the wrong thing.
+    """
+    return _unscored_query(db, user, query).count()
 
 
 def persist_matches(
