@@ -89,6 +89,23 @@ def match_jobs(
         prefs,
     )
     total = above_threshold.count()
+
+    # Counted after the scoring pass, so the numbers describe the state the
+    # user is being shown rather than the one before the button was pressed.
+    on_preference = preferences.feed_query(db, prefs)
+    unscored_remaining = matching.count_unscored(db, current_user, on_preference)
+    below_threshold = (
+        preferences.apply_to_query(
+            db.query(JobMatch)
+            .join(Job, JobMatch.job_id == Job.id)
+            .filter(
+                JobMatch.user_id == current_user.id,
+                Job.status == JobStatus.active,
+                JobMatch.fit_score < matching.MIN_SCORE_THRESHOLD,
+            ),
+            prefs,
+        ).count()
+    )
     stored = (
         # Tie-broken by job id. Ordering on score alone is not a total order —
         # dozens of jobs share a score — and Postgres may return a tied group
@@ -121,4 +138,6 @@ def match_jobs(
         candidates_scored=len(jobs),
         threshold=matching.MIN_SCORE_THRESHOLD,
         total=total,
+        unscored_remaining=unscored_remaining,
+        below_threshold=below_threshold,
     )

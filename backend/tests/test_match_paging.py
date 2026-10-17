@@ -128,3 +128,102 @@ def test_the_total_counts_everything_above_the_bar_not_the_page(client):
 
     assert len(body["matches"]) == 5
     assert body["total"] == 12
+
+
+# ---------- scoring that does not stop early ----------
+
+def test_older_unscored_jobs_are_still_reachable(db_session):
+    """The walk took the newest limit*4 rows and then dropped the scored
+    ones. Once those were all scored it returned nothing, for ever, while
+    older jobs matching the user's filters sat unscored and unreachable —
+    Refresh did nothing and said nothing."""
+    from datetime import datetime, timedelta, timezone
+
+    from app.models.user_preference import UserPreference
+    from app.services import matching, preferences
+
+    user = User(email=f"{uuid.uuid4()}@example.com", password_hash="x",
+                full_name="Amara Obi", role="job_seeker")
+    db_session.add(user)
+    db_session.flush()
+    db_session.add(UserPreference(user_id=user.id))
+
+    old = datetime.now(timezone.utc) - timedelta(days=40)
+    older_unscored = None
+    for i in range(50):
+        job = Job(
+            title=f"Old role {i}", description="d" * 60, requirements=[], location="Lagos",
+            job_type=JobType.full_time, experience_level=ExperienceLevel.mid, source="test",
+            source_url=f"https://x.test/{uuid.uuid4()}", status=JobStatus.active,
+        )
+        job.created_at = old
+        db_session.add(job)
+        db_session.flush()
+        older_unscored = older_unscored or job
+
+    # Everything newer than them is already scored.
+    for i in range(30):
+        job = Job(
+            title=f"New role {i}", description="d" * 60, requirements=[], location="Lagos",
+            job_type=JobType.full_time, experience_level=ExperienceLevel.mid, source="test",
+            source_url=f"https://x.test/{uuid.uuid4()}", status=JobStatus.active,
+        )
+        db_session.add(job)
+        db_session.flush()
+        db_session.add(JobMatch(
+            user_id=user.id, job_id=job.id, fit_score=80, skills_score=80,
+            experience_score=80, geo_score=80, reason="r",
+        ))
+    db_session.commit()
+
+    prefs = preferences.get_or_create(db_session, user)
+    candidates = matching.unscored_for(db_session, user, preferences.feed_query(db_session, prefs), 10)
+
+    assert len(candidates) == 10
+    assert all(job.title.startswith("Old role") for job in candidates)
+
+
+def test_the_page_says_how_many_are_still_waiting(client):
+    """"1 of 1" is true and useless on its own: three hundred jobs can match
+    the filters and be waiting unscored, which looks identical to there being
+    nothing for you."""
+    from app.db.base import SessionLocal
+
+    headers, user_id = _auth(client, "waiting@example.com")
+    session = SessionLocal()
+    try:
+        session.add(Resume(user_id=user_id, raw_text="x", parsed_skills=["Python"], experience_years=4))
+        session.commit()
+        _seed(session, 3, user_id)
+        # Eligible, never scored.
+        for i in range(12):
+            session.add(Job(
+                title=f"Unscored {i}", description="d" * 60, requirements=[], location="Lagos",
+                job_type=JobType.full_time, experience_level=ExperienceLevel.mid, source="test",
+                source_url=f"https://x.test/{uuid.uuid4()}", status=JobStatus.active,
+            ))
+        # Scored, and under the bar.
+        low = Job(
+            title="Too low", description="d" * 60, requirements=[], location="Lagos",
+            job_type=JobType.full_time, experience_level=ExperienceLevel.mid, source="test",
+            source_url=f"https://x.test/{uuid.uuid4()}", status=JobStatus.active,
+        )
+        session.add(low)
+        session.flush()
+        session.add(JobMatch(
+            user_id=user_id, job_id=low.id, fit_score=20, skills_score=20,
+            experience_score=20, geo_score=20, reason="r",
+        ))
+        session.commit()
+    finally:
+        session.close()
+
+    # skip>0, so the scoring pass does not run: it would make a real AI call,
+    # and the counts are meant to describe what is waiting, not what a scoring
+    # run would leave behind.
+    resp = client.get("/api/ai/match-jobs?limit=20&skip=1", headers=headers)
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+
+    assert body["below_threshold"] == 1
+    assert body["unscored_remaining"] == 12
