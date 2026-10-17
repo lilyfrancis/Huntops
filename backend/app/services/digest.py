@@ -10,7 +10,7 @@ from app.models.enums import JobStatus
 from app.models.job import Job
 from app.models.job_match import JobMatch
 from app.models.user import User
-from app.services import matching, visibility
+from app.services import matching, preferences, visibility
 
 settings = get_settings()
 
@@ -19,22 +19,27 @@ def get_top_matches(db: Session, user: User) -> list[tuple[JobMatch, Job]]:
     """Reads whatever's already scored — this never triggers an AI call.
     The scheduled digest job scores first, then calls this; the interactive
     preview endpoint just renders what's there."""
+    # Through the user's own filters, like the feed and autopilot.
+    #
+    # This read every score the user had ever been given, and scores are kept
+    # forever so nothing is paid for twice — so a job scored before they
+    # narrowed their job families was mailed to them every morning
+    # afterwards, and no setting on the preferences page could stop it.
+    prefs = preferences.get_or_create(db, user)
     rows = (
-        db.query(JobMatch, Job)
-        .join(Job, JobMatch.job_id == Job.id)
+        preferences.feed_query(db, prefs)
+        .join(JobMatch, (JobMatch.job_id == Job.id) & (JobMatch.user_id == user.id))
+        .add_entity(JobMatch)
         # The threshold moved here from persistence: every score is kept now,
         # so that a job already considered is never paid for twice, and the
         # places that mean "worth your morning" filter for themselves.
-        .filter(
-            JobMatch.user_id == user.id,
-            Job.status == JobStatus.active,
-            JobMatch.fit_score >= matching.MIN_SCORE_THRESHOLD,
-        )
+        .filter(JobMatch.fit_score >= matching.MIN_SCORE_THRESHOLD)
         .order_by(desc(JobMatch.geo_boost_applied), desc(JobMatch.fit_score))
         .limit(settings.DIGEST_MAX_JOBS)
         .all()
     )
-    return rows
+    # feed_query selects Job first; every caller here expects (match, job).
+    return [(match, job) for job, match in rows]
 
 
 def format_digest_email(
