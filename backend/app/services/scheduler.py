@@ -270,6 +270,10 @@ def start_scheduler() -> BackgroundScheduler | None:
         # Between ingest and digest: staleness signals accrue daily, so scores
         # have to be refreshed before the digest picks what to send.
         _scheduler.add_job(_run_ghost_rescan, "cron", hour=7, minute=20, id="daily_ghost_rescan")
+    if settings.ENABLE_SCHEDULED_AGGREGATION:
+        # Before the digest, which scores: a CV with no skills on it cannot
+        # be scored usefully, so reading it has to come first.
+        _scheduler.add_job(_run_pending_resume_parses, "cron", hour=7, minute=25, id="pending_resume_parses")
     if settings.ENABLE_SCHEDULED_DIGEST:
         # After both — the digest scores against jobs aggregation/email-sync just refreshed.
         _scheduler.add_job(_run_daily_digest, "cron", hour=7, minute=30, id="daily_digest")
@@ -292,6 +296,24 @@ def start_scheduler() -> BackgroundScheduler | None:
         # long enough for an orchestrator to decide it had failed.
         _scheduler.add_job(catch_up, id="startup_catch_up")
     return _scheduler
+
+
+def _run_pending_resume_parses() -> None:
+    """Read the CVs accepted while the provider was unavailable.
+
+    An upload is never refused for want of a parse, so a spell without
+    credit leaves a queue of CVs with no skills on them — and no skills
+    means no useful score. This clears the queue the morning after the
+    account is topped up, without anybody having to know the script exists.
+    """
+    from app.scripts.parse_pending_resumes import parse_pending
+
+    try:
+        summary = parse_pending()
+        if summary.get("parsed"):
+            logger.info("Pending CVs read: %s", summary)
+    except Exception as e:
+        logger.error("Pending CV parse failed: %s", e)
 
 
 def _hours_since_last(model, column) -> float | None:

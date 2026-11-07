@@ -166,6 +166,19 @@ export function MatchesPage() {
         }
       />
 
+      {/* A failed run and an empty result are different facts. Saying nothing
+          about the first renders it as the second, which sends people off to
+          rewrite a résumé that was never the problem. */}
+      {run?.scoring_error && (
+        <div className="mb-6 flex flex-wrap items-center gap-3 rounded-xl border border-warning/30 bg-warning-soft px-4 py-3">
+          <AlertTriangle className="h-4 w-4 shrink-0 text-warning" />
+          <p className="min-w-0 flex-1 text-sm text-warning">
+            <strong className="font-semibold">Scoring is paused</strong> — anything already
+            scored is below and still yours. Browsing, unlocking and applying are unaffected.
+          </p>
+        </div>
+      )}
+
       {isLoading ? (
         <PageSpinner />
       ) : error ? (

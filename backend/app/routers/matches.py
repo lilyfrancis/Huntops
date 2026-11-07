@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import desc, or_
 from sqlalchemy.orm import Session
@@ -16,6 +18,8 @@ from app.schemas.job_match import JobMatchOut, MatchRunOut
 from app.services import matching, preferences, resume_selection, unlocking
 from app.services.ai_client import AIResponseError
 from app.services.ghost_detection import GHOST_THRESHOLD
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/ai", tags=["matching"])
 settings = get_settings()
@@ -55,14 +59,22 @@ def match_jobs(
     )
     # Each job scored against the CV it calls for, so an engineering role is
     # never rated on a sales CV — and then applied for with a third one.
+    # Scoring failing is not the same as having nothing to show. It used to
+    # raise, so a provider outage — or an account out of credit — emptied a
+    # page that was full of matches already paid for, and told the user to
+    # try again rather than letting them read what was there.
+    scoring_error = None
     if jobs:
         try:
             for resume, group in resume_selection.group_by_resume(db, current_user, jobs):
                 scored = matching.score_jobs(resume, group, current_user.home_market)
                 matching.persist_matches(db, current_user, scored)
+            db.commit()
         except AIResponseError as e:
-            raise HTTPException(status_code=502, detail=f"Job matching failed: {e}")
-        db.commit()
+            db.rollback()
+            logger.warning("Scoring unavailable for user=%s: %s", current_user.id, e)
+            scoring_error = str(e)
+            jobs = []
 
     # Everything this user has, not only what was scored a moment ago. Now
     # that a job is scored once and remembered, a quiet day scores nothing —
@@ -140,4 +152,5 @@ def match_jobs(
         total=total,
         unscored_remaining=unscored_remaining,
         below_threshold=below_threshold,
+        scoring_error=scoring_error,
     )

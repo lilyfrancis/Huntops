@@ -14,6 +14,7 @@ class ResumeOut(BaseModel):
     lanes: list[str]
     is_primary: bool
     file_name: str | None
+    parse_status: str
     parsed_skills: list[str]
     experience_years: int | None
     education: str | None

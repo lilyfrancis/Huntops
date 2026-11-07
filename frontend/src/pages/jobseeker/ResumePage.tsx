@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Check, FileText, Star, Trash2, Upload } from "lucide-react";
+import { Check, FileText, Hourglass, Star, Trash2, Upload } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -241,6 +241,20 @@ function ResumeCard({
       </CardHeader>
 
       <CardContent className="space-y-4">
+        {/* Stored but not yet read. The file is safe and the rest of the
+            product works on it — only the scoring needs the reading, and
+            that is caught up automatically. Saying nothing here would leave
+            an empty Skills row looking like a failed upload. */}
+        {resume.parse_status === "pending" && (
+          <p className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning-soft px-3 py-2 text-sm text-warning">
+            <Hourglass className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            <span>
+              Saved, but not read yet — skills and experience will fill in shortly. You can
+              browse and apply for jobs in the meantime.
+            </span>
+          </p>
+        )}
+
         <div className="space-y-2">
           <p className="font-mono text-[0.7rem] uppercase tracking-wide text-ink-faint">Use this CV for</p>
           <ChipGroup
@@ -259,16 +273,18 @@ function ResumeCard({
 
         {resume.summary && <p className="text-sm text-ink-muted">{resume.summary}</p>}
 
-        <div>
-          <p className="mb-1.5 font-mono text-[0.7rem] uppercase tracking-wide text-ink-faint">Skills</p>
-          <div className="flex flex-wrap gap-1.5">
-            {resume.parsed_skills.map((skill) => (
-              <Badge key={skill} tone="accent">
-                {skill}
-              </Badge>
-            ))}
+        {resume.parse_status !== "pending" && (
+          <div>
+            <p className="mb-1.5 font-mono text-[0.7rem] uppercase tracking-wide text-ink-faint">Skills</p>
+            <div className="flex flex-wrap gap-1.5">
+              {resume.parsed_skills.map((skill) => (
+                <Badge key={skill} tone="accent">
+                  {skill}
+                </Badge>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {resume.achievements.length > 0 && (
           <div>

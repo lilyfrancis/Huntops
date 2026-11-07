@@ -43,3 +43,8 @@ class MatchRunOut(BaseModel):
     # these yet" from "we looked and they were not for you", which have
     # opposite fixes: press Refresh, or widen the filters.
     below_threshold: int = 0
+    # Why nothing new was scored this time, when that is the reason. Null
+    # when scoring ran. A page that shows stored matches and says nothing
+    # about a failed run reads as "there is nothing newer", which is a
+    # different and much more discouraging fact.
+    scoring_error: str | None = None

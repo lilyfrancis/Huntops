@@ -129,6 +129,8 @@ export interface Resume {
   achievements: string[];
   created_at: string;
   updated_at: string;
+  /** \"parsed\" | \"pending\" | \"failed\" — whether the model has read it yet. */
+  parse_status: string;
 }
 
 export interface Outreach {
@@ -458,6 +460,8 @@ export interface MatchRun {
   unscored_remaining: number;
   /** Scored, and did not clear the bar. */
   below_threshold: number;
+  /** Why nothing new was scored, when that is the reason. Null when it ran. */
+  scoring_error: string | null;
 }
 
 export interface ApiValidationItem {

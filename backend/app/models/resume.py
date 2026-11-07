@@ -45,6 +45,17 @@ class Resume(Base):
     file_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     raw_text: Mapped[str] = mapped_column(Text, nullable=False)
 
+    # "parsed" | "pending" | "failed". Whether the model has read this CV yet.
+    #
+    # Parsing is the one step of uploading that costs an API call, and it was
+    # the only one that could refuse the upload: no credit on the provider
+    # account meant a 502 and no CV, which meant no matches, which meant a
+    # new user hit a dead end on their first action. The upload is now kept
+    # either way and the reading is caught up later — browsing, unlocking and
+    # applying never needed the parse, and those are the parts that earn the
+    # money that buys the credit.
+    parse_status: Mapped[str] = mapped_column(String(10), nullable=False, default="parsed")
+
     parsed_skills: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
     experience_years: Mapped[int | None] = mapped_column(Integer, nullable=True)
     education: Mapped[str | None] = mapped_column(String(255), nullable=True)

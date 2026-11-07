@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request, UploadFile, File
@@ -16,6 +17,8 @@ from app.services import resume_selection
 from app.services import resumes as resumes_service
 from app.services.ai_client import AIResponseError
 from app.services.resume_files import UnsupportedFileError, extract_text
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/resumes", tags=["resumes"])
 settings = get_settings()
@@ -54,10 +57,17 @@ async def upload_resume(
             detail="Résumé appears to be empty or too short. Please upload a complete résumé.",
         )
 
+    # Reading the CV is the only part of this that costs an API call, and it
+    # used to be the only part that could refuse the upload. A provider
+    # outage, or an account out of credit, turned a new user's first action
+    # into a dead end — and the parts of the product that earn the money to
+    # buy that credit (browsing, unlocking, applying) never needed the parse
+    # at all. So the file is kept regardless and read later.
+    parsed = None
     try:
         parsed = resumes_service.parse_resume(resume_text)
     except AIResponseError as e:
-        raise HTTPException(status_code=502, detail=f"Résumé parsing failed: {e}")
+        logger.warning("Résumé parsing unavailable, storing unparsed: %s", e)
 
     # Uploading adds a CV. It used to replace the only one, which is the
     # wrong default now that a person can keep one per career track —
@@ -89,11 +99,23 @@ async def upload_resume(
 
     resume.file_name = file.filename
     resume.raw_text = resume_text
-    resume.parsed_skills = parsed.skills
-    resume.experience_years = parsed.experience_years
-    resume.education = parsed.education
-    resume.summary = parsed.summary
-    resume.achievements = parsed.achievements
+    if parsed is not None:
+        resume.parse_status = "parsed"
+        resume.parsed_skills = parsed.skills
+        resume.experience_years = parsed.experience_years
+        resume.education = parsed.education
+        resume.summary = parsed.summary
+        resume.achievements = parsed.achievements
+    else:
+        # Left exactly as they were on a re-upload: a stale reading of the
+        # previous file is worse than none, because scoring would quietly use
+        # it as though it described the document just uploaded.
+        resume.parse_status = "pending"
+        resume.parsed_skills = []
+        resume.experience_years = None
+        resume.education = None
+        resume.summary = None
+        resume.achievements = []
 
     db.flush()
     # The first CV uploaded is the fallback; later ones leave it alone.

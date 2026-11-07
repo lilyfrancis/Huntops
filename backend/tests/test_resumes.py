@@ -105,12 +105,49 @@ def test_get_my_resume_404_when_none_uploaded(client):
 
 
 @patch("app.routers.resumes.resumes_service.parse_resume")
-def test_upload_returns_502_on_ai_failure(mock_parse, client):
+def test_an_upload_is_kept_even_when_the_model_cannot_read_it(mock_parse, client):
+    """This used to be a 502 and no CV. Parsing is the one step of uploading
+    that costs an API call, and it was the only step that could refuse the
+    upload — so an account out of credit turned a new user's first action
+    into a dead end, and without a CV there are no matches at all.
+
+    Browsing, unlocking and applying never needed the parse, and those are
+    the parts that earn the money that buys the credit.
+    """
     from app.services.ai_client import AIResponseError
 
-    mock_parse.side_effect = AIResponseError("model returned garbage")
+    mock_parse.side_effect = AIResponseError("credit balance too low")
     data = register_user(client, email="aifail@example.com")
     headers = auth_headers(data["access_token"])
 
     resp = _upload(client, headers)
-    assert resp.status_code == 502
+
+    assert resp.status_code == 201, resp.text
+    body = resp.json()
+    assert body["parse_status"] == "pending"
+    # No invented skills: scoring against a guess would be worse than not
+    # scoring, because nothing downstream could tell it was a guess.
+    assert body["parsed_skills"] == []
+
+
+@patch("app.routers.resumes.resumes_service.parse_resume")
+def test_a_re_upload_does_not_keep_the_old_reading(mock_parse, client):
+    """A stale parse is worse than none: scoring would use it as though it
+    described the document just uploaded."""
+    from app.services.ai_client import AIResponseError
+    from app.schemas.ai import ParsedResume
+
+    mock_parse.return_value = ParsedResume(
+        skills=["Python"], experience_years=5, education="BSc", summary="s", achievements=[]
+    )
+    data = register_user(client, email="reupload@example.com")
+    headers = auth_headers(data["access_token"])
+    first = _upload(client, headers).json()
+    assert first["parsed_skills"] == ["Python"]
+
+    mock_parse.side_effect = AIResponseError("credit balance too low")
+    resp = _upload(client, headers, replaces=first["id"])
+
+    assert resp.status_code == 201, resp.text
+    assert resp.json()["parsed_skills"] == []
+    assert resp.json()["parse_status"] == "pending"

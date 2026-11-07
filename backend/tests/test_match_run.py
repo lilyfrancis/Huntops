@@ -103,17 +103,48 @@ def test_scored_but_below_the_bar_reports_how_many_and_what_the_bar_was(client, 
     assert body["threshold"] == 50
 
 
-def test_a_scoring_failure_is_an_error_not_an_empty_result(client, db_session):
-    """The page rendered a 502 as "No strong matches yet", which sent people
-    off to rewrite a résumé that was never the problem."""
+def test_a_scoring_failure_is_reported_and_not_passed_off_as_no_matches(client, db_session):
+    """Still the original point — a failed run must never render as "no
+    strong matches yet", which sends people off to rewrite a résumé that was
+    never the problem.
+
+    It is no longer a 502, though. Raising emptied a page that was full of
+    matches already paid for, so an account out of credit lost the user
+    access to work that had already been done for them. The run reports
+    itself instead, and the stored matches come back as usual.
+    """
     _job(db_session, "Nigerian Engineer", market="Nigeria")
     _user, headers = _seeker(client, db_session, target_markets=["Nigeria"])
 
     with patch("app.services.matching.score_jobs", side_effect=AIResponseError("model unavailable")):
         resp = client.get("/api/ai/match-jobs", headers=headers)
 
-    assert resp.status_code == 502
-    assert "model unavailable" in resp.json()["detail"]
+    assert resp.status_code == 200
+    assert "model unavailable" in resp.json()["scoring_error"]
+
+
+def test_a_failed_run_still_returns_what_was_already_scored(client, db_session):
+    """The reason this is no longer an error. Scores are paid for once and
+    kept; a provider outage must not take them off the page."""
+    from app.models.job_match import JobMatch
+
+    job = _job(db_session, "Nigerian Engineer", market="Nigeria")
+    user, headers = _seeker(client, db_session, target_markets=["Nigeria"])
+    db_session.add(JobMatch(
+        user_id=user.id, job_id=job.id, fit_score=88, skills_score=88,
+        experience_score=88, geo_score=88, reason="r",
+    ))
+    # An unscored job as well, so a scoring run is actually attempted. With
+    # everything already scored there is nothing to call the provider for,
+    # and no failure to report — which is correct, and not what this covers.
+    _job(db_session, "Another Nigerian role", market="Nigeria")
+    db_session.commit()
+
+    with patch("app.services.matching.score_jobs", side_effect=AIResponseError("out of credit")):
+        body = client.get("/api/ai/match-jobs", headers=headers).json()
+
+    assert len(body["matches"]) == 1
+    assert body["scoring_error"] is not None
 
 
 def test_a_user_with_no_preferences_still_sees_everything(client, db_session):
